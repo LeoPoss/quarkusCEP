@@ -94,6 +94,32 @@ public class ConstraintResource {
         return Response.created(URI.create(request.name)).build();
     }
 
+    @POST
+    @Path("/respondedExistence")
+    public Response createRespondedExistenceConstraint(ConstraintRequest request) {
+
+
+        constraintService.createRespondedExistenceActivationQuery(request.name, request.activationEvent);
+        constraintService.createRespondedExistenceTargetQuery(request.name, request.targetEvent);
+
+
+        constraintService.createRespondedExistenceForwardTempViolationQuery(request.name);
+        constraintService.createRespondedExistenceBackwardTempViolationQuery(request.name);
+
+        constraintService.createRespondedExistenceForwardFulfillmentQuery(request.name);
+        constraintService.createRespondedExistenceBackwardFulfillmentQuery(request.name);
+        // Welche Events brauchen wir?
+        // 1. Activation detecten und nach constraint status
+        // 2. Target detecten und nach constraint status
+
+        // 3. Fulfillment: Act->Tar
+        // 4. Fulfillment: Tar->Activation
+        //
+
+
+        return Response.created(URI.create(request.name)).build();
+    }
+
     @Data
     public static class ConstraintRequest {
         private String name;
