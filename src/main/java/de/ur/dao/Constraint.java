@@ -1,23 +1,15 @@
 package de.ur.dao;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 
-@Getter
-@Setter
-@NoArgsConstructor
+@Data
+@AllArgsConstructor
 public class Constraint {
     private String name;
-    private HashMap<String, String> eplStatements;
+    private ArrayList<EplStatement> eplStatements;
     private ConstraintType type;
     private ConstraintStatus status;
-
-    public Constraint(String name, String eplName, String eplStatement, ConstraintType type, ConstraintStatus status) {
-        this.name = name;
-        this.eplStatements = new HashMap<>();
-        eplStatements.put(eplName, eplStatement);
-        this.type = type;
-        this.status = status;
-    }
 }

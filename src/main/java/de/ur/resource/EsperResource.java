@@ -69,12 +69,8 @@ public class EsperResource {
     @DELETE
     @Path("/deploy/{deploymentId}")
     public Response undeployStatement(@PathParam("deploymentId") String deploymentId) {
-        boolean success = esperService.undeploy(deploymentId);
-        if (success) {
-            return Response.ok(Map.of("status", "Statement undeployed successfully")).build();
-        } else {
-            return Response.status(Response.Status.NOT_FOUND).entity(Map.of("error", "Deployment not found or undeploy failed")).build();
-        }
+        esperService.undeploy(deploymentId);
+        return Response.ok(Map.of("status", "Statement undeployed successfully")).build();
     }
 
     @Setter

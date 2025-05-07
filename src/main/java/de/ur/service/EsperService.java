@@ -8,23 +8,32 @@ import com.espertech.esper.compiler.client.EPCompiler;
 import com.espertech.esper.compiler.client.EPCompilerProvider;
 import com.espertech.esper.runtime.client.*;
 import de.ur.dao.SampleEvent;
+import de.ur.dao.StatementType;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @ApplicationScoped
 @Slf4j
 public class EsperService {
+    private final ConstraintService constraintService;
     @Getter
     private EPRuntime runtime;
     private final Map<String, EPDeployment> deployments = new ConcurrentHashMap<>();
     private final EPCompiler compiler = EPCompilerProvider.getCompiler();
+
+    @Inject
+    public EsperService(ConstraintService constraintService) {
+        this.constraintService = constraintService;
+    }
 
     void onStart(@Observes StartupEvent event) {
         log.info("Initializing Esper service");
@@ -59,12 +68,8 @@ public class EsperService {
 
             args.getOptions()
                     .setAccessModifierEventType(env -> NameAccessModifier.PUBLIC);
-            EPCompiled compiled;
-            if (name != null) {
-                compiled = compiler.compile("@name('" + name + "') " + query, args);
-            } else {
-                compiled = compiler.compile(query, args);
-            }
+            EPCompiled compiled = compiler.compile("@name('" + name + "') " + query, args);
+
             EPDeployment deployment = runtime.getDeploymentService()
                     .deploy(compiled);
             return deployment.getStatements()[0];
@@ -112,22 +117,39 @@ public class EsperService {
         }
     }
 
-
-    public void sendEvent(Map<String, Object> event, String eventTypeName) {
-        if (runtime != null) {
-            runtime.getEventService().sendEventMap(event, eventTypeName);
-        }
-    }
-
-    public boolean undeploy(String deploymentId) {
+    public void undeploy(String deploymentId) {
         try {
             runtime.getDeploymentService().undeploy(deploymentId);
-            deployments.remove(deploymentId);
-            return true;
         } catch (EPUndeployException e) {
-            log.error("Failed to undeploy: {}", deploymentId, e);
-            return false;
+            throw new RuntimeException(e);
         }
     }
 
+    public void removeConstraint(String name) {
+        var constraint = constraintService.getConstraints().get(name);
+        var deploymentService = runtime.getDeploymentService();
+
+        constraint.getEplStatements().forEach((s) -> {
+            if (List.of(StatementType.FULFILLMENT, StatementType.PERMANENT_VIOLATION).contains(s.type())) {
+                try {
+                    deploymentService.undeploy(s.deploymentId());
+                } catch (EPUndeployException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
 }
+
+//public boolean undeploy(String deploymentId) {
+//   try {
+//        runtime.getDeploymentService().undeploy(deploymentId);
+//            deployments.remove(deploymentId);
+//            return true;
+//        } catch (EPUndeployException e) {
+//            log.error("Failed to undeploy: {}", deploymentId, e);
+//            return false;
+//        }
+//    }
+
+//}

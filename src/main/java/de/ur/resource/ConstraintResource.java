@@ -26,6 +26,9 @@ public class ConstraintResource {
 
     @GET
     public Response getAllConstraints() {
+        for (var d : esperService.getRuntime().getDeploymentService().getDeployments()) {
+            log.info("Deployment: {}", d);
+        }
         return Response.ok(constraintService.getConstraints()).build();
     }
 
@@ -73,6 +76,13 @@ public class ConstraintResource {
     @POST
     @Path("/precedence")
     public Response createPrecedenceConstraint(ConstraintRequest request) {
+
+        constraintService.createPrecedenceActivationQuery(request.name, request.activationEvent);
+        constraintService.createPrecedenceTargetQuery(request.name, request.targetEvent);
+
+        constraintService.createPrecedenceTempViolationQuery(request.name);
+        constraintService.createPrecedenceFulfillmentQuery(request.name);
+        constraintService.createPrecedencePermanentViolationQuery(request.name);
         // Welche Events brauchen wir?
         // 1. Activation detecten und nach constraint status
         // 2. Target detecten und nach constraint status
