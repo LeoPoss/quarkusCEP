@@ -30,15 +30,15 @@ public class ConstraintResource {
     }
 
     // Prozessstart und Ende -> Muss auch in Paper, Prozess kann nicht beendet werden, solange nicht alle constraints erfüllt
-    // dennoch irgendwo in memory constraints mit name, query und status speichern und da jeweils start status setzen
+
     // INSERT INTO ist quasi reaction auf FROM PATTERN
     // SELECT triggert dann listener der code ausführt, deswegen zwei Ebenen
 
     @POST
     @Path("/existence")
-    public Response createExistenceConstraint(ConstraintResource.ExistenceConstraintRequest request) {
+    public Response createExistenceConstraint(ConstraintRequest request) {
         constraintService.createExistenceActivationQuery(request.name, request.targetEvent);
-        //esperService.deployStatements("ConstraintStatusTableDefinition2", "@public CREATE SCHEMA constraintStatus(id string, name string, type string);");
+
         constraintService.createExistenceFulfillmentQuery(request.name);
 
         // Welche Events brauchen wir?
@@ -46,14 +46,20 @@ public class ConstraintResource {
 
         // 2. Activation von constraints status -> Status update
 
-        // init -> fulfilled
+        // temp vio -> fulfilled
 
         return Response.created(URI.create(request.name)).build();
     }
 
     @POST
     @Path("/response")
-    public Response createResponseConstraint(ConstraintResource.ExistenceConstraintRequest request) {
+    public Response createResponseConstraint(ConstraintRequest request) {
+
+        constraintService.createResponseActivationQuery(request.name, request.activationEvent);
+        constraintService.createResponseTargetQuery(request.name, request.targetEvent);
+
+        constraintService.createResponseTempViolationQuery(request.name);
+        constraintService.createResponseFulfillmentQuery(request.name);
         // Welche Events brauchen wir?
         // 1. Activation detecten und nach constraint status
         // 2. Target detecten und nach constraint status
@@ -66,7 +72,7 @@ public class ConstraintResource {
 
     @POST
     @Path("/precedence")
-    public Response createPrecedenceConstraint(ConstraintResource.ExistenceConstraintRequest request) {
+    public Response createPrecedenceConstraint(ConstraintRequest request) {
         // Welche Events brauchen wir?
         // 1. Activation detecten und nach constraint status
         // 2. Target detecten und nach constraint status
@@ -79,8 +85,9 @@ public class ConstraintResource {
     }
 
     @Data
-    public static class ExistenceConstraintRequest {
+    public static class ConstraintRequest {
         private String name;
+        private String activationEvent;
         private String targetEvent;
     }
 }

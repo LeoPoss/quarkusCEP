@@ -12,7 +12,6 @@ import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.ws.rs.BadRequestException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,13 +38,6 @@ public class EsperService {
 
         CompilerArguments compilerArgs = new CompilerArguments();
         compilerArgs.getPath().add(runtime.getRuntimePath());
-
-        try {
-            //deployStatements("ConstraintStatusTableDefinition", "CREATE SCHEMA constraintStatus AS (id String, name String, type String);");
-            log.info("ConstraintStatus table defined.");
-        } catch (BadRequestException e) {
-            log.error("Failed to define ConstraintStatus table on startup", e);
-        }
     }
 
     void onStop(@Observes ShutdownEvent event) {
