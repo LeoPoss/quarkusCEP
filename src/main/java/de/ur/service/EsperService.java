@@ -2,8 +2,8 @@ package de.ur.service;
 
 import com.espertech.esper.common.client.EPCompiled;
 import com.espertech.esper.common.client.configuration.Configuration;
+import com.espertech.esper.common.client.util.NameAccessModifier;
 import com.espertech.esper.compiler.client.CompilerArguments;
-import com.espertech.esper.compiler.client.EPCompileException;
 import com.espertech.esper.compiler.client.EPCompiler;
 import com.espertech.esper.compiler.client.EPCompilerProvider;
 import com.espertech.esper.runtime.client.*;
@@ -12,6 +12,7 @@ import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.ws.rs.BadRequestException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,6 +35,17 @@ public class EsperService {
 
         runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
         log.info("Esper runtime initialized");
+
+
+        CompilerArguments compilerArgs = new CompilerArguments();
+        compilerArgs.getPath().add(runtime.getRuntimePath());
+
+        try {
+            //deployStatements("ConstraintStatusTableDefinition", "CREATE SCHEMA constraintStatus AS (id String, name String, type String);");
+            log.info("ConstraintStatus table defined.");
+        } catch (BadRequestException e) {
+            log.error("Failed to define ConstraintStatus table on startup", e);
+        }
     }
 
     void onStop(@Observes ShutdownEvent event) {
@@ -48,20 +60,27 @@ public class EsperService {
     }
 
 
-    public EPStatement deployStatement(String deploymentId, String eplStatement)
-            throws EPCompileException, EPDeployException {
+    public EPStatement deployStatements(String name, String query) {
+        try {
+            CompilerArguments args = new CompilerArguments();
+            args.getPath().add(runtime.getRuntimePath());
 
-        CompilerArguments args = new CompilerArguments(runtime.getConfigurationDeepCopy());
-        EPCompiled compiled = compiler.compile(eplStatement, args);
-
-        EPDeployment deployment = runtime.getDeploymentService().deploy(compiled,
-                new DeploymentOptions().setDeploymentId(deploymentId));
-
-        deployments.put(deploymentId, deployment);
-
-        // Return the first statement (assuming there's only one per deployment)
-        return deployment.getStatements()[0];
+            args.getOptions()
+                    .setAccessModifierEventType(env -> NameAccessModifier.PUBLIC);
+            EPCompiled compiled;
+            if (name != null) {
+                compiled = compiler.compile("@name('" + name + "') " + query, args);
+            } else {
+                compiled = compiler.compile(query, args);
+            }
+            EPDeployment deployment = runtime.getDeploymentService()
+                    .deploy(compiled);
+            return deployment.getStatements()[0];
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
+
 
     public boolean addListener(String deploymentId, String statementName, UpdateListener listener) {
         EPDeployment deployment = deployments.get(deploymentId);

@@ -4,7 +4,8 @@ import lombok.Data;
 
 @Data
 public class SampleEvent {
-    private String id;
+    private int id;
+    private String type;
     private double value;
     private long timestamp;
 }
