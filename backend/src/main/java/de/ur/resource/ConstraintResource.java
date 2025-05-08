@@ -1,6 +1,8 @@
 package de.ur.resource;
 
 
+import de.ur.dao.ConstraintStatus;
+import de.ur.dao.ConstraintType;
 import de.ur.service.ConstraintService;
 import de.ur.service.EsperService;
 import jakarta.inject.Inject;
@@ -12,7 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
 
-@Path("/constraint")
+@Path("/constraints")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Slf4j
@@ -26,10 +28,7 @@ public class ConstraintResource {
 
     @GET
     public Response getAllConstraints() {
-        for (var d : esperService.getRuntime().getDeploymentService().getDeployments()) {
-            log.info("Deployment: {}", d);
-        }
-        return Response.ok(constraintService.getConstraints()).build();
+        return Response.ok(constraintService.getConstraints().values()).build();
     }
 
     // Prozessstart und Ende -> Muss auch in Paper, Prozess kann nicht beendet werden, solange nicht alle constraints erfüllt
@@ -43,9 +42,14 @@ public class ConstraintResource {
     @POST
     @Path("/existence")
     public Response createExistenceConstraint(ConstraintRequest request) {
+        constraintService.addConstraint(request.name, ConstraintType.EXISTENCE, request.activationEvent, request.targetEvent, ConstraintStatus.TEMPORARY_VIOLATION);
+
         constraintService.createExistenceActivationQuery(request.name, request.targetEvent);
 
         constraintService.createExistenceFulfillmentQuery(request.name);
+
+
+
 
         // Welche Events brauchen wir?
         // 1. Activation detecten und nach constraint status
@@ -60,11 +64,14 @@ public class ConstraintResource {
     @POST
     @Path("/response")
     public Response createResponseConstraint(ConstraintRequest request) {
+        constraintService.addConstraint(request.name, ConstraintType.RESPONSE, request.activationEvent, request.targetEvent, ConstraintStatus.INIT);
+
         constraintService.createResponseActivationQuery(request.name, request.activationEvent);
         constraintService.createResponseTargetQuery(request.name, request.targetEvent);
 
         constraintService.createResponseTempViolationQuery(request.name);
         constraintService.createResponseFulfillmentQuery(request.name);
+
         // Welche Events brauchen wir?
         // 1. Activation detecten und nach constraint status
         // 2. Target detecten und nach constraint status
@@ -78,12 +85,15 @@ public class ConstraintResource {
     @POST
     @Path("/precedence")
     public Response createPrecedenceConstraint(ConstraintRequest request) {
+        constraintService.addConstraint(request.name, ConstraintType.PRECEDENCE, request.activationEvent, request.targetEvent, ConstraintStatus.INIT);
+
         constraintService.createPrecedenceActivationQuery(request.name, request.activationEvent);
         constraintService.createPrecedenceTargetQuery(request.name, request.targetEvent);
 
         constraintService.createPrecedenceTempViolationQuery(request.name);
         constraintService.createPrecedenceFulfillmentQuery(request.name);
         constraintService.createPrecedencePermanentViolationQuery(request.name);
+
         // Welche Events brauchen wir?
         // 1. Activation detecten und nach constraint status
         // 2. Target detecten und nach constraint status
@@ -96,8 +106,10 @@ public class ConstraintResource {
     }
 
     @POST
-    @Path("/respondedExistence")
+    @Path("/respondedexistence")
     public Response createRespondedExistenceConstraint(ConstraintRequest request) {
+        constraintService.addConstraint(request.name, ConstraintType.RESPONDEDEXISTENCE, request.activationEvent, request.targetEvent, ConstraintStatus.INIT);
+
         constraintService.createRespondedExistenceActivationQuery(request.name, request.activationEvent);
         constraintService.createRespondedExistenceTargetQuery(request.name, request.targetEvent);
 
@@ -107,6 +119,7 @@ public class ConstraintResource {
 
         constraintService.createRespondedExistenceForwardFulfillmentQuery(request.name);
         constraintService.createRespondedExistenceBackwardFulfillmentQuery(request.name);
+
         // Welche Events brauchen wir?
         // 1. Activation detecten und nach constraint status
         // 2. Target detecten und nach constraint status
@@ -118,8 +131,10 @@ public class ConstraintResource {
     }
 
     @POST
-    @Path("/alternateResponse")
+    @Path("/alternateresponse")
     public Response createAlternateResponseConstraint(ConstraintRequest request) {
+        constraintService.addConstraint(request.name, ConstraintType.ALTERNATERESPONSE, request.activationEvent, request.targetEvent, ConstraintStatus.INIT);
+
         constraintService.createAlternateResponseActivationQuery(request.name, request.activationEvent);
         constraintService.createAlternateResponseTargetQuery(request.name, request.targetEvent);
 
@@ -127,6 +142,8 @@ public class ConstraintResource {
         constraintService.createAlternateResponseTempViolationQuery(request.name);
         constraintService.createAlternateResponseFulfillmentQuery(request.name);
         constraintService.createAlternateResponsePermanentViolationQuery(request.name);
+
+
         // Welche Events brauchen wir?
 
         // 1. Activation detecten und nach constraint status

@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 @ApplicationScoped
@@ -20,8 +19,8 @@ public class ConstraintService {
     @Getter
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
 
-    public void addConstraint(String name, String eplId, StatementType eplType, String eplStatement, ConstraintType type, ConstraintStatus status) {
-        constraints.put(name, new Constraint(name, new ArrayList<>(List.of(new EplStatement(eplId, eplStatement, eplType))), type, status));
+    public void addConstraint(String name, ConstraintType type, String activationEvent, String targetEvent, ConstraintStatus status) {
+        constraints.put(name, new Constraint(name, new ArrayList<>(), activationEvent, targetEvent, type, status));
     }
 
     public void addConstraintStatement(String name, String eplId, StatementType eplType, String eplStatement) {
@@ -38,7 +37,7 @@ public class ConstraintService {
 
         var statement = esperService.deployStatements(name, query);
 
-        addConstraint(name, statement.getDeploymentId(), StatementType.ACTIVATION, query, ConstraintType.EXISTENCE, ConstraintStatus.TEMPORARY_VIOLATION);
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
     }
 
     public void createExistenceFulfillmentQuery(String name) {
@@ -73,7 +72,7 @@ public class ConstraintService {
 
         var statement = esperService.deployStatements(name, query);
 
-        addConstraint(name, statement.getDeploymentId(), StatementType.ACTIVATION, query, ConstraintType.RESPONSE, ConstraintStatus.INIT);
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
     }
 
     public void createResponseTargetQuery(String name, String targetEvent) {
@@ -143,7 +142,7 @@ public class ConstraintService {
 
         var statement = esperService.deployStatements(name, query);
 
-        addConstraint(name, statement.getDeploymentId(), StatementType.ACTIVATION, query, ConstraintType.PRECEDENCE, ConstraintStatus.INIT);
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
     }
 
     public void createPrecedenceTargetQuery(String name, String targetEvent) {
@@ -236,7 +235,7 @@ public class ConstraintService {
 
         var statement = esperService.deployStatements(name, query);
 
-        addConstraint(name, statement.getDeploymentId(), StatementType.ACTIVATION, query, ConstraintType.RESPONDEDEXISTENCE, ConstraintStatus.INIT);
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
     }
 
     public void createRespondedExistenceTargetQuery(String name, String targetEvent) {
@@ -351,7 +350,7 @@ public class ConstraintService {
 
         var statement = esperService.deployStatements(name, query);
 
-        addConstraint(name, statement.getDeploymentId(), StatementType.ACTIVATION, query, ConstraintType.ALTERNATERESPONSE, ConstraintStatus.INIT);
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
     }
 
     public void createAlternateResponseTargetQuery(String name, String targetEvent) {

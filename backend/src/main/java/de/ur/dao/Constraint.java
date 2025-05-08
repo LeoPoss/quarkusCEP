@@ -10,6 +10,8 @@ import java.util.ArrayList;
 public class Constraint {
     private String name;
     private ArrayList<EplStatement> eplStatements;
+    private String activationEvent;
+    private String targetEvent;
     private ConstraintType type;
     private ConstraintStatus status;
 
