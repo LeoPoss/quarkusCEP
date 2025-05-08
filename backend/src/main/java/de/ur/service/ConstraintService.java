@@ -431,6 +431,73 @@ public class ConstraintService {
         });
 
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
+    }
 
+    public void createNotResponseActivationQuery(String name, String activationEvent) {
+        String query = """
+                INSERT INTO constraintStatus
+                SELECT id, '%s' as name, 'activation' as type
+                FROM SampleEvent WHERE type = '%s'
+                """.formatted(name, activationEvent);
+
+        var statement = esperService.deployStatements(name, query);
+
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
+    }
+
+    public void createNotResponseTargetQuery(String name, String targetEvent) {
+        String query = """
+                INSERT INTO constraintStatus
+                SELECT id, '%s' as name, 'target' as type
+                FROM SampleEvent(type = '%s')
+                """.formatted(name, targetEvent);
+
+        var statement = esperService.deployStatements(name, query);
+
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TARGET, query);
+    }
+
+    public void createNotResponseTempViolationQuery(String name) {
+        String query = """
+                SELECT id, name, type
+                FROM constraintStatus
+                WHERE name = '%s' AND type = 'activation'
+                """.formatted(name);
+
+        var statement = esperService.deployStatements(name, query);
+
+        statement.addListener((newEvents, oldEvents, s, r) -> {
+            if (newEvents != null) {
+                for (EventBean newEvent : newEvents) {
+                    log.info("Reacting to activation of: {}", newEvent.getUnderlying());
+
+                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
+                }
+            }
+        });
+
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
+    }
+
+    public void createNotResponsePermanentViolationQuery(String name) {
+        String query = """
+                SELECT a.id, a.name, a.type
+                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
+                """.formatted(name, name);
+
+        var statement = esperService.deployStatements(name, query);
+
+        statement.addListener((newEvents, oldEvents, s, r) -> {
+            if (newEvents != null) {
+                for (EventBean newEvent : newEvents) {
+                    log.info("Reacting to fulfillment of: {}", newEvent.getUnderlying());
+
+                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
+                    esperService.removeConstraint(name);
+                }
+            }
+        });
+
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }
 }

@@ -156,6 +156,28 @@ public class ConstraintResource {
         return Response.created(URI.create(request.name)).build();
     }
 
+    @POST
+    @Path("notresponse")
+    public Response createNotResponseConstraint(ConstraintRequest request) {
+        constraintService.addConstraint(request.name, ConstraintType.NOTRESPONSE, request.activationEvent, request.targetEvent, ConstraintStatus.FULFILLED);
+
+        constraintService.createNotResponseActivationQuery(request.name, request.activationEvent);
+        constraintService.createNotResponseTargetQuery(request.name, request.targetEvent);
+
+        constraintService.createNotResponseTempViolationQuery(request.name);
+        constraintService.createNotResponsePermanentViolationQuery(request.name);
+        // Welche Events brauchen wir?
+
+        // 1. Activation detecten und nach constraint status
+        // 2. Target detecten und nach constraint status
+
+        // 3. TempViolation: Act
+        // 4. Permanent Violation: Act -> Tar
+        // INIT: Fulfilled
+
+        return Response.created(URI.create(request.name)).build();
+    }
+
     @Data
     public static class ConstraintRequest {
         private String name;

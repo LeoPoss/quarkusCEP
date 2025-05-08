@@ -50,6 +50,7 @@ export default function CreateConstraint() {
               <SelectItem key="alternateResponse">
                 Alternate Response
               </SelectItem>
+              <SelectItem key="notResponse">Not Response</SelectItem>
             </Select>
             <Input label="Activation Event" name="activationEvent" />
             <Input isRequired label="Target Event" name="targetEvent" />
