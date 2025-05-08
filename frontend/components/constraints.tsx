@@ -4,12 +4,14 @@ import {
   Accordion,
   AccordionItem,
   Chip,
+  Divider,
   Spinner,
   Tooltip,
 } from "@heroui/react";
 import * as React from "react";
 import { LinkBreak } from "@phosphor-icons/react";
 import ShikiHighlighter from "react-shiki";
+import { useTheme } from "next-themes";
 
 type Constraint = {
   name: string;
@@ -52,6 +54,7 @@ const statusChip: Record<
 };
 
 export default function Constraints() {
+  const { theme, resolvedTheme } = useTheme();
   const constraints = useConstraints();
 
   return (
@@ -85,23 +88,30 @@ export default function Constraints() {
                   title={c.name}
                 >
                   {c.eplStatements.map((s) => (
-                    <div
-                      key={s.deploymentId}
-                      className="my-2 grid grid-cols-4 gap-4"
-                    >
-                      <div className="w-64">
-                        <Tooltip content={s.deploymentId}>
-                          <Chip variant="faded">{s.type}</Chip>
-                        </Tooltip>
-                      </div>
-                      <ShikiHighlighter
-                        className="col-span-3 text-sm"
-                        language="sql"
-                        theme="ayu-dark"
+                    <>
+                      <div
+                        key={s.deploymentId}
+                        className="my-2 grid grid-cols-4 gap-4"
                       >
-                        {s.statement.trim()}
-                      </ShikiHighlighter>
-                    </div>
+                        <div className="w-64">
+                          <Tooltip content={s.deploymentId}>
+                            <Chip variant="faded">{s.type}</Chip>
+                          </Tooltip>
+                        </div>
+                        <ShikiHighlighter
+                          className="col-span-3 text-sm border"
+                          language="sql"
+                          theme={
+                            resolvedTheme === "dark"
+                              ? "material-theme-darker"
+                              : "material-theme-lighter"
+                          }
+                        >
+                          {s.statement.trim()}
+                        </ShikiHighlighter>
+                      </div>
+                      <Divider />
+                    </>
                   ))}
                 </AccordionItem>
               ))}
