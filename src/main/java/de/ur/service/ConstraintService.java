@@ -55,7 +55,7 @@ public class ConstraintService {
                 for (EventBean newEvent : newEvents) {
                     log.info("Reacting to activation of: {}", newEvent.getUnderlying());
 
-                    constraints.get(name).setStatus(ConstraintStatus.FULFILLED);
+                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
                     esperService.removeConstraint(name);
                 }
             }
@@ -102,7 +102,7 @@ public class ConstraintService {
                 for (EventBean newEvent : newEvents) {
                     log.info("Reacting to activation of: {}", newEvent.getUnderlying());
 
-                    constraints.get(name).setStatus(ConstraintStatus.TEMPORARY_VIOLATION);
+                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
                 }
             }
         });
@@ -124,7 +124,7 @@ public class ConstraintService {
                 for (EventBean newEvent : newEvents) {
                     log.info("Reacting to activation of: {}", newEvent.getUnderlying());
 
-                    constraints.get(name).setStatus(ConstraintStatus.FULFILLED);
+                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
                     esperService.removeConstraint(name);
                 }
             }
@@ -172,7 +172,7 @@ public class ConstraintService {
                 for (EventBean newEvent : newEvents) {
                     log.info("Reacting to tempvio of: {}", newEvent.getUnderlying());
 
-                    constraints.get(name).setStatus(ConstraintStatus.TEMPORARY_VIOLATION);
+                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
                 }
             }
         });
@@ -194,7 +194,7 @@ public class ConstraintService {
                 for (EventBean newEvent : newEvents) {
                     log.info("Reacting to fulfillment of: {}", newEvent.getUnderlying());
 
-                    constraints.get(name).setStatus(ConstraintStatus.FULFILLED);
+                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
                     esperService.removeConstraint(name);
                 }
             }
@@ -217,7 +217,7 @@ public class ConstraintService {
                 for (EventBean newEvent : newEvents) {
                     log.info("Reacting to permanentvio of: {}", newEvent.getUnderlying());
 
-                    constraints.get(name).setStatus(ConstraintStatus.PERMANENT_VIOLATION);
+                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
                     esperService.removeConstraint(name);
                 }
             }
@@ -266,7 +266,7 @@ public class ConstraintService {
                 for (EventBean newEvent : newEvents) {
                     log.info("Reacting to tempvio of: {}", newEvent.getUnderlying());
 
-                    constraints.get(name).setStatus(ConstraintStatus.TEMPORARY_VIOLATION);
+                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
                 }
             }
         });
@@ -288,7 +288,7 @@ public class ConstraintService {
                 for (EventBean newEvent : newEvents) {
                     log.info("Reacting to tempvio of: {}", newEvent.getUnderlying());
 
-                    constraints.get(name).setStatus(ConstraintStatus.TEMPORARY_VIOLATION);
+                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
                 }
             }
         });
@@ -307,9 +307,9 @@ public class ConstraintService {
         statement.addListener((newEvents, oldEvents, s, r) -> {
             if (newEvents != null) {
                 for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to forwardfullfillment of: {}", newEvent.getUnderlying());
+                    log.info("Reacting to forward fulfillment of: {}", newEvent.getUnderlying());
 
-                    constraints.get(name).setStatus(ConstraintStatus.FULFILLED);
+                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
                     esperService.removeConstraint(name);
                 }
             }
@@ -330,9 +330,9 @@ public class ConstraintService {
         statement.addListener((newEvents, oldEvents, s, r) -> {
             if (newEvents != null) {
                 for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to backwardfullfillment of: {}", newEvent.getUnderlying());
+                    log.info("Reacting to backward fullfillment of: {}", newEvent.getUnderlying());
 
-                    constraints.get(name).setStatus(ConstraintStatus.FULFILLED);
+                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
                     esperService.removeConstraint(name);
                 }
             }
@@ -342,4 +342,96 @@ public class ConstraintService {
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }
 
+    public void createAlternateResponseActivationQuery(String name, String activationEvent) {
+        String query = """
+                INSERT INTO constraintStatus
+                SELECT id, '%s' as name, 'activation' as type
+                FROM SampleEvent WHERE type = '%s'
+                """.formatted(name, activationEvent);
+
+        var statement = esperService.deployStatements(name, query);
+
+        addConstraint(name, statement.getDeploymentId(), StatementType.ACTIVATION, query, ConstraintType.ALTERNATERESPONSE, ConstraintStatus.INIT);
+    }
+
+    public void createAlternateResponseTargetQuery(String name, String targetEvent) {
+        String query = """
+                INSERT INTO constraintStatus
+                SELECT id, '%s' as name, 'target' as type
+                FROM SampleEvent(type = '%s')
+                """.formatted(name, targetEvent);
+
+        var statement = esperService.deployStatements(name, query);
+
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TARGET, query);
+    }
+
+    public void createAlternateResponseTempViolationQuery(String name) {
+        String query = """
+                SELECT id, name, type
+                FROM constraintStatus
+                WHERE name = '%s' AND type = 'activation'
+                """.formatted(name);
+
+        var statement = esperService.deployStatements(name, query);
+
+        statement.addListener((newEvents, oldEvents, s, r) -> {
+            if (newEvents != null) {
+                for (EventBean newEvent : newEvents) {
+                    log.info("Reacting to activation of: {}", newEvent.getUnderlying());
+
+                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
+                }
+            }
+        });
+
+
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
+    }
+
+    public void createAlternateResponseFulfillmentQuery(String name) {
+        String query = """
+                SELECT a.id, a.name, a.type
+                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
+                """.formatted(name, name);
+
+        var statement = esperService.deployStatements(name, query);
+
+        statement.addListener((newEvents, oldEvents, s, r) -> {
+            if (newEvents != null) {
+                for (EventBean newEvent : newEvents) {
+                    log.info("Reacting to fulfillment of: {}", newEvent.getUnderlying());
+
+                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
+                    esperService.removeConstraint(name);
+                }
+            }
+        });
+
+
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
+    }
+
+    public void createAlternateResponsePermanentViolationQuery(String name) {
+        String query = """
+                SELECT a.id, a.name, a.type
+                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='activation', name='%s') -> c=constraintStatus(type='target', name='%s')]
+                """.formatted(name, name, name);
+
+        var statement = esperService.deployStatements(name, query);
+
+        statement.addListener((newEvents, oldEvents, s, r) -> {
+            if (newEvents != null) {
+                for (EventBean newEvent : newEvents) {
+                    log.info("Reacting to permanent violation of: {}", newEvent.getUnderlying());
+
+                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
+                    esperService.removeConstraint(name);
+                }
+            }
+        });
+
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
+
+    }
 }

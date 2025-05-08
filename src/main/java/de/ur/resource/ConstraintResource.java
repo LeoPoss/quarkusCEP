@@ -37,6 +37,9 @@ public class ConstraintResource {
     // INSERT INTO ist quasi reaction auf FROM PATTERN
     // SELECT triggert dann listener der code ausführt, deswegen zwei Ebenen
 
+    // TODO: Wann können wir löschen, also welche status sind final und welche nicht
+    // TODO: Evtl. nicht constraints löschen sondern alte activation und target
+
     @POST
     @Path("/existence")
     public Response createExistenceConstraint(ConstraintRequest request) {
@@ -57,7 +60,6 @@ public class ConstraintResource {
     @POST
     @Path("/response")
     public Response createResponseConstraint(ConstraintRequest request) {
-
         constraintService.createResponseActivationQuery(request.name, request.activationEvent);
         constraintService.createResponseTargetQuery(request.name, request.targetEvent);
 
@@ -76,7 +78,6 @@ public class ConstraintResource {
     @POST
     @Path("/precedence")
     public Response createPrecedenceConstraint(ConstraintRequest request) {
-
         constraintService.createPrecedenceActivationQuery(request.name, request.activationEvent);
         constraintService.createPrecedenceTargetQuery(request.name, request.targetEvent);
 
@@ -97,8 +98,6 @@ public class ConstraintResource {
     @POST
     @Path("/respondedExistence")
     public Response createRespondedExistenceConstraint(ConstraintRequest request) {
-
-
         constraintService.createRespondedExistenceActivationQuery(request.name, request.activationEvent);
         constraintService.createRespondedExistenceTargetQuery(request.name, request.targetEvent);
 
@@ -114,8 +113,28 @@ public class ConstraintResource {
 
         // 3. Fulfillment: Act->Tar
         // 4. Fulfillment: Tar->Activation
-        //
 
+        return Response.created(URI.create(request.name)).build();
+    }
+
+    @POST
+    @Path("/alternateResponse")
+    public Response createAlternateResponseConstraint(ConstraintRequest request) {
+        constraintService.createAlternateResponseActivationQuery(request.name, request.activationEvent);
+        constraintService.createAlternateResponseTargetQuery(request.name, request.targetEvent);
+
+
+        constraintService.createAlternateResponseTempViolationQuery(request.name);
+        constraintService.createAlternateResponseFulfillmentQuery(request.name);
+        constraintService.createAlternateResponsePermanentViolationQuery(request.name);
+        // Welche Events brauchen wir?
+
+        // 1. Activation detecten und nach constraint status
+        // 2. Target detecten und nach constraint status
+
+        // 3. TempViolation: Act
+        // 3. Fulfillment: Act -> Tar
+        // 4. Permanent Violation: Act -> Act -> Tar
 
         return Response.created(URI.create(request.name)).build();
     }
