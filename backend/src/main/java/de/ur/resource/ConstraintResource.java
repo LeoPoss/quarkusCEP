@@ -9,7 +9,6 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URI;
@@ -39,16 +38,17 @@ public class ConstraintResource {
     // TODO: Wann können wir löschen, also welche status sind final und welche nicht
     // TODO: Evtl. nicht constraints löschen sondern alte activation und target
 
+
+    // "targetCondition": "cast(payload('val'), double)>300"
+
     @POST
     @Path("/existence")
     public Response createExistenceConstraint(ConstraintRequest request) {
         constraintService.addConstraint(request.name, ConstraintType.EXISTENCE, request.activationEvent, request.targetEvent, ConstraintStatus.TEMPORARY_VIOLATION);
 
-        constraintService.createExistenceActivationQuery(request.name, request.targetEvent);
+        constraintService.createExistenceActivationQuery(request.name, request.targetEvent, request.targetCondition);
 
         constraintService.createExistenceFulfillmentQuery(request.name);
-
-
 
 
         // Welche Events brauchen wir?
@@ -178,10 +178,10 @@ public class ConstraintResource {
         return Response.created(URI.create(request.name)).build();
     }
 
-    @Data
-    public static class ConstraintRequest {
-        private String name;
-        private String activationEvent;
-        private String targetEvent;
+    public record ConstraintRequest(String name, String activationEvent, String targetEvent, ConditionRequest targetCondition,
+                                    ConditionRequest activationCondition) {
+    }
+
+    public record ConditionRequest(String param, String condition, String value) {
     }
 }

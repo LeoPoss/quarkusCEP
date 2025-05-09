@@ -2,6 +2,7 @@ package de.ur.service;
 
 import com.espertech.esper.common.client.EventBean;
 import de.ur.dao.*;
+import de.ur.resource.ConstraintResource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
@@ -28,12 +29,17 @@ public class ConstraintService {
         constraint.getEplStatements().add(new EplStatement(eplId, eplStatement, eplType));
     }
 
-    public void createExistenceActivationQuery(String name, String targetEvent) {
+    public void createExistenceActivationQuery(String name, String targetEvent, ConstraintResource.ConditionRequest targetCondition) {
         String query = """
                 INSERT INTO constraintStatus
                 SELECT id, '%s' as name, 'activation' as type
                 FROM SampleEvent WHERE type = '%s'
                 """.formatted(name, targetEvent);
+
+        if (targetCondition != null) {
+            // TODO Cast correctly if string, what else?
+            query += "AND cast(payload('%s'), double)%s%s".formatted(targetCondition.param(), targetCondition.condition(), targetCondition.value());
+        }
 
         var statement = esperService.deployStatements(name, query);
 
