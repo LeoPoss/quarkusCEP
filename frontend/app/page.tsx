@@ -15,7 +15,7 @@ export default function Home() {
   return (
     <section className="flex flex-col gap-4">
       <h2 className="text-2xl font-black">Synergistic CEP for MP-Declare</h2>
-      <div className="flex items-center gap-2 bg-gradient-to-br from-primary-100 via-transparent p-2 w-fit">
+      <div className="flex items-center gap-2 bg-gradient-to-br from-primary-200 via-transparent p-2 w-fit">
         <Chip color="primary">MP-Declare</Chip>
         <Switch
           checked={isMPDeclareEnabled}

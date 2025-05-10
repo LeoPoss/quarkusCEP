@@ -88,15 +88,15 @@ export default function CreateConstraint() {
             />
           </div>
           {isMPDeclareEnabled && (
-            <div className="mt-4 bg-gradient-to-br from-primary-100 via-transparent p-2 relative">
-              <div className="absolute left-2 top-2 opacity-20 text-4xl font-bold text-primary">
+            <div className="mt-4 bg-gradient-to-br from-primary-200 via-transparent p-2 relative">
+              <div className="absolute left-2 top-2 opacity-20 text-5xl font-bold text-primary">
                 MP-Declare
               </div>
               <div>
                 <h3 className="text-sm font-medium mb-2">Conditions</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <h4 className="text-xs font-medium text-gray-500 mb-1">
+                    <h4 className="text-xs font-medium text-neutral-500 mb-1">
                       Activation Condition
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -113,7 +113,7 @@ export default function CreateConstraint() {
                         <SelectItem key="">None</SelectItem>
                         <SelectItem key="<">{"<"}</SelectItem>
                         <SelectItem key="<=">{"<="}</SelectItem>
-                        <SelectItem key="==">{"=="}</SelectItem>
+                        <SelectItem key="=">{"=="}</SelectItem>
                         <SelectItem key=">=">{">="}</SelectItem>
                         <SelectItem key=">">{">"}</SelectItem>
                       </Select>
@@ -121,7 +121,7 @@ export default function CreateConstraint() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="text-xs font-medium text-gray-500 mb-1">
+                    <h4 className="text-xs font-medium text-neutral-500 mb-1">
                       Target Condition
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -130,7 +130,7 @@ export default function CreateConstraint() {
                         <SelectItem key="">None</SelectItem>
                         <SelectItem key="<">{"<"}</SelectItem>
                         <SelectItem key="<=">{"<="}</SelectItem>
-                        <SelectItem key="==">{"=="}</SelectItem>
+                        <SelectItem key="=">{"=="}</SelectItem>
                         <SelectItem key=">=">{">="}</SelectItem>
                         <SelectItem key=">">{">"}</SelectItem>
                       </Select>

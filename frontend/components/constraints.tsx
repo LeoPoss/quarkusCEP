@@ -75,8 +75,8 @@ export default function Constraints() {
         <>
           {constraints.data.length == 0 ? (
             <div className="flex flex-col items-center gap-6">
-              <LinkBreak className="w-24 h-24 text-gray-300" />
-              <span className="text-sm text-gray-300">
+              <LinkBreak className="text-neutral-300" size={96} />
+              <span className="text-sm text-neutral-300">
                 No constraints found
               </span>
             </div>
@@ -88,11 +88,14 @@ export default function Constraints() {
                   startContent={
                     <Chip color={statusChip[c.status]}>{c.status}</Chip>
                   }
-                  subtitle={<span>{formatConstraintDisplay(c)}</span>}
-                  title={c.name}
+                  subtitle={formatConstraintDisplay(c)}
+                  title={<span className="font-medium">{c.name}</span>}
                 >
                   {c.eplStatements.map((s) => (
-                    <div key={s.deploymentId} className="bg-gray-100">
+                    <div
+                      key={s.deploymentId}
+                      className="bg-neutral-100 dark:bg-neutral-900"
+                    >
                       <Divider />
                       <div className="p-2 grid grid-cols-7 gap-4 pl-8 ">
                         <Tooltip content={s.deploymentId}>
