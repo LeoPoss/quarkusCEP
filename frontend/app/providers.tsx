@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ToastProvider } from "@heroui/react";
+
 import { MPDeclareProvider } from "../contexts/mpDeclareContext";
 
 export interface ProvidersProps {
