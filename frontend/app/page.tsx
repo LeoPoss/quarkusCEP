@@ -8,7 +8,7 @@ import ConstraintsOverview from "@/components/constraints";
 import CreateConstraint from "@/components/create-constraint";
 import SendEvent from "@/components/send-event";
 import { useMPDeclare } from "@/contexts/mpDeclareContext";
-f;
+
 export default function Home() {
   const { isMPDeclareEnabled, toggleMPDeclare } = useMPDeclare();
 
