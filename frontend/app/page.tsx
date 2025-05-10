@@ -8,13 +8,13 @@ import ConstraintsOverview from "@/components/constraints";
 import CreateConstraint from "@/components/create-constraint";
 import SendEvent from "@/components/send-event";
 import { useMPDeclare } from "@/contexts/mpDeclareContext";
-
+f;
 export default function Home() {
   const { isMPDeclareEnabled, toggleMPDeclare } = useMPDeclare();
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-2xl font-black">Constraints</h2>
+      <h2 className="text-2xl font-black">Synergistic CEP for MP-Declare</h2>
       <div className="flex items-center gap-2 bg-gradient-to-br from-primary-100 via-transparent p-2 w-fit">
         <Chip color="primary">MP-Declare</Chip>
         <Switch

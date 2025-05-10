@@ -92,18 +92,16 @@ export default function Constraints() {
                   title={c.name}
                 >
                   {c.eplStatements.map((s) => (
-                    <>
-                      <div
-                        key={s.deploymentId}
-                        className="my-2 grid grid-cols-4 gap-4"
-                      >
-                        <div className="w-64">
-                          <Tooltip content={s.deploymentId}>
-                            <Chip variant="faded">{s.type}</Chip>
-                          </Tooltip>
-                        </div>
+                    <div key={s.deploymentId} className="bg-gray-100">
+                      <Divider />
+                      <div className="p-2 grid grid-cols-7 gap-4 pl-8 ">
+                        <Tooltip content={s.deploymentId}>
+                          <Chip color="default" variant="dot">
+                            {s.type}
+                          </Chip>
+                        </Tooltip>
                         <ShikiHighlighter
-                          className="col-span-3 text-sm border"
+                          className="col-span-6 text-sm border"
                           language="sql"
                           theme={
                             resolvedTheme === "dark"
@@ -114,8 +112,7 @@ export default function Constraints() {
                           {s.statement.trim()}
                         </ShikiHighlighter>
                       </div>
-                      <Divider />
-                    </>
+                    </div>
                   ))}
                 </AccordionItem>
               ))}

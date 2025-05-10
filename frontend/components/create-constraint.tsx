@@ -115,7 +115,7 @@ export default function CreateConstraint() {
                         <SelectItem key="<=">{"<="}</SelectItem>
                         <SelectItem key="==">{"=="}</SelectItem>
                         <SelectItem key=">=">{">="}</SelectItem>
-                        <SelectItem key=">">{"}"}</SelectItem>
+                        <SelectItem key=">">{">"}</SelectItem>
                       </Select>
                       <Input label="Value" name="activationValue" size="sm" />
                     </div>
@@ -132,7 +132,7 @@ export default function CreateConstraint() {
                         <SelectItem key="<=">{"<="}</SelectItem>
                         <SelectItem key="==">{"=="}</SelectItem>
                         <SelectItem key=">=">{">="}</SelectItem>
-                        <SelectItem key=">">{"}"}</SelectItem>
+                        <SelectItem key=">">{">"}</SelectItem>
                       </Select>
                       <Input label="Value" name="targetValue" size="sm" />
                     </div>
