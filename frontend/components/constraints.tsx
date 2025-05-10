@@ -19,7 +19,15 @@ type Constraint = {
   type: string;
   status: string;
   activationEvent: string;
+  activationCondition: Condition;
   targetEvent: string;
+  targetCondition: Condition;
+};
+
+type Condition = {
+  param: string;
+  operator: string;
+  value: string;
 };
 
 type EplStatement = {
@@ -80,11 +88,7 @@ export default function Constraints() {
                   startContent={
                     <Chip color={statusChip[c.status]}>{c.status}</Chip>
                   }
-                  subtitle={
-                    <span>
-                      {c.type}({c.activationEvent},{c.targetEvent})
-                    </span>
-                  }
+                  subtitle={<span>{formatConstraintDisplay(c)}</span>}
                   title={c.name}
                 >
                   {c.eplStatements.map((s) => (
@@ -121,4 +125,39 @@ export default function Constraints() {
       )}
     </div>
   );
+}
+
+function formatConstraintDisplay(c?: Constraint | null): string {
+  if (!c) return "";
+
+  const formatCondition = (cond?: Condition | null): string =>
+    !cond
+      ? ""
+      : [cond.param, cond.operator, cond.value]
+          .map((p) => p?.trim())
+          .filter(Boolean)
+          .join(" ");
+
+  const formatEvent = (event?: string | null, condition?: string): string => {
+    const name = event?.trim();
+
+    if (!name) return "";
+
+    return condition ? `${name}[${condition}]` : name;
+  };
+
+  const type = c.type?.trim() || "";
+
+  const activation = formatEvent(
+    c.activationEvent,
+    formatCondition(c.activationCondition),
+  );
+  const target = formatEvent(c.targetEvent, formatCondition(c.targetCondition));
+
+  const events = [activation, target].filter(Boolean).join(", ");
+
+  if (!type) return events;
+  if (!events) return type;
+
+  return `${type}(${events})`;
 }

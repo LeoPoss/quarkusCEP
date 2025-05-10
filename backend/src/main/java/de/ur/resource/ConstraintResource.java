@@ -44,7 +44,7 @@ public class ConstraintResource {
     @POST
     @Path("/existence")
     public Response createExistenceConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.EXISTENCE, request.activationEvent, request.targetEvent, ConstraintStatus.TEMPORARY_VIOLATION);
+        constraintService.addConstraint(request.name, ConstraintType.EXISTENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.TEMPORARY_VIOLATION);
 
         constraintService.createExistenceActivationQuery(request.name, request.targetEvent, request.targetCondition);
 
@@ -64,10 +64,10 @@ public class ConstraintResource {
     @POST
     @Path("/response")
     public Response createResponseConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.RESPONSE, request.activationEvent, request.targetEvent, ConstraintStatus.INIT);
+        constraintService.addConstraint(request.name, ConstraintType.RESPONSE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
 
-        constraintService.createResponseActivationQuery(request.name, request.activationEvent);
-        constraintService.createResponseTargetQuery(request.name, request.targetEvent);
+        constraintService.createResponseActivationQuery(request.name, request.activationEvent, request.activationCondition);
+        constraintService.createResponseTargetQuery(request.name, request.targetEvent, request.targetCondition);
 
         constraintService.createResponseTempViolationQuery(request.name);
         constraintService.createResponseFulfillmentQuery(request.name);
@@ -85,7 +85,7 @@ public class ConstraintResource {
     @POST
     @Path("/precedence")
     public Response createPrecedenceConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.PRECEDENCE, request.activationEvent, request.targetEvent, ConstraintStatus.INIT);
+        constraintService.addConstraint(request.name, ConstraintType.PRECEDENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
 
         constraintService.createPrecedenceActivationQuery(request.name, request.activationEvent);
         constraintService.createPrecedenceTargetQuery(request.name, request.targetEvent);
@@ -108,7 +108,7 @@ public class ConstraintResource {
     @POST
     @Path("/respondedexistence")
     public Response createRespondedExistenceConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.RESPONDEDEXISTENCE, request.activationEvent, request.targetEvent, ConstraintStatus.INIT);
+        constraintService.addConstraint(request.name, ConstraintType.RESPONDEDEXISTENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
 
         constraintService.createRespondedExistenceActivationQuery(request.name, request.activationEvent);
         constraintService.createRespondedExistenceTargetQuery(request.name, request.targetEvent);
@@ -133,7 +133,7 @@ public class ConstraintResource {
     @POST
     @Path("/alternateresponse")
     public Response createAlternateResponseConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.ALTERNATERESPONSE, request.activationEvent, request.targetEvent, ConstraintStatus.INIT);
+        constraintService.addConstraint(request.name, ConstraintType.ALTERNATERESPONSE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
 
         constraintService.createAlternateResponseActivationQuery(request.name, request.activationEvent);
         constraintService.createAlternateResponseTargetQuery(request.name, request.targetEvent);
@@ -159,7 +159,7 @@ public class ConstraintResource {
     @POST
     @Path("notresponse")
     public Response createNotResponseConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.NOTRESPONSE, request.activationEvent, request.targetEvent, ConstraintStatus.FULFILLED);
+        constraintService.addConstraint(request.name, ConstraintType.NOTRESPONSE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.FULFILLED);
 
         constraintService.createNotResponseActivationQuery(request.name, request.activationEvent);
         constraintService.createNotResponseTargetQuery(request.name, request.targetEvent);
@@ -182,6 +182,27 @@ public class ConstraintResource {
                                     ConditionRequest activationCondition) {
     }
 
-    public record ConditionRequest(String param, String condition, String value) {
+    public record ConditionRequest(String param, String operator, String value) {
+        public boolean isValid()  {
+            return !param.isBlank() && !operator.isBlank() && !value.isBlank();
+        }
+
+        public String getConditionQueryPart() {
+            String querySegment;
+
+            if ("true".equalsIgnoreCase(this.value) || "false".equalsIgnoreCase(this.value)) {
+                String booleanLiteral = this.value.toUpperCase();
+                querySegment = " AND cast(payload('%s'), boolean) %s %s".formatted(this.param, this.operator, booleanLiteral);
+
+            } else {
+                try {
+                    querySegment = " AND cast(payload('%s'), double) %s %s".formatted(this.param, this.operator, this.value);
+                } catch (NumberFormatException e) {
+                    String sqlSafeString = this.value.replace("'", "''");
+                    querySegment = " AND payload('%s') %s '%s'".formatted(this.param, this.operator, sqlSafeString);
+                }
+            }
+            return querySegment;
+        }
     }
 }

@@ -11,7 +11,9 @@ public class Constraint {
     private String name;
     private ArrayList<EplStatement> eplStatements;
     private String activationEvent;
+    private ConstraintCondition activationCondition;
     private String targetEvent;
+    private ConstraintCondition targetCondition;
     private ConstraintType type;
     private ConstraintStatus status;
 

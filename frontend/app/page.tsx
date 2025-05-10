@@ -5,14 +5,28 @@ import * as React from "react";
 import ConstraintsOverview from "@/components/constraints";
 import CreateConstraint from "@/components/create-constraint";
 import SendEvent from "@/components/send-event";
+import { useMPDeclare } from "@/contexts/mpDeclareContext";
+import { Switch } from "@heroui/switch";
+import { Chip } from "@heroui/chip";
 
 export default function Home() {
+  const { isMPDeclareEnabled, toggleMPDeclare } = useMPDeclare();
+
   return (
-    <section className="flex flex-col gap-4 py-8 md:py-10">
+    <section className="flex flex-col gap-4">
       <h2 className="text-2xl font-black">Constraints</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-        <CreateConstraint />
-        <SendEvent />
+      <div className="flex items-center gap-2 bg-gradient-to-br from-primary-100 via-transparent p-2 w-fit">
+            <Chip color="primary">MP-Declare</Chip>
+            <Switch
+              checked={isMPDeclareEnabled}
+              onChange={toggleMPDeclare}
+              size="sm"
+              color="primary"
+            />
+          </div>
+      <div className="grid grid-cols-3 gap-8">
+              <div className="col-span-2"><CreateConstraint/></div>
+              <SendEvent />
       </div>
 
       <h2 className="text-lg mt-4">Current constraints</h2>

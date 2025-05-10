@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ToastProvider } from "@heroui/react";
+import { MPDeclareProvider } from "../contexts/mpDeclareContext";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -31,7 +32,9 @@ export function Providers({ children, themeProps }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <HeroUIProvider navigate={router.push}>
         <ToastProvider />
-        <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
+        <MPDeclareProvider>
+          <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
+        </MPDeclareProvider>
       </HeroUIProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

@@ -20,14 +20,24 @@ public class ConstraintService {
     @Getter
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
 
-    public void addConstraint(String name, ConstraintType type, String activationEvent, String targetEvent, ConstraintStatus status) {
-        constraints.put(name, new Constraint(name, new ArrayList<>(), activationEvent, targetEvent, type, status));
+    public void addConstraint(String name, ConstraintType type, String activationEvent, ConstraintResource.ConditionRequest activationCondition, String targetEvent, ConstraintResource.ConditionRequest targetCondition, ConstraintStatus status) {
+        constraints.put(name,
+                new Constraint(name,
+                        new ArrayList<>(),
+                        activationEvent,
+                        activationCondition.isValid() ? new ConstraintCondition(activationCondition.param(), activationCondition.operator(), activationCondition.value()) : null,
+                        targetEvent,
+                        targetCondition.isValid() ? new ConstraintCondition(targetCondition.param(), targetCondition.operator(), targetCondition.value()) : null,
+                        type,
+                        status)
+        );
     }
 
     public void addConstraintStatement(String name, String eplId, StatementType eplType, String eplStatement) {
         Constraint constraint = constraints.get(name);
         constraint.getEplStatements().add(new EplStatement(eplId, eplStatement, eplType));
     }
+
 
     public void createExistenceActivationQuery(String name, String targetEvent, ConstraintResource.ConditionRequest targetCondition) {
         String query = """
@@ -36,9 +46,8 @@ public class ConstraintService {
                 FROM SampleEvent WHERE type = '%s'
                 """.formatted(name, targetEvent);
 
-        if (targetCondition != null) {
-            // TODO Cast correctly if string, what else?
-            query += "AND cast(payload('%s'), double)%s%s".formatted(targetCondition.param(), targetCondition.condition(), targetCondition.value());
+        if (targetCondition.isValid()) {
+            query += targetCondition.getConditionQueryPart();
         }
 
         var statement = esperService.deployStatements(name, query);
@@ -69,24 +78,32 @@ public class ConstraintService {
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }
 
-    public void createResponseActivationQuery(String name, String activationEvent) {
+    public void createResponseActivationQuery(String name, String activationEvent, ConstraintResource.ConditionRequest activationCondition) {
         String query = """
                 INSERT INTO constraintStatus
                 SELECT id, '%s' as name, 'activation' as type
-                FROM SampleEvent(type = '%s')
+                FROM SampleEvent WHERE type = '%s'
                 """.formatted(name, activationEvent);
+
+        if (activationCondition.isValid()) {
+            query += activationCondition.getConditionQueryPart();
+        }
 
         var statement = esperService.deployStatements(name, query);
 
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
     }
 
-    public void createResponseTargetQuery(String name, String targetEvent) {
+    public void createResponseTargetQuery(String name, String targetEvent, ConstraintResource.ConditionRequest targetCondition) {
         String query = """
                 INSERT INTO constraintStatus
                 SELECT id, '%s' as name, 'target' as type
-                FROM SampleEvent(type = '%s')
+                FROM SampleEvent WHERE type = '%s'
                 """.formatted(name, targetEvent);
+
+        if (targetCondition.isValid()) {
+            query += targetCondition.getConditionQueryPart();
+        }
 
         var statement = esperService.deployStatements(name, query);
 
