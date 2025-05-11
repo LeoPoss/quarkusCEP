@@ -1,6 +1,5 @@
 package de.ur.resource;
 
-
 import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
 import de.ur.service.ConstraintService;
@@ -38,7 +37,6 @@ public class ConstraintResource {
     // TODO: Wann können wir löschen, also welche status sind final und welche nicht
     // TODO: Evtl. nicht constraints löschen sondern alte activation und target
 
-
     // "targetCondition": "cast(payload('val'), double)>300"
 
     @POST
@@ -49,7 +47,6 @@ public class ConstraintResource {
         constraintService.createExistenceActivationQuery(request.name, request.targetEvent, request.targetCondition);
 
         constraintService.createExistenceFulfillmentQuery(request.name);
-
 
         // Welche Events brauchen wir?
         // 1. Activation detecten und nach constraint status
@@ -113,7 +110,6 @@ public class ConstraintResource {
         constraintService.createRespondedExistenceActivationQuery(request.name, request.activationEvent);
         constraintService.createRespondedExistenceTargetQuery(request.name, request.targetEvent);
 
-
         constraintService.createRespondedExistenceForwardTempViolationQuery(request.name);
         constraintService.createRespondedExistenceBackwardTempViolationQuery(request.name);
 
@@ -138,11 +134,9 @@ public class ConstraintResource {
         constraintService.createAlternateResponseActivationQuery(request.name, request.activationEvent);
         constraintService.createAlternateResponseTargetQuery(request.name, request.targetEvent);
 
-
         constraintService.createAlternateResponseTempViolationQuery(request.name);
         constraintService.createAlternateResponseFulfillmentQuery(request.name);
         constraintService.createAlternateResponsePermanentViolationQuery(request.name);
-
 
         // Welche Events brauchen wir?
 
@@ -178,13 +172,13 @@ public class ConstraintResource {
         return Response.created(URI.create(request.name)).build();
     }
 
-    public record ConstraintRequest(String name, String activationEvent, String targetEvent, ConditionRequest targetCondition,
-                                    ConditionRequest activationCondition) {
+    public record ConstraintRequest(String name, String activationEvent, String targetEvent,
+                                    ConditionRequest targetCondition, ConditionRequest activationCondition) {
     }
 
     public record ConditionRequest(String param, String operator, String value) {
-        public boolean isValid()  {
-            return param != null && operator != null && value != null && !param.isBlank() && !operator.isBlank() && !value.isBlank();
+        public boolean isValid() {
+            return (param != null && operator != null && value != null && !param.isBlank() && !operator.isBlank() && !value.isBlank());
         }
 
         public String getConditionQueryPart() {
@@ -193,7 +187,6 @@ public class ConstraintResource {
             if ("true".equalsIgnoreCase(this.value) || "false".equalsIgnoreCase(this.value)) {
                 String booleanLiteral = this.value.toUpperCase();
                 querySegment = " AND cast(payload('%s'), boolean) %s %s".formatted(this.param, this.operator, booleanLiteral);
-
             } else {
                 try {
                     querySegment = " AND cast(payload('%s'), double) %s %s".formatted(this.param, this.operator, this.value);

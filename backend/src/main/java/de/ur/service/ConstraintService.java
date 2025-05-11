@@ -21,16 +21,7 @@ public class ConstraintService {
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
 
     public void addConstraint(String name, ConstraintType type, String activationEvent, ConstraintResource.ConditionRequest activationCondition, String targetEvent, ConstraintResource.ConditionRequest targetCondition, ConstraintStatus status) {
-        constraints.put(name,
-                new Constraint(name,
-                        new ArrayList<>(),
-                        activationEvent,
-                        activationCondition.isValid() ? new ConstraintCondition(activationCondition.param(), activationCondition.operator(), activationCondition.value()) : null,
-                        targetEvent,
-                        targetCondition.isValid() ? new ConstraintCondition(targetCondition.param(), targetCondition.operator(), targetCondition.value()) : null,
-                        type,
-                        status)
-        );
+        constraints.put(name, new Constraint(name, new ArrayList<>(), activationEvent, activationCondition.isValid() ? new ConstraintCondition(activationCondition.param(), activationCondition.operator(), activationCondition.value()) : null, targetEvent, targetCondition.isValid() ? new ConstraintCondition(targetCondition.param(), targetCondition.operator(), targetCondition.value()) : null, type, status));
     }
 
     public void addConstraintStatement(String name, String eplId, StatementType eplType, String eplStatement) {
