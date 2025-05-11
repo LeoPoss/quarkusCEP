@@ -61,6 +61,12 @@ const statusChip: Record<
   FULFILLED: "success",
 };
 
+const statusCircle: Record<string, string> = {
+  TEMPORARY_VIOLATION: "text-red-500",
+  PERMANENT_VIOLATION: "text-yellow-500",
+  FULFILLED: "text-green-500",
+};
+
 export default function Constraints() {
   const { theme, resolvedTheme } = useTheme();
   const constraints = useConstraints();
@@ -86,7 +92,14 @@ export default function Constraints() {
                 <AccordionItem
                   key={c.name}
                   startContent={
-                    <Chip color={statusChip[c.status]}>{c.status}</Chip>
+                    <>
+                      {/*<Circle
+                        className={statusCircle[c.status]}
+                        size={32}
+                        weight="duotone"
+                      />*/}
+                      <Chip color={statusChip[c.status]}>{c.status}</Chip>
+                    </>
                   }
                   subtitle={formatConstraintDisplay(c)}
                   title={<span className="font-medium">{c.name}</span>}

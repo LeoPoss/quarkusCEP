@@ -1,7 +1,7 @@
 import { tv } from "tailwind-variants";
 
 export const title = tv({
-  base: "tracking-tight inline font-semibold",
+  base: "tracking-tight inline font-black",
   variants: {
     color: {
       violet: "from-[#FF1CF7] to-[#b249f8]",
@@ -13,7 +13,7 @@ export const title = tv({
       foreground: "dark:from-[#FFFFFF] dark:to-[#4B4B4B]",
     },
     size: {
-      sm: "text-3xl lg:text-4xl",
+      sm: "text-2xl lg:text-3xl",
       md: "text-[2.3rem] lg:text-5xl leading-9",
       lg: "text-4xl lg:text-6xl",
     },
@@ -38,6 +38,10 @@ export const title = tv({
       class: "bg-clip-text text-transparent bg-gradient-to-b",
     },
   ],
+});
+
+export const cardHeader = tv({
+  base: "flex items-center gap-2 font-medium text-xl",
 });
 
 export const subtitle = tv({

@@ -129,17 +129,17 @@ public class EsperService {
         var constraint = constraintService.getConstraints().get(name);
         var deploymentService = runtime.getDeploymentService();
 
-        // TODO Check what can be removed an what not
+        // TODO Check what can be removed and what can't
 
-//        constraint.getEplStatements().forEach((s) -> {
-//            if (List.of(StatementType.FULFILLMENT, StatementType.PERMANENT_VIOLATION).contains(s.type())) {
-//                try {
-//                    deploymentService.undeploy(s.deploymentId());
-//                } catch (EPUndeployException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        });
+        constraint.getEplStatements().forEach((s) -> {
+            if (List.of(StatementType.FULFILLMENT, StatementType.PERMANENT_VIOLATION).contains(s.type())) {
+                try {
+                    deploymentService.undeploy(s.deploymentId());
+                } catch (EPUndeployException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
     }
 }
 

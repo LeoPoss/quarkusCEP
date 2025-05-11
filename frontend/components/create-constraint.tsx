@@ -12,6 +12,8 @@ import {
 import ky from "ky";
 import { Plus } from "@phosphor-icons/react";
 
+import { cardHeader } from "./primitives";
+
 import { useMPDeclare } from "@/contexts/mpDeclareContext";
 
 export default function CreateConstraint() {
@@ -49,7 +51,7 @@ export default function CreateConstraint() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className={cardHeader()}>
         <Plus className="w-6 h-6 mr-4" /> Create new Constraint
       </CardHeader>
       <Form
@@ -110,7 +112,6 @@ export default function CreateConstraint() {
                         name="activationOperator"
                         size="sm"
                       >
-                        <SelectItem key="">None</SelectItem>
                         <SelectItem key="<">{"<"}</SelectItem>
                         <SelectItem key="<=">{"<="}</SelectItem>
                         <SelectItem key="=">{"=="}</SelectItem>
@@ -127,7 +128,6 @@ export default function CreateConstraint() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                       <Input label="Parameter" name="targetParam" size="sm" />
                       <Select label="Operator" name="targetOperator" size="sm">
-                        <SelectItem key="">None</SelectItem>
                         <SelectItem key="<">{"<"}</SelectItem>
                         <SelectItem key="<=">{"<="}</SelectItem>
                         <SelectItem key="=">{"=="}</SelectItem>

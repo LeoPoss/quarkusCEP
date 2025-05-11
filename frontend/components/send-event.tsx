@@ -12,6 +12,8 @@ import { Input } from "@heroui/input";
 import { useState } from "react";
 import { Code, PaperPlaneTilt } from "@phosphor-icons/react";
 
+import { cardHeader } from "./primitives";
+
 import { useMPDeclare } from "@/contexts/mpDeclareContext";
 
 export default function SendEvent() {
@@ -43,7 +45,7 @@ export default function SendEvent() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className={cardHeader()}>
         <PaperPlaneTilt className="mr-4" size={24} />
         Send Event
       </CardHeader>

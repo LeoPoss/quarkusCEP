@@ -184,7 +184,7 @@ public class ConstraintResource {
 
     public record ConditionRequest(String param, String operator, String value) {
         public boolean isValid()  {
-            return !param.isBlank() && !operator.isBlank() && !value.isBlank();
+            return param != null && operator != null && value != null && !param.isBlank() && !operator.isBlank() && !value.isBlank();
         }
 
         public String getConditionQueryPart() {
