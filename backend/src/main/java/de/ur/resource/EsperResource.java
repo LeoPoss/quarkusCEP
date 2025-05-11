@@ -58,7 +58,7 @@ public class EsperResource {
     @Path("/event")
     public Response sendEvent(SampleEvent event) {
         try {
-            log.info("Sending event: {}", event);
+            log.info("Received event: {}", event);
             esperService.sendEvent(event);
             return Response.ok(Map.of("status", "Event sent successfully")).build();
         } catch (Exception e) {
