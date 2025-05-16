@@ -20,6 +20,10 @@ public class ConstraintService {
     @Getter
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
 
+    public void resetConstraints() {
+        constraints.clear();
+    }
+
     public void addConstraint(String name, ConstraintType type, String activationEvent, ConstraintResource.ConditionRequest activationCondition, String targetEvent, ConstraintResource.ConditionRequest targetCondition, ConstraintStatus status) {
         constraints.put(name, new Constraint(name, new ArrayList<>(), activationEvent, activationCondition.isValid() ? new ConstraintCondition(activationCondition.param(), activationCondition.operator(), activationCondition.value()) : null, targetEvent, targetCondition.isValid() ? new ConstraintCondition(targetCondition.param(), targetCondition.operator(), targetCondition.value()) : null, type, status));
     }

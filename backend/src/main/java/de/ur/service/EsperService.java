@@ -141,17 +141,15 @@ public class EsperService {
             }
         });
     }
+
+    public void reset() {
+        if (runtime != null) {
+            runtime.destroy();
+        }
+
+        Configuration configuration = new Configuration();
+        configureEventTypes(configuration);
+        runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
+        log.info("Esper runtime has been reset and reinitialized");
+    }
 }
-
-//public boolean undeploy(String deploymentId) {
-//   try {
-//        runtime.getDeploymentService().undeploy(deploymentId);
-//            deployments.remove(deploymentId);
-//            return true;
-//        } catch (EPUndeployException e) {
-//            log.error("Failed to undeploy: {}", deploymentId, e);
-//            return false;
-//        }
-//    }
-
-//}

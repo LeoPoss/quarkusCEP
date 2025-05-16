@@ -3,6 +3,7 @@ package de.ur.resource;
 import com.espertech.esper.common.client.EventBean;
 import com.espertech.esper.runtime.client.EPStatement;
 import de.ur.dao.SampleEvent;
+import de.ur.service.ConstraintService;
 import de.ur.service.EsperService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -24,6 +25,9 @@ public class EsperResource {
 
     @Inject
     EsperService esperService;
+
+    @Inject
+    ConstraintService constraintService;
 
     @GET
     public Response getDeployments() {
@@ -67,11 +71,25 @@ public class EsperResource {
         }
     }
 
-    @DELETE
-    @Path("/deploy/{deploymentId}")
-    public Response undeployStatement(@PathParam("deploymentId") String deploymentId) {
-        esperService.undeploy(deploymentId);
-        return Response.ok(Map.of("status", "Statement undeployed successfully")).build();
+    @POST
+    @Path("/reset")
+    public Response resetEsper() {
+        try {
+            esperService.reset();
+            constraintService.resetConstraints();
+            return Response.ok(Map.of(
+                    "status", "Esper engine has been reset and reinitialized",
+                    "timestamp", java.time.Instant.now()
+            )).build();
+        } catch (Exception e) {
+            log.error("Failed to reset Esper engine", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of(
+                            "error", "Failed to reset Esper engine: " + e.getMessage(),
+                            "timestamp", java.time.Instant.now()
+                    ))
+                    .build();
+        }
     }
 
     @Setter
