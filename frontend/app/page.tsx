@@ -16,24 +16,10 @@ import { subtitle, title } from "@/components/primitives";
 export default function Home() {
   const { isMPDeclareEnabled, toggleMPDeclare } = useMPDeclare();
 
-  async function resetEsper() {
-    const response = await ky.post("http://localhost:8080/esper/reset");
-
-    addToast({
-      title: "Reset esper successfully",
-      color: "success",
-      timeout: 1000,
-      shouldShowTimeoutProgress: true,
-    });
-  }
 
   return (
     <section className="flex flex-col gap-4">
       <h2 className={title()}>Synergistic CEP for MP-Declare</h2>
-      <Button color="danger" variant="flat" onPress={() => resetEsper()}>
-        <Trash /> Reset CEP Runtime (clears all constraints and events from
-        server)
-      </Button>
       <div className="flex items-center gap-2 bg-gradient-to-br from-primary-200 via-transparent p-2 w-fit">
         <Chip color="primary">MP-Declare</Chip>
         <Switch
