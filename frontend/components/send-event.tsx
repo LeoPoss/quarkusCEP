@@ -6,15 +6,22 @@ import {
   CardBody,
   CardHeader,
   Divider,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
   Tooltip,
+  useDisclosure,
 } from "@heroui/react";
 import { Input } from "@heroui/input";
 import { useState } from "react";
-import { Code, PaperPlaneTilt } from "@phosphor-icons/react";
+import { Code, PaperPlaneTilt, Trash, Warning } from "@phosphor-icons/react";
 
 import { cardHeader } from "./primitives";
 
 import { useMPDeclare } from "@/contexts/mpDeclareContext";
+import * as React from "react";
 
 export default function SendEvent() {
   const [customEventType, setCustomEventType] = useState("");
@@ -42,6 +49,20 @@ export default function SendEvent() {
       shouldShowTimeoutProgress: true,
     });
   }
+
+
+  async function resetEsper() {
+    const response = await ky.post("http://localhost:8080/esper/reset");
+
+    addToast({
+      title: "Reset esper successfully",
+      color: "success",
+      timeout: 1000,
+      shouldShowTimeoutProgress: true,
+    });
+  }
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   return (
     <Card>
@@ -112,7 +133,7 @@ export default function SendEvent() {
         <Divider className="my-2" />
         <div className="flex flex-row gap-2 items-center">
           <Code className="mr-2" size="24" />
-          <div className="grid grid-cols-2 gap-2 w-full">
+          <div className="grid grid-cols-3 gap-2 w-full">
             <Tooltip content="Send simple (no payload) A-Event">
               <Button
                 color="secondary"
@@ -133,6 +154,37 @@ export default function SendEvent() {
                 B
               </Button>
             </Tooltip>
+            <Button color="danger" variant="flat" onPress={onOpen}>
+              <Trash /> Reset 
+            </Button>
+
+            <Modal isOpen={isOpen} onClose={onClose}>
+              <ModalContent>
+                <ModalHeader className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <Warning size={24} weight="fill" />
+                    Confirm Reset
+                  </div>
+                </ModalHeader>
+                <ModalBody>
+                  <p>Are you sure you want to reset the Esper engine? This will also delete all events and constraints.</p>
+                </ModalBody>
+                <ModalFooter>
+                  <Button variant="flat" onPress={onClose}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    color="danger" 
+                    onPress={() => {
+                      resetEsper();
+                      onClose();
+                    }}
+                  >
+                    Reset Esper
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
           </div>
         </div>
       </CardBody>

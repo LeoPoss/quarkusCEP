@@ -179,7 +179,7 @@ public class ConstraintService {
         String query = """
                 SELECT id, name, type
                 FROM constraintStatus
-                WHERE name = '%s' AND type = 'activation'
+                WHERE name = '%s' AND type = 'target'
                 """.formatted(name);
 
         var statement = esperService.deployStatements(name, query);
@@ -201,7 +201,7 @@ public class ConstraintService {
     public void createPrecedenceFulfillmentQuery(String name) {
         String query = """
                 SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='target', name='%s') -> b=constraintStatus(type='activation', name='%s')]
+                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
                 """.formatted(name, name);
 
         var statement = esperService.deployStatements(name, query);
@@ -224,7 +224,7 @@ public class ConstraintService {
     public void createPrecedencePermanentViolationQuery(String name) {
         String query = """
                 SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> (timer:interval(1 sec) and not b=constraintStatus(type='target', name='%s'))]
+                FROM PATTERN [every a=constraintStatus(type='target', name='%s') -> (timer:interval(1 sec) and not b=constraintStatus(type='activation', name='%s'))]
                 """.formatted(name, name);
 
         var statement = esperService.deployStatements(name, query);
