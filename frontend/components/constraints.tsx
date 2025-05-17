@@ -110,14 +110,14 @@ export default function Constraints() {
                       className="bg-neutral-100 dark:bg-neutral-900"
                     >
                       <Divider />
-                      <div className="p-2 grid grid-cols-7 gap-4 pl-8 ">
+                      <div className="p-2 grid grid-cols-4 gap-4 pl-8 ">
                         <Tooltip content={s.deploymentId}>
                           <Chip color="default" variant="dot">
                             {s.type}
                           </Chip>
                         </Tooltip>
                         <ShikiHighlighter
-                          className="col-span-6 text-sm border"
+                          className="col-span-3 text-sm border"
                           language="sql"
                           theme={
                             resolvedTheme === "dark"

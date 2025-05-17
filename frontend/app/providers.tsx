@@ -37,7 +37,6 @@ export function Providers({ children, themeProps }: ProvidersProps) {
           <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
         </MPDeclareProvider>
       </HeroUIProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 }

@@ -8,6 +8,7 @@ import {
   Input,
   Select,
   SelectItem,
+  SelectSection,
 } from "@heroui/react";
 import ky from "ky";
 import { Plus } from "@phosphor-icons/react";
@@ -69,17 +70,37 @@ export default function CreateConstraint() {
               name="name"
               size="sm"
             />
-            <Select isRequired label="Type" name="type" size="sm">
-              <SelectItem key="existence">Existence</SelectItem>
-              <SelectItem key="response">Response</SelectItem>
-              <SelectItem key="precedence">Precedence</SelectItem>
-              <SelectItem key="respondedExistence">
-                Responded Existence
-              </SelectItem>
-              <SelectItem key="alternateResponse">
-                Alternate Response
-              </SelectItem>
-              <SelectItem key="notResponse">Not Response</SelectItem>
+            <Select
+              isRequired
+              disabledKeys={[
+                "alternatePrecedence", "chainPrecedence", "chainResponse"]
+              }
+              label="Type"
+              name="type"
+              size="sm"
+            >
+              <SelectSection title="Existence Constraints">
+                <SelectItem key="existence">Existence</SelectItem>
+              </SelectSection>
+              <SelectSection title="Relation Constraints">
+                <SelectItem key="respondedExistence">
+                  Responded Existence
+                </SelectItem>
+                <SelectItem key="response">Response</SelectItem>
+                <SelectItem key="alternateResponse">
+                  Alternate Response
+                </SelectItem>
+                <SelectItem key="chainResponse">Chain Response</SelectItem>
+                <SelectItem key="precedence">Precedence</SelectItem>
+                <SelectItem key="alternatePrecedence">
+                  Alternate Precedence
+                </SelectItem>
+                <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>
+              </SelectSection>
+
+              <SelectSection title="Negative Relation Constraints">
+                <SelectItem key="notResponse">Not Response</SelectItem>
+              </SelectSection>
             </Select>
             <Input label="Activation Event" name="activationEvent" size="sm" />
             <Input
