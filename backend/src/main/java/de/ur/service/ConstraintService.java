@@ -15,11 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class ConstraintService {
 
-    enum ConstraintLevel {
-        ACTIVATION,
-        TARGET
-    }
-
     @Inject
     EsperService esperService;
 
@@ -49,10 +44,10 @@ public class ConstraintService {
         if (condition.isValid()) {
             query += condition.getConditionQueryPart();
         }
-        
+
         var statement = esperService.deployStatements(name, query);
 
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
+        addConstraintStatement(name, statement.getDeploymentId(), statementType, query);
     }
 
 
@@ -416,6 +411,98 @@ public class ConstraintService {
                 }
             }
         });
+
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
+    }
+
+    public void createAlternatePrecedenceTempViolationQuery(String name) {
+        String query = """
+                SELECT id, name, type
+                FROM constraintStatus
+                WHERE name = '%s' AND type = 'target'
+                """.formatted(name);
+
+        var statement = esperService.deployStatements(name, query);
+
+        statement.addListener((newEvents, oldEvents, s, r) -> {
+            if (newEvents != null) {
+                for (EventBean newEvent : newEvents) {
+                    log.info("Reacting to tempvio of: {}", newEvent.getUnderlying());
+
+                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
+                }
+            }
+        });
+
+
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
+    }
+
+    public void createAlternatePrecedencePermanentViolationQuery(String name) {
+        String query = """
+                SELECT a.id, a.name, a.type
+                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s') -> c=constraintStatus(type='target', name='%s')]
+                """.formatted(name, name, name);
+
+        var statement = esperService.deployStatements(name, query);
+
+        statement.addListener((newEvents, oldEvents, s, r) -> {
+            if (newEvents != null) {
+                for (EventBean newEvent : newEvents) {
+                    log.info("Reacting to permanentvio of: {}", newEvent.getUnderlying());
+
+                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
+       //             esperService.removeConstraint(name);
+                }
+            }
+        });
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
+
+
+        String query2 = """
+                SELECT a.id, a.name, a.type
+                FROM PATTERN [
+                    (timer:interval(0) and not b=constraintStatus(type='activation', name='%s'))
+                    ->
+                    a=constraintStatus(type='target', name='%s')
+                ]  """.formatted(name, name);
+
+        var statement2 = esperService.deployStatements(name + "2", query2);
+
+        statement2.addListener((newEvents, oldEvents, s, r) -> {
+            if (newEvents != null) {
+                for (EventBean newEvent : newEvents) {
+                    log.info("Reacting to permanentvio of: {}", newEvent.getUnderlying());
+
+                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
+                  //  esperService.removeConstraint(name);
+                }
+            }
+        });
+
+
+        addConstraintStatement(name, statement2.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query2);
+    }
+
+    public void createAlternatePrecedenceFulfillmentQuery(String name) {
+        String query = """
+                SELECT a.id, a.name, a.type
+                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
+                """.formatted(name, name);
+
+        var statement = esperService.deployStatements(name, query);
+
+        statement.addListener((newEvents, oldEvents, s, r) -> {
+            if (newEvents != null) {
+                for (EventBean newEvent : newEvents) {
+                    log.info("Reacting to fulfillment of: {}", newEvent.getUnderlying());
+
+                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED, ConstraintType.ALTERNATEPRECEDENCE);
+//                    esperService.removeConstraint(name);
+                }
+            }
+        });
+
 
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }

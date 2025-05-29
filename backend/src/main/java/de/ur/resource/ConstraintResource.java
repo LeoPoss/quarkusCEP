@@ -147,6 +147,21 @@ public class ConstraintResource {
     }
 
     @POST
+    @Path("/alternateprecedence")
+    public Response createAlternatePrecedenceConstraint(ConstraintRequest request) {
+        constraintService.addConstraint(request.name, ConstraintType.ALTERNATEPRECEDENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
+
+        constraintService.createDetectionQuery(StatementType.ACTIVATION, request.name, request.activationEvent, request.activationCondition);
+        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
+
+        constraintService.createAlternatePrecedenceTempViolationQuery(request.name);
+        constraintService.createAlternatePrecedenceFulfillmentQuery(request.name);
+        constraintService.createAlternatePrecedencePermanentViolationQuery(request.name);
+
+        return Response.created(URI.create(request.name)).build();
+    }
+
+    @POST
     @Path("notresponse")
     public Response createNotResponseConstraint(ConstraintRequest request) {
         constraintService.addConstraint(request.name, ConstraintType.NOTRESPONSE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.FULFILLED);

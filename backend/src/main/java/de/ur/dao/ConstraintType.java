@@ -7,5 +7,6 @@ public enum ConstraintType {
     ALTERNATERESPONSE,
     CHAINRESPONSE,
     PRECEDENCE,
+    ALTERNATEPRECEDENCE,
     NOTRESPONSE
 }

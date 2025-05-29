@@ -72,7 +72,6 @@ export default function CreateConstraint() {
             />
             <Select
               isRequired
-              disabledKeys={["alternatePrecedence", "chainPrecedence"]}
               label="Type"
               name="type"
               size="sm"
@@ -90,6 +89,9 @@ export default function CreateConstraint() {
                 </SelectItem>
                 <SelectItem key="chainResponse">Chain Response</SelectItem>
                 <SelectItem key="precedence">Precedence</SelectItem>
+                <SelectItem key="alternatePrecedence">
+                  Alternate Precedence
+                </SelectItem>
               </SelectSection>
 
               <SelectSection title="Negative Relation Constraints">
@@ -128,9 +130,7 @@ export default function CreateConstraint() {
                         size="sm"
                       >
                         <SelectItem key="<">{"<"}</SelectItem>
-                        <SelectItem key="<=">{"<="}</SelectItem>
                         <SelectItem key="=">{"=="}</SelectItem>
-                        <SelectItem key=">=">{">="}</SelectItem>
                         <SelectItem key=">">{">"}</SelectItem>
                       </Select>
                       <Input label="Value" name="activationValue" size="sm" />
@@ -144,9 +144,7 @@ export default function CreateConstraint() {
                       <Input label="Parameter" name="targetParam" size="sm" />
                       <Select label="Operator" name="targetOperator" size="sm">
                         <SelectItem key="<">{"<"}</SelectItem>
-                        <SelectItem key="<=">{"<="}</SelectItem>
                         <SelectItem key="=">{"=="}</SelectItem>
-                        <SelectItem key=">=">{">="}</SelectItem>
                         <SelectItem key=">">{">"}</SelectItem>
                       </Select>
                       <Input label="Value" name="targetValue" size="sm" />

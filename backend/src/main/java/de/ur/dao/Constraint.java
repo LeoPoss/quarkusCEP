@@ -23,4 +23,11 @@ public class Constraint {
         }
         this.status = status;
     }
+
+    public void updateStatus(ConstraintStatus status, ConstraintType type) {
+        switch (type) {
+            case ALTERNATEPRECEDENCE:
+                this.status = status;
+        }
+    }
 }
