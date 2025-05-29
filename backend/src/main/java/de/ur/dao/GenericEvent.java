@@ -5,10 +5,9 @@ import lombok.Data;
 import java.util.Map;
 
 @Data
-public class SampleEvent {
+public class GenericEvent {
     private int id;
     private String type;
     private long timestamp;
     private Map<String, String> payload;
-
 }

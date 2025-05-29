@@ -7,7 +7,7 @@ import com.espertech.esper.compiler.client.CompilerArguments;
 import com.espertech.esper.compiler.client.EPCompiler;
 import com.espertech.esper.compiler.client.EPCompilerProvider;
 import com.espertech.esper.runtime.client.*;
-import de.ur.dao.SampleEvent;
+import de.ur.dao.GenericEvent;
 import de.ur.dao.StatementType;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -57,7 +57,7 @@ public class EsperService {
     }
 
     private void configureEventTypes(Configuration configuration) {
-        configuration.getCommon().addEventType(SampleEvent.class);
+        configuration.getCommon().addEventType(GenericEvent.class);
     }
 
 

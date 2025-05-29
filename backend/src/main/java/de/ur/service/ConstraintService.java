@@ -14,6 +14,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @ApplicationScoped
 @Slf4j
 public class ConstraintService {
+
+    enum ConstraintLevel {
+        ACTIVATION,
+        TARGET
+    }
+
     @Inject
     EsperService esperService;
 
@@ -33,28 +39,30 @@ public class ConstraintService {
         constraint.getEplStatements().add(new EplStatement(eplId, eplStatement, eplType));
     }
 
-
-    public void createExistenceActivationQuery(String name, String targetEvent, ConstraintResource.ConditionRequest targetCondition) {
+    public void createDetectionQuery(StatementType statementType, String name, String event, ConstraintResource.ConditionRequest condition) {
         String query = """
                 INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'activation' as type
-                FROM SampleEvent WHERE type = '%s'
-                """.formatted(name, targetEvent);
+                SELECT id, '%s' as name, '%s' as type
+                FROM GenericEvent WHERE type = '%s'
+                """.formatted(name, statementType.name().toLowerCase(), event);
 
-        if (targetCondition.isValid()) {
-            query += targetCondition.getConditionQueryPart();
+        if (condition.isValid()) {
+            query += condition.getConditionQueryPart();
         }
+
+        log.error(query);
 
         var statement = esperService.deployStatements(name, query);
 
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
     }
 
+
     public void createExistenceFulfillmentQuery(String name) {
         String query = """
                 SELECT id, name, type
                 FROM constraintStatus
-                WHERE name = '%s' AND type = 'activation'
+                WHERE name = '%s' AND type = 'target'
                 """.formatted(name);
 
         var statement = esperService.deployStatements(name, query);
@@ -62,7 +70,7 @@ public class ConstraintService {
         statement.addListener((newEvents, oldEvents, s, r) -> {
             if (newEvents != null) {
                 for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to activation of: {}", newEvent.getUnderlying());
+                    log.info("Reacting to target of: {}", newEvent.getUnderlying());
 
                     constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
                     esperService.removeConstraint(name);
@@ -71,38 +79,6 @@ public class ConstraintService {
         });
 
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createResponseActivationQuery(String name, String activationEvent, ConstraintResource.ConditionRequest activationCondition) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'activation' as type
-                FROM SampleEvent WHERE type = '%s'
-                """.formatted(name, activationEvent);
-
-        if (activationCondition.isValid()) {
-            query += activationCondition.getConditionQueryPart();
-        }
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
-    }
-
-    public void createResponseTargetQuery(String name, String targetEvent, ConstraintResource.ConditionRequest targetCondition) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'target' as type
-                FROM SampleEvent WHERE type = '%s'
-                """.formatted(name, targetEvent);
-
-        if (targetCondition.isValid()) {
-            query += targetCondition.getConditionQueryPart();
-        }
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TARGET, query);
     }
 
     public void createResponseTempViolationQuery(String name) {
@@ -149,30 +125,6 @@ public class ConstraintService {
 
 
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createPrecedenceActivationQuery(String name, String activationEvent) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'activation' as type
-                FROM SampleEvent WHERE type = '%s'
-                """.formatted(name, activationEvent);
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
-    }
-
-    public void createPrecedenceTargetQuery(String name, String targetEvent) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'target' as type
-                FROM SampleEvent(type = '%s')
-                """.formatted(name, targetEvent);
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TARGET, query);
     }
 
     public void createPrecedenceTempViolationQuery(String name) {
@@ -243,31 +195,6 @@ public class ConstraintService {
 
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }
-
-    public void createRespondedExistenceActivationQuery(String name, String activationEvent) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'activation' as type
-                FROM SampleEvent WHERE type = '%s'
-                """.formatted(name, activationEvent);
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
-    }
-
-    public void createRespondedExistenceTargetQuery(String name, String targetEvent) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'target' as type
-                FROM SampleEvent(type = '%s')
-                """.formatted(name, targetEvent);
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TARGET, query);
-    }
-
 
     public void createRespondedExistenceForwardTempViolationQuery(String name) {
         String query = """
@@ -359,30 +286,6 @@ public class ConstraintService {
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }
 
-    public void createAlternateResponseActivationQuery(String name, String activationEvent) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'activation' as type
-                FROM SampleEvent WHERE type = '%s'
-                """.formatted(name, activationEvent);
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
-    }
-
-    public void createAlternateResponseTargetQuery(String name, String targetEvent) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'target' as type
-                FROM SampleEvent(type = '%s')
-                """.formatted(name, targetEvent);
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TARGET, query);
-    }
-
     public void createAlternateResponseTempViolationQuery(String name) {
         String query = """
                 SELECT id, name, type
@@ -451,30 +354,6 @@ public class ConstraintService {
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }
 
-    public void createChainResponseActivationQuery(String name, String activationEvent) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'activation' as type
-                FROM SampleEvent WHERE type = '%s'
-                """.formatted(name, activationEvent);
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
-    }
-
-    public void createChainResponseTargetQuery(String name, String targetEvent) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'target' as type
-                FROM SampleEvent(type = '%s')
-                """.formatted(name, targetEvent);
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TARGET, query);
-    }
-
     public void createChainResponseTempViolationQuery(String name) {
         String query = """
                 SELECT id, name, type
@@ -541,30 +420,6 @@ public class ConstraintService {
         });
 
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createNotResponseActivationQuery(String name, String activationEvent) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'activation' as type
-                FROM SampleEvent WHERE type = '%s'
-                """.formatted(name, activationEvent);
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
-    }
-
-    public void createNotResponseTargetQuery(String name, String targetEvent) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, 'target' as type
-                FROM SampleEvent(type = '%s')
-                """.formatted(name, targetEvent);
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TARGET, query);
     }
 
     public void createNotResponseTempViolationQuery(String name) {

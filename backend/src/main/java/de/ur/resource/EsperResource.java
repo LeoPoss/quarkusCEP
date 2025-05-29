@@ -2,7 +2,7 @@ package de.ur.resource;
 
 import com.espertech.esper.common.client.EventBean;
 import com.espertech.esper.runtime.client.EPStatement;
-import de.ur.dao.SampleEvent;
+import de.ur.dao.GenericEvent;
 import de.ur.service.ConstraintService;
 import de.ur.service.EsperService;
 import jakarta.inject.Inject;
@@ -60,7 +60,7 @@ public class EsperResource {
 
     @POST
     @Path("/event")
-    public Response sendEvent(SampleEvent event) {
+    public Response sendEvent(GenericEvent event) {
         try {
             log.info("Received event: {}", event);
             esperService.sendEvent(event);
