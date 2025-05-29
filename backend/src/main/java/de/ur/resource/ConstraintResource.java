@@ -80,29 +80,6 @@ public class ConstraintResource {
     }
 
     @POST
-    @Path("/precedence")
-    public Response createPrecedenceConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.PRECEDENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
-
-        constraintService.createPrecedenceActivationQuery(request.name, request.activationEvent);
-        constraintService.createPrecedenceTargetQuery(request.name, request.targetEvent);
-
-        constraintService.createPrecedenceTempViolationQuery(request.name);
-        constraintService.createPrecedenceFulfillmentQuery(request.name);
-        constraintService.createPrecedencePermanentViolationQuery(request.name);
-
-        // Welche Events brauchen wir?
-        // 1. Activation detecten und nach constraint status
-        // 2. Target detecten und nach constraint status
-
-        // 3. Temporary Violation: Act
-        // 4. Fulfillment: Act->Tar
-        // 5. Permanent Violation: !(Act->Tar) in 10 ms timer interval
-
-        return Response.created(URI.create(request.name)).build();
-    }
-
-    @POST
     @Path("/respondedexistence")
     public Response createRespondedExistenceConstraint(ConstraintRequest request) {
         constraintService.addConstraint(request.name, ConstraintType.RESPONDEDEXISTENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
@@ -146,6 +123,53 @@ public class ConstraintResource {
         // 3. TempViolation: Act
         // 3. Fulfillment: Act -> Tar
         // 4. Permanent Violation: Act -> Act -> Tar
+
+        return Response.created(URI.create(request.name)).build();
+    }
+
+    @POST
+    @Path("/chainresponse")
+    public Response createChainResponseConstraint(ConstraintRequest request) {
+        constraintService.addConstraint(request.name, ConstraintType.CHAINRESPONSE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
+
+        constraintService.createChainResponseActivationQuery(request.name, request.activationEvent);
+        constraintService.createChainResponseTargetQuery(request.name, request.targetEvent);
+
+        constraintService.createChainResponseTempViolationQuery(request.name);
+        constraintService.createChainResponseFulfillmentQuery(request.name);
+        constraintService.createChainResponsePermanentViolationQuery(request.name);
+
+        // Welche Events brauchen wir?
+
+        // 1. Activation detecten und nach constraint status
+        // 2. Target detecten und nach constraint status
+
+        // 3. TempViolation: Act
+        // 3. Fulfillment: Act -> Tar
+        // 4. Permanent Violation: Act -> X -> Tar
+
+        return Response.created(URI.create(request.name)).build();
+    }
+
+    @POST
+    @Path("/precedence")
+    public Response createPrecedenceConstraint(ConstraintRequest request) {
+        constraintService.addConstraint(request.name, ConstraintType.PRECEDENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
+
+        constraintService.createPrecedenceActivationQuery(request.name, request.activationEvent);
+        constraintService.createPrecedenceTargetQuery(request.name, request.targetEvent);
+
+        constraintService.createPrecedenceTempViolationQuery(request.name);
+        constraintService.createPrecedenceFulfillmentQuery(request.name);
+        constraintService.createPrecedencePermanentViolationQuery(request.name);
+
+        // Welche Events brauchen wir?
+        // 1. Activation detecten und nach constraint status
+        // 2. Target detecten und nach constraint status
+
+        // 3. Temporary Violation: Act
+        // 4. Fulfillment: Act->Tar
+        // 5. Permanent Violation: !(Act->Tar) in 10 ms timer interval
 
         return Response.created(URI.create(request.name)).build();
     }

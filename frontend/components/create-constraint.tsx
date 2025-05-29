@@ -72,9 +72,7 @@ export default function CreateConstraint() {
             />
             <Select
               isRequired
-              disabledKeys={[
-                "alternatePrecedence", "chainPrecedence", "chainResponse"]
-              }
+              disabledKeys={["alternatePrecedence", "chainPrecedence"]}
               label="Type"
               name="type"
               size="sm"

@@ -2,9 +2,10 @@ package de.ur.dao;
 
 public enum ConstraintType {
     EXISTENCE,
-    RESPONSE,
     RESPONDEDEXISTENCE,
+    RESPONSE,
     ALTERNATERESPONSE,
-    NOTRESPONSE,
-    PRECEDENCE
+    CHAINRESPONSE,
+    PRECEDENCE,
+    NOTRESPONSE
 }
