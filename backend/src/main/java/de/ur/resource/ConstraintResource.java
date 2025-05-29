@@ -162,6 +162,21 @@ public class ConstraintResource {
     }
 
     @POST
+    @Path("/chainprecedence")
+    public Response createChainPrecedenceConstraint(ConstraintRequest request) {
+        constraintService.addConstraint(request.name, ConstraintType.CHAINPRECEDENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
+
+        constraintService.createDetectionQuery(StatementType.ACTIVATION, request.name, request.activationEvent, request.activationCondition);
+        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
+
+        constraintService.createChainPrecedenceTempViolationQuery(request.name);
+        constraintService.createChainPrecedenceFulfillmentQuery(request.name);
+        constraintService.createChainPrecedencePermanentViolationQuery(request.name);
+
+        return Response.created(URI.create(request.name)).build();
+    }
+
+    @POST
     @Path("notresponse")
     public Response createNotResponseConstraint(ConstraintRequest request) {
         constraintService.addConstraint(request.name, ConstraintType.NOTRESPONSE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.FULFILLED);

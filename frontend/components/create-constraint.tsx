@@ -92,6 +92,9 @@ export default function CreateConstraint() {
                 <SelectItem key="alternatePrecedence">
                   Alternate Precedence
                 </SelectItem>
+                <SelectItem key="chainPrecedence">
+                  Chain Precedence
+                </SelectItem>
               </SelectSection>
 
               <SelectSection title="Negative Relation Constraints">
