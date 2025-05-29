@@ -39,7 +39,7 @@ To set up and run the DeclareCEP proof-of-concept locally:
 ### Prerequisites
 - Java Development Kit (JDK): Version 11 or newer.
 - Apache Maven: For building the backend.
-- Node.js & npm/yarn: For building the frontend.
+- Node.js & bun/npm: For building the frontend.
 - Git: For cloning the repository.
 
 ### Installation and Setup
