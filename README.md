@@ -43,22 +43,16 @@ To set up and run the DeclareCEP proof-of-concept locally:
 - Git: For cloning the repository.
 
 ### Installation and Setup
-1. Clone this repository:
-    ```console
-    git clone https://anonymous.4open.science/r/quarkus-CEP
-    cd quarkus-CEP
-    ```
-
-2. Start backend:
+1. Start backend (includes SwaggerUI):
     ```console
     cd backend
     mvn quarkus:dev
     ```
-   The backend server will typically run on http://localhost:8080.
+   The backend server will typically run on http://localhost:8080 ([SwaggerUI](http://localhost:8080/q/dev-ui/io.quarkus.quarkus-smallrye-openapi/swagger-ui)).
 
-3. Set up and run the frontend:
+2. Set up and run the frontend:
     ```console
-    cd ../frontend
+    cd frontend
     bun install # or npm install
     bun dev # or npm run dev
     ```
