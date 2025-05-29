@@ -49,9 +49,7 @@ public class ConstraintService {
         if (condition.isValid()) {
             query += condition.getConditionQueryPart();
         }
-
-        log.error(query);
-
+        
         var statement = esperService.deployStatements(name, query);
 
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.ACTIVATION, query);
