@@ -20,7 +20,7 @@ import { useMPDeclare } from "@/contexts/mpDeclareContext";
 export default function CreateConstraint() {
   const [submitted, setSubmitted] = React.useState(null);
   const [errors, setErrors] = React.useState({});
-  const [constraintType, setConstraintType] = React.useState('');
+  const [constraintType, setConstraintType] = React.useState("");
   const { isMPDeclareEnabled, toggleMPDeclare } = useMPDeclare();
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -95,21 +95,19 @@ export default function CreateConstraint() {
                 <SelectItem key="alternatePrecedence">
                   Alternate Precedence
                 </SelectItem>
-                <SelectItem key="chainPrecedence">
-                  Chain Precedence
-                </SelectItem>
+                <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>
               </SelectSection>
 
               <SelectSection title="Negative Relation Constraints">
                 <SelectItem key="notResponse">Not Response</SelectItem>
               </SelectSection>
             </Select>
-            <Input 
-              label="Activation Event" 
-              name="activationEvent" 
+            <Input
+              isDisabled={constraintType === "existence"}
+              isRequired={constraintType !== "existence"}
+              label="Activation Event"
+              name="activationEvent"
               size="sm"
-              isRequired={constraintType !== 'existence'}
-              isDisabled={constraintType === 'existence'}
             />
             <Input
               isRequired
@@ -132,11 +130,15 @@ export default function CreateConstraint() {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                       <Input
+                        isDisabled={constraintType === "existence"}
+                        isRequired={constraintType !== "existence"}
                         label="Parameter"
                         name="activationParam"
                         size="sm"
                       />
                       <Select
+                        isDisabled={constraintType === "existence"}
+                        isRequired={constraintType !== "existence"}
                         label="Operator"
                         name="activationOperator"
                         size="sm"
@@ -145,7 +147,13 @@ export default function CreateConstraint() {
                         <SelectItem key="=">{"=="}</SelectItem>
                         <SelectItem key=">">{">"}</SelectItem>
                       </Select>
-                      <Input label="Value" name="activationValue" size="sm" />
+                      <Input
+                        isDisabled={constraintType === "existence"}
+                        isRequired={constraintType !== "existence"}
+                        label="Value"
+                        name="activationValue"
+                        size="sm"
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
