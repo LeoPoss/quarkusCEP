@@ -20,11 +20,13 @@ import { useMPDeclare } from "@/contexts/mpDeclareContext";
 export default function CreateConstraint() {
   const [submitted, setSubmitted] = React.useState(null);
   const [errors, setErrors] = React.useState({});
+  const [constraintType, setConstraintType] = React.useState('');
   const { isMPDeclareEnabled, toggleMPDeclare } = useMPDeclare();
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.currentTarget));
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData);
 
     ky.post(
       "http://localhost:8080/constraints/" +
@@ -75,6 +77,7 @@ export default function CreateConstraint() {
               label="Type"
               name="type"
               size="sm"
+              onChange={(e) => setConstraintType(e.target.value)}
             >
               <SelectSection title="Existence Constraints">
                 <SelectItem key="existence">Existence</SelectItem>
@@ -101,7 +104,13 @@ export default function CreateConstraint() {
                 <SelectItem key="notResponse">Not Response</SelectItem>
               </SelectSection>
             </Select>
-            <Input label="Activation Event" name="activationEvent" size="sm" />
+            <Input 
+              label="Activation Event" 
+              name="activationEvent" 
+              size="sm"
+              isRequired={constraintType !== 'existence'}
+              isDisabled={constraintType === 'existence'}
+            />
             <Input
               isRequired
               label="Target Event"

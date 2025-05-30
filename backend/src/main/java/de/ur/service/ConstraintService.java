@@ -1,8 +1,8 @@
 package de.ur.service;
 
-import com.espertech.esper.common.client.EventBean;
 import de.ur.dao.*;
-import de.ur.resource.ConstraintResource;
+import de.ur.dto.ConditionRequest;
+import de.ur.service.constraint.ConstraintHandlerFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
@@ -16,629 +16,66 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConstraintService {
 
     @Inject
-    EsperService esperService;
+    ConstraintHandlerFactory constraintHandlerFactory;
 
     @Getter
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
+
+    public org.slf4j.Logger getLogger() {
+        return log;
+    }
 
     public void resetConstraints() {
         constraints.clear();
     }
 
-    public void addConstraint(String name, ConstraintType type, String activationEvent, ConstraintResource.ConditionRequest activationCondition, String targetEvent, ConstraintResource.ConditionRequest targetCondition, ConstraintStatus status) {
-        constraints.put(name, new Constraint(name, new ArrayList<>(), activationEvent, activationCondition.isValid() ? new ConstraintCondition(activationCondition.param(), activationCondition.operator(), activationCondition.value()) : null, targetEvent, targetCondition.isValid() ? new ConstraintCondition(targetCondition.param(), targetCondition.operator(), targetCondition.value()) : null, type, status));
+    public void setupConstraint(ConstraintType type, String name, String activationEvent,
+                                ConditionRequest activationCondition, String targetEvent,
+                                ConditionRequest targetCondition, ConstraintStatus status) {
+        // Create default empty conditions if null
+        ConditionRequest safeActivationCondition = activationCondition != null ? activationCondition : new ConditionRequest("", "", "");
+        ConditionRequest safeTargetCondition = targetCondition != null ? targetCondition : new ConditionRequest("", "", "");
+
+        // Create and add the constraint to the map first
+        Constraint constraint = new Constraint(
+            name, 
+            new ArrayList<>(), 
+            activationEvent,
+            safeActivationCondition.isValid() ? new ConstraintCondition(
+                safeActivationCondition.param(), 
+                safeActivationCondition.operator(), 
+                safeActivationCondition.value()
+            ) : null,
+            targetEvent,
+            safeTargetCondition.isValid() ? new ConstraintCondition(
+                safeTargetCondition.param(), 
+                safeTargetCondition.operator(), 
+                safeTargetCondition.value()
+            ) : null,
+            type, 
+            status
+        );
+        constraints.put(name, constraint);
+
+        var handler = constraintHandlerFactory.getHandler(type);
+
+        // Only create activation detection query if activationEvent is provided
+        if (activationEvent != null && !activationEvent.isBlank()) {
+            handler.createDetectionQuery(StatementType.ACTIVATION, name, activationEvent, safeActivationCondition);
+        }
+        
+        // Only create target detection query if targetEvent is provided
+        if (targetEvent != null && !targetEvent.isBlank()) {
+            handler.createDetectionQuery(StatementType.TARGET, name, targetEvent, safeTargetCondition);
+        }
+
+        handler.createFulfillmentQuery(name);
+        handler.createTemporaryViolationQuery(name);
+        handler.createPermanentViolationQuery(name);
     }
 
     public void addConstraintStatement(String name, String eplId, StatementType eplType, String eplStatement) {
         Constraint constraint = constraints.get(name);
         constraint.getEplStatements().add(new EplStatement(eplId, eplStatement, eplType));
-    }
-
-    public void createDetectionQuery(StatementType statementType, String name, String event, ConstraintResource.ConditionRequest condition) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT id, '%s' as name, '%s' as type
-                FROM GenericEvent WHERE type = '%s'
-                """.formatted(name, statementType.name().toLowerCase(), event);
-
-        if (condition.isValid()) {
-            query += condition.getConditionQueryPart();
-        }
-
-        var statement = esperService.deployStatements(name, query);
-
-        addConstraintStatement(name, statement.getDeploymentId(), statementType, query);
-    }
-
-
-    public void createExistenceFulfillmentQuery(String name) {
-        String query = """
-                SELECT id, name, type
-                FROM constraintStatus
-                WHERE name = '%s' AND type = 'target'
-                """.formatted(name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to target of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createResponseTempViolationQuery(String name) {
-        String query = """
-                SELECT id, name, type
-                FROM constraintStatus
-                WHERE name = '%s' AND type = 'activation'
-                """.formatted(name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to activation of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
-    }
-
-    public void createResponseFulfillmentQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to activation of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createPrecedenceTempViolationQuery(String name) {
-        String query = """
-                SELECT id, name, type
-                FROM constraintStatus
-                WHERE name = '%s' AND type = 'target'
-                """.formatted(name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to tempvio of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
-    }
-
-    public void createPrecedenceFulfillmentQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to fulfillment of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createPrecedencePermanentViolationQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='target', name='%s') -> (timer:interval(1 sec) and not b=constraintStatus(type='activation', name='%s'))]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to permanentvio of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
-    }
-
-    public void createRespondedExistenceForwardTempViolationQuery(String name) {
-        String query = """
-                SELECT id, name, type
-                FROM constraintStatus
-                WHERE name = '%s' AND type = 'activation'
-                """.formatted(name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to tempvio of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
-                }
-            }
-        });
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
-    }
-
-    public void createRespondedExistenceBackwardTempViolationQuery(String name) {
-        String query = """
-                SELECT id, name, type
-                FROM constraintStatus
-                WHERE name = '%s' AND type = 'target'
-                """.formatted(name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to tempvio of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
-                }
-            }
-        });
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
-    }
-
-    public void createRespondedExistenceForwardFulfillmentQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to forward fulfillment of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createRespondedExistenceBackwardFulfillmentQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='target', name='%s') -> b=constraintStatus(type='activation', name='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to backward fullfillment of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createAlternateResponseTempViolationQuery(String name) {
-        String query = """
-                SELECT id, name, type
-                FROM constraintStatus
-                WHERE name = '%s' AND type = 'activation'
-                """.formatted(name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to activation of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
-    }
-
-    public void createAlternateResponseFulfillmentQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to fulfillment of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createAlternateResponsePermanentViolationQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='activation', name='%s') -> c=constraintStatus(type='target', name='%s')]
-                """.formatted(name, name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to permanent violation of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createChainResponseTempViolationQuery(String name) {
-        String query = """
-                SELECT id, name, type
-                FROM constraintStatus
-                WHERE name = '%s' AND type = 'activation'
-                """.formatted(name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to activation of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
-    }
-
-    public void createChainResponseFulfillmentQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to fulfillment of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createChainResponsePermanentViolationQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> c=constraintStatus(name!='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to permanent violation of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
-    }
-
-    public void createAlternatePrecedenceTempViolationQuery(String name) {
-        String query = """
-                SELECT id, name, type
-                FROM constraintStatus
-                WHERE name = '%s' AND type = 'target'
-                """.formatted(name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to tempvio of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
-    }
-
-    public void createAlternatePrecedencePermanentViolationQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s') -> c=constraintStatus(type='target', name='%s')]
-                """.formatted(name, name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to permanentvio of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
-                    //             esperService.removeConstraint(name);
-                }
-            }
-        });
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
-
-
-        String query2 = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [
-                    (timer:interval(0) and not b=constraintStatus(type='activation', name='%s'))
-                    ->
-                    a=constraintStatus(type='target', name='%s')
-                ]  """.formatted(name, name);
-
-        var statement2 = esperService.deployStatements(name + "2", query2);
-
-        statement2.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to permanentvio of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
-                    //  esperService.removeConstraint(name);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement2.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query2);
-    }
-
-    public void createAlternatePrecedenceFulfillmentQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to fulfillment of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED, ConstraintType.ALTERNATEPRECEDENCE);
-//                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createNotResponseTempViolationQuery(String name) {
-        String query = """
-                SELECT id, name, type
-                FROM constraintStatus
-                WHERE name = '%s' AND type = 'activation'
-                """.formatted(name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to activation of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
-                }
-            }
-        });
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
-    }
-
-    public void createNotResponsePermanentViolationQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to fulfillment of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
-    }
-
-    public void createChainPrecedencePermanentViolationQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> c=constraintStatus(name!='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to permanent violation of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
-                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
-
-        String query2 = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [
-                    (timer:interval(0) and not b=constraintStatus(type='activation', name='%s'))
-                    ->
-                    a=constraintStatus(type='target', name='%s')
-                ]""".formatted(name, name);
-
-        var statement2 = esperService.deployStatements(name + "2", query2);
-
-        statement2.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to permanentvio of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.PERMANENT_VIOLATION);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement2.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query2);
-    }
-
-    public void createChainPrecedenceFulfillmentQuery(String name) {
-        String query = """
-                SELECT a.id, a.name, a.type
-                FROM PATTERN [every a=constraintStatus(type='activation', name='%s') -> b=constraintStatus(type='target', name='%s')]
-                """.formatted(name, name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to fulfillment of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.FULFILLED, ConstraintType.ALTERNATEPRECEDENCE);
-//                    esperService.removeConstraint(name);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
-    }
-
-    public void createChainPrecedenceTempViolationQuery(String name) {
-        String query = """
-                SELECT id, name, type
-                FROM constraintStatus
-                WHERE name = '%s' AND type = 'target'
-                """.formatted(name);
-
-        var statement = esperService.deployStatements(name, query);
-
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    log.info("Reacting to tempvio of: {}", newEvent.getUnderlying());
-
-                    constraints.get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
-                }
-            }
-        });
-
-
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
     }
 }

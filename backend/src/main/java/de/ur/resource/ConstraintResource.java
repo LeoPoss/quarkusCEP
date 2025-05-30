@@ -2,7 +2,7 @@ package de.ur.resource;
 
 import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
-import de.ur.dao.StatementType;
+import de.ur.dto.ConstraintRequest;
 import de.ur.service.ConstraintService;
 import de.ur.service.EsperService;
 import jakarta.inject.Inject;
@@ -30,163 +30,139 @@ public class ConstraintResource {
         return Response.ok(constraintService.getConstraints().values()).build();
     }
 
-    public record ConstraintRequest(String name, String activationEvent, String targetEvent,
-                                    ConditionRequest targetCondition, ConditionRequest activationCondition) {
-    }
-
-    public record ConditionRequest(String param, String operator, String value) {
-        public boolean isValid() {
-            return (param != null && operator != null && value != null && !param.isBlank() && !operator.isBlank() && !value.isBlank());
-        }
-
-        public String getConditionQueryPart() {
-
-            String querySegment;
-
-            if ("true".equalsIgnoreCase(this.value) || "false".equalsIgnoreCase(this.value)) {
-                String booleanLiteral = this.value.toUpperCase();
-                querySegment = " AND cast(payload('%s'), boolean) %s %s".formatted(this.param, this.operator, booleanLiteral);
-            } else {
-                try {
-                    querySegment = " AND cast(payload('%s'), double) %s %s".formatted(this.param, this.operator, this.value);
-                } catch (NumberFormatException e) {
-                    String sqlSafeString = this.value.replace("'", "''");
-                    querySegment = " AND payload('%s') %s '%s'".formatted(this.param, this.operator, sqlSafeString);
-                }
-            }
-            return querySegment;
-        }
-    }
 
     @POST
     @Path("/existence")
     public Response createExistenceConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.EXISTENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.TEMPORARY_VIOLATION);
-
-        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
-
-        constraintService.createExistenceFulfillmentQuery(request.name);
-
-        return Response.created(URI.create(request.name)).build();
+        constraintService.setupConstraint(
+                ConstraintType.EXISTENCE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                ConstraintStatus.INIT
+        );
+        return Response.created(URI.create(request.name())).build();
     }
 
     @POST
     @Path("/response")
     public Response createResponseConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.RESPONSE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
-
-        constraintService.createDetectionQuery(StatementType.ACTIVATION, request.name, request.activationEvent, request.activationCondition);
-        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
-
-        constraintService.createResponseTempViolationQuery(request.name);
-        constraintService.createResponseFulfillmentQuery(request.name);
-
-        return Response.created(URI.create(request.name)).build();
+        constraintService.setupConstraint(
+                ConstraintType.RESPONSE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                ConstraintStatus.INIT
+        );
+        return Response.created(URI.create(request.name())).build();
     }
 
     @POST
     @Path("/respondedexistence")
     public Response createRespondedExistenceConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.RESPONDEDEXISTENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
-
-        constraintService.createDetectionQuery(StatementType.ACTIVATION, request.name, request.activationEvent, request.activationCondition);
-        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
-
-        constraintService.createRespondedExistenceForwardTempViolationQuery(request.name);
-        constraintService.createRespondedExistenceBackwardTempViolationQuery(request.name);
-
-        constraintService.createRespondedExistenceForwardFulfillmentQuery(request.name);
-        constraintService.createRespondedExistenceBackwardFulfillmentQuery(request.name);
-
-        return Response.created(URI.create(request.name)).build();
+        constraintService.setupConstraint(
+                ConstraintType.RESPONDED_EXISTENCE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                ConstraintStatus.INIT
+        );
+        return Response.created(URI.create(request.name())).build();
     }
 
     @POST
     @Path("/alternateresponse")
     public Response createAlternateResponseConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.ALTERNATERESPONSE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
-
-        constraintService.createDetectionQuery(StatementType.ACTIVATION, request.name, request.activationEvent, request.activationCondition);
-        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
-
-        constraintService.createAlternateResponseTempViolationQuery(request.name);
-        constraintService.createAlternateResponseFulfillmentQuery(request.name);
-        constraintService.createAlternateResponsePermanentViolationQuery(request.name);
-
-        return Response.created(URI.create(request.name)).build();
+        constraintService.setupConstraint(
+                ConstraintType.ALTERNATE_RESPONSE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                ConstraintStatus.INIT
+        );
+        return Response.created(URI.create(request.name())).build();
     }
 
     @POST
     @Path("/chainresponse")
     public Response createChainResponseConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.CHAINRESPONSE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
-
-        constraintService.createDetectionQuery(StatementType.ACTIVATION, request.name, request.activationEvent, request.activationCondition);
-        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
-
-        constraintService.createChainResponseTempViolationQuery(request.name);
-        constraintService.createChainResponseFulfillmentQuery(request.name);
-        constraintService.createChainResponsePermanentViolationQuery(request.name);
-
-        return Response.created(URI.create(request.name)).build();
+        constraintService.setupConstraint(
+                ConstraintType.CHAIN_RESPONSE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                ConstraintStatus.INIT
+        );
+        return Response.created(URI.create(request.name())).build();
     }
 
     @POST
     @Path("/precedence")
     public Response createPrecedenceConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.PRECEDENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
-
-        constraintService.createDetectionQuery(StatementType.ACTIVATION, request.name, request.activationEvent, request.activationCondition);
-        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
-
-        constraintService.createPrecedenceTempViolationQuery(request.name);
-        constraintService.createPrecedenceFulfillmentQuery(request.name);
-        constraintService.createPrecedencePermanentViolationQuery(request.name);
-
-        return Response.created(URI.create(request.name)).build();
+        constraintService.setupConstraint(
+                ConstraintType.PRECEDENCE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                ConstraintStatus.INIT
+        );
+        return Response.created(URI.create(request.name())).build();
     }
 
     @POST
     @Path("/alternateprecedence")
     public Response createAlternatePrecedenceConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.ALTERNATEPRECEDENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
-
-        constraintService.createDetectionQuery(StatementType.ACTIVATION, request.name, request.activationEvent, request.activationCondition);
-        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
-
-        constraintService.createAlternatePrecedenceTempViolationQuery(request.name);
-        constraintService.createAlternatePrecedenceFulfillmentQuery(request.name);
-        constraintService.createAlternatePrecedencePermanentViolationQuery(request.name);
-
-        return Response.created(URI.create(request.name)).build();
+        constraintService.setupConstraint(
+                ConstraintType.ALTERNATE_PRECEDENCE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                ConstraintStatus.INIT
+        );
+        return Response.created(URI.create(request.name())).build();
     }
 
     @POST
     @Path("/chainprecedence")
     public Response createChainPrecedenceConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.CHAINPRECEDENCE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.INIT);
-
-        constraintService.createDetectionQuery(StatementType.ACTIVATION, request.name, request.activationEvent, request.activationCondition);
-        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
-
-        constraintService.createChainPrecedenceTempViolationQuery(request.name);
-        constraintService.createChainPrecedenceFulfillmentQuery(request.name);
-        constraintService.createChainPrecedencePermanentViolationQuery(request.name);
-
-        return Response.created(URI.create(request.name)).build();
+        constraintService.setupConstraint(
+                ConstraintType.CHAIN_PRECEDENCE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                ConstraintStatus.INIT
+        );
+        return Response.created(URI.create(request.name())).build();
     }
 
     @POST
-    @Path("notresponse")
+    @Path("/notresponse")
     public Response createNotResponseConstraint(ConstraintRequest request) {
-        constraintService.addConstraint(request.name, ConstraintType.NOTRESPONSE, request.activationEvent, request.activationCondition, request.targetEvent, request.targetCondition, ConstraintStatus.FULFILLED);
-
-        constraintService.createDetectionQuery(StatementType.ACTIVATION, request.name, request.activationEvent, request.activationCondition);
-        constraintService.createDetectionQuery(StatementType.TARGET, request.name, request.targetEvent, request.targetCondition);
-
-        constraintService.createNotResponseTempViolationQuery(request.name);
-        constraintService.createNotResponsePermanentViolationQuery(request.name);
-
-        return Response.created(URI.create(request.name)).build();
+        constraintService.setupConstraint(
+                ConstraintType.NOT_RESPONSE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                ConstraintStatus.FULFILLED
+        );
+        return Response.created(URI.create(request.name())).build();
     }
 }
