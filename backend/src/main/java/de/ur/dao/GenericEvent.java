@@ -7,7 +7,7 @@ import java.util.Map;
 @Data
 public class GenericEvent {
     private int id;
-    private String type;
+    private String eventType;
     private long timestamp;
     private Map<String, String> payload;
 }

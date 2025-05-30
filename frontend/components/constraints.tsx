@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from "@heroui/react";
 import * as React from "react";
-import { LinkBreak } from "@phosphor-icons/react";
+import { LinkBreakIcon } from "@phosphor-icons/react";
 import ShikiHighlighter from "react-shiki";
 import { useTheme } from "next-themes";
 
@@ -81,7 +81,7 @@ export default function Constraints() {
         <>
           {constraints.data.length == 0 ? (
             <div className="flex flex-col items-center gap-6">
-              <LinkBreak className="text-neutral-300" size={96} />
+              <LinkBreakIcon className="text-neutral-300" size={96} />
               <span className="text-sm text-neutral-300">
                 No constraints found
               </span>

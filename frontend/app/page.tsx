@@ -3,9 +3,6 @@
 import * as React from "react";
 import { Switch } from "@heroui/switch";
 import { Chip } from "@heroui/chip";
-import { addToast, Button } from "@heroui/react";
-import ky from "ky";
-import { Trash } from "@phosphor-icons/react";
 
 import ConstraintsOverview from "@/components/constraints";
 import CreateConstraint from "@/components/create-constraint";
@@ -15,7 +12,6 @@ import { subtitle, title } from "@/components/primitives";
 
 export default function Home() {
   const { isMPDeclareEnabled, toggleMPDeclare } = useMPDeclare();
-
 
   return (
     <section className="flex flex-col gap-4">

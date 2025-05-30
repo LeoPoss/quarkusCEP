@@ -19,7 +19,7 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
         String query = """
                 INSERT INTO constraintStatus
                 SELECT id, '%s' as name, '%s' as type
-                FROM GenericEvent WHERE type = '%s'
+                FROM GenericEvent WHERE eventType = '%s'
                 """.formatted(name, type, event);
 
         if (condition.isValid()) {

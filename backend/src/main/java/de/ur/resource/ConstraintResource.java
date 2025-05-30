@@ -41,7 +41,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.TEMPORARY_VIOLATION
         );
         return Response.created(URI.create(request.name())).build();
     }

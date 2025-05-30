@@ -15,13 +15,18 @@ import {
   useDisclosure,
 } from "@heroui/react";
 import { Input } from "@heroui/input";
+import * as React from "react";
 import { useState } from "react";
-import { Code, PaperPlaneTilt, Trash, Warning } from "@phosphor-icons/react";
+import {
+  CodeIcon,
+  PaperPlaneTiltIcon,
+  TrashIcon,
+  WarningIcon,
+} from "@phosphor-icons/react";
 
 import { cardHeader } from "./primitives";
 
 import { useMPDeclare } from "@/contexts/mpDeclareContext";
-import * as React from "react";
 
 export default function SendEvent() {
   const [customEventType, setCustomEventType] = useState("");
@@ -30,7 +35,7 @@ export default function SendEvent() {
   const { isMPDeclareEnabled, toggleMPDeclare } = useMPDeclare();
 
   type Event = {
-    type: string;
+    eventType: string;
     payload?: {
       [key: string]: string;
     };
@@ -50,7 +55,6 @@ export default function SendEvent() {
     });
   }
 
-
   async function resetEsper() {
     const response = await ky.post("http://localhost:8080/esper/reset");
 
@@ -67,7 +71,7 @@ export default function SendEvent() {
   return (
     <Card>
       <CardHeader className={cardHeader()}>
-        <PaperPlaneTilt className="mr-4" size={24} />
+        <PaperPlaneTiltIcon className="mr-4" size={24} />
         Send Event
       </CardHeader>
       <CardBody>
@@ -117,7 +121,7 @@ export default function SendEvent() {
             className="w-full"
             onPress={() =>
               sendEvent({
-                type: customEventType,
+                eventType: customEventType,
                 payload:
                   payloadName && payloadValue
                     ? {
@@ -132,14 +136,14 @@ export default function SendEvent() {
         </div>
         <Divider className="my-2" />
         <div className="flex flex-row gap-2 items-center">
-          <Code className="mr-2" size="24" />
+          <CodeIcon className="mr-2" size="24" />
           <div className="grid grid-cols-3 gap-2 w-full">
             <Tooltip content="Send simple (no payload) A-Event">
               <Button
                 color="secondary"
                 size="md"
                 variant="flat"
-                onPress={() => sendEvent({ type: "A" })}
+                onPress={() => sendEvent({ eventType: "A" })}
               >
                 A
               </Button>
@@ -149,32 +153,35 @@ export default function SendEvent() {
                 color="secondary"
                 size="md"
                 variant="flat"
-                onPress={() => sendEvent({ type: "B" })}
+                onPress={() => sendEvent({ eventType: "B" })}
               >
                 B
               </Button>
             </Tooltip>
             <Button color="danger" variant="flat" onPress={onOpen}>
-              <Trash /> Reset 
+              <TrashIcon /> Reset
             </Button>
 
             <Modal isOpen={isOpen} onClose={onClose}>
               <ModalContent>
                 <ModalHeader className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
-                    <Warning size={24} weight="fill" />
+                    <WarningIcon size={24} weight="fill" />
                     Confirm Reset
                   </div>
                 </ModalHeader>
                 <ModalBody>
-                  <p>Are you sure you want to reset the Esper engine? This will also delete all events and constraints.</p>
+                  <p>
+                    Are you sure you want to reset the Esper engine? This will
+                    also delete all events and constraints.
+                  </p>
                 </ModalBody>
                 <ModalFooter>
                   <Button variant="flat" onPress={onClose}>
                     Cancel
                   </Button>
-                  <Button 
-                    color="danger" 
+                  <Button
+                    color="danger"
                     onPress={() => {
                       resetEsper();
                       onClose();

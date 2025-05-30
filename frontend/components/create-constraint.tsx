@@ -11,7 +11,7 @@ import {
   SelectSection,
 } from "@heroui/react";
 import ky from "ky";
-import { Plus } from "@phosphor-icons/react";
+import { PlusIcon } from "@phosphor-icons/react";
 
 import { cardHeader } from "./primitives";
 
@@ -55,7 +55,7 @@ export default function CreateConstraint() {
   return (
     <Card>
       <CardHeader className={cardHeader()}>
-        <Plus className="w-6 h-6 mr-4" /> Create new Constraint
+        <PlusIcon className="w-6 h-6 mr-4" /> Create new Constraint
       </CardHeader>
       <Form
         className="space-y-4"
