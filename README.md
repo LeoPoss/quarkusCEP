@@ -57,18 +57,23 @@ To set up and run the DeclareCEP proof-of-concept locally:
 3. Set up and run the frontend:
     ```console
     cd ../frontend
-    bun install # or npm install
-    bun dev # or npm run dev
+    bun install
+    bun dev
     ```
 
 ### Docker (July 2025)
 Alternatively use Docker Compose to run both services:
-1. Navigate to backend and build backend once for caching (required by Quarkus, check correct Java Version!)
+1. Navigate to frontend and install dependencies
+    ```console
+    cd frontend
+    bun install
     ```
+2. Navigate to backend and build backend once for caching (required by Quarkus, check correct Java Version!)
+    ```console
     cd backend
     ./gradlew build
     ```
-2. Navigate to main folder and execute
+3. Navigate to main folder and execute
     ```console
      docker compose up --build --force-recreate    
     ```
