@@ -9,22 +9,23 @@
     "lint": "eslint --fix"
   },
   "dependencies": {
-    "@heroui/button": "2.2.19",
-    "@heroui/code": "2.2.14",
-    "@heroui/input": "2.4.19",
-    "@heroui/kbd": "2.2.15",
-    "@heroui/link": "2.2.16",
-    "@heroui/listbox": "2.3.18",
-    "@heroui/navbar": "2.2.17",
-    "@heroui/react": "^2.7.8",
-    "@heroui/snippet": "2.2.20",
-    "@heroui/switch": "2.2.17",
-    "@heroui/system": "2.4.15",
-    "@heroui/table": "^2.2.18",
-    "@heroui/theme": "2.4.15",
+    "@heroui/button": "2.2.23",
+    "@heroui/code": "2.2.17",
+    "@heroui/input": "2.4.23",
+    "@heroui/kbd": "2.2.18",
+    "@heroui/link": "2.2.20",
+    "@heroui/listbox": "2.3.22",
+    "@heroui/navbar": "2.2.21",
+    "@heroui/react": "^2.8.0",
+    "@heroui/snippet": "2.2.24",
+    "@heroui/switch": "2.2.21",
+    "@heroui/system": "2.4.19",
+    "@heroui/table": "2.2.22",
+    "@heroui/theme": "2.4.18",
     "@phosphor-icons/react": "^2.1.10",
     "@react-aria/ssr": "3.9.8",
     "@react-aria/visually-hidden": "3.8.22",
+    "@tailwindcss/postcss": "^4.1.11",
     "@tanstack/react-query": "^5.79.0",
     "@tanstack/react-query-devtools": "^5.79.0",
     "clsx": "2.1.1",
@@ -64,8 +65,11 @@
     "postcss": "8.5.3",
     "prettier": "3.5.3",
     "tailwind-variants": "0.3.0",
-    "tailwindcss": "3.4.16",
+    "tailwindcss": "4.1.11",
     "typescript": "5.6.3"
   },
-  "packageManager": "pnpm@10.4.0+sha512.6b849d0787d97f8f4e1f03a9b8ff8f038e79e153d6f11ae539ae7c435ff9e796df6a862c991502695c7f9e8fac8aeafc1ac5a8dab47e36148d183832d886dd52"
+  "trustedDependencies": [
+    "@heroui/shared-utils",
+    "unrs-resolver"
+  ]
 }

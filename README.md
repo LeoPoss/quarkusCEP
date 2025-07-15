@@ -60,7 +60,21 @@ To set up and run the DeclareCEP proof-of-concept locally:
     bun install # or npm install
     bun dev # or npm run dev
     ```
-    The frontend application will typically be accessible at http://localhost:3000.
+
+### Docker (July 2025)
+Alternatively use Docker Compose to run both services:
+1. Navigate to backend and build backend once for caching (required by Quarkus, check correct Java Version!)
+    ```
+    cd backend
+    ./gradlew build
+    ```
+2. Navigate to main folder and execute
+    ```console
+     docker compose up --build --force-recreate    
+    ```
+
+
+The frontend application will typically be accessible at http://localhost:3000.
 
 ## License
 This project is licensed under the GNU GPLv3 License -- see the LICENSE file for details.

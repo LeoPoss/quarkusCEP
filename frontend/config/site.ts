@@ -2,6 +2,7 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "QuarkusCEP",
+  description: "Implementation",
   navItems: [
     {
       label: "Home",
