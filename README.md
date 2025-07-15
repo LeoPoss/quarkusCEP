@@ -1,6 +1,4 @@
 # DeclareCEP: A Unified Engine for Declarative Process Specifications and Event Processing
-This repository contains the proof-of-concept implementation for our paper:
-"A Common Engine Paradigm for Synergistic Integration of Declarative Process Specifications and Event Processing"
 
 ## Project Overview
 This implementation demonstrates a novel approach for integrating Business Process Management (BPM) and Complex Event Processing (CEP) to enable flexible, declarative process execution with high-frequency Internet of Things (IoT) data. It introduces a unified engine paradigm that leverages a single CEP engine for both event abstraction and the direct execution of MP-Declare models. This simplifies architectures, reduces latency, and enables responsive, event-driven execution by eliminating the need for dedicated preprocessing middleware.
@@ -37,22 +35,28 @@ This multi-level abstraction allows for the systematic translation of MP-Declare
 To set up and run the DeclareCEP proof-of-concept locally:
 
 ### Prerequisites
-- Java Development Kit (JDK): Version 11 or newer.
-- Apache Maven: For building the backend.
-- Node.js & bun/npm: For building the frontend.
+- Java Development Kit (JDK): Version 21 or newer.
+- Gradle: For building the backend.
+- Node.js & npm/yarn: For building the frontend.
 - Git: For cloning the repository.
 
 ### Installation and Setup
-1. Start backend (includes SwaggerUI):
+1. Clone this repository:
+    ```console
+    git clone https://anonymous.4open.science/r/quarkus-CEP
+    cd quarkus-CEP
+    ```
+
+2. Start backend:
     ```console
     cd backend
-    mvn quarkus:dev
+    ./gradlew quarkusDev
     ```
-   The backend server will typically run on http://localhost:8080 ([SwaggerUI](http://localhost:8080/q/dev-ui/io.quarkus.quarkus-smallrye-openapi/swagger-ui)).
+   The backend server will typically run on http://localhost:8080.
 
-2. Set up and run the frontend:
+3. Set up and run the frontend:
     ```console
-    cd frontend
+    cd ../frontend
     bun install # or npm install
     bun dev # or npm run dev
     ```
