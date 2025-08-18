@@ -61,22 +61,31 @@ To set up and run the DeclareCEP proof-of-concept locally:
     bun dev
     ```
 
-### Docker (July 2025)
-Alternatively use Docker Compose to run both services:
-1. Navigate to frontend and install dependencies
-    ```console
-    cd frontend
-    bun install
-    ```
-2. Navigate to backend and build backend once for caching (required by Quarkus, check correct Java Version!)
-    ```console
-    cd backend
-    ./gradlew build
-    ```
-3. Navigate to main folder and execute
-    ```console
-     docker compose up --build --force-recreate    
-    ```
+### Docker
+
+You can run the entire application using Docker Compose without needing to install any dependencies locally:
+
+```bash
+cd backend
+./gradlew build 
+
+cd ..
+docker compose up --build
+```
+
+This will:
+1. Build the backend with Gradle
+2. Build the frontend with all dependencies
+3. Start both services with proper networking
+
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8080
+
+To rebuild the containers (e.g., after making changes):
+```bash
+docker compose up --build --force-recreate
+```
 
 
 The frontend application will typically be accessible at http://localhost:3000.

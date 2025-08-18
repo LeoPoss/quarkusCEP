@@ -16,6 +16,7 @@ val esperVersion = "9.0.0"
 val lombokVersion = "1.18.38"
 
 dependencies {
+    implementation("io.quarkus:quarkus-container-image-docker")
     implementation("io.quarkus:quarkus-smallrye-openapi")
     implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))
     implementation("io.quarkus:quarkus-rest")

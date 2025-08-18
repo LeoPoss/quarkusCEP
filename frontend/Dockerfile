@@ -2,47 +2,43 @@
 
 FROM oven/bun:1 AS base
 
-# Install dependencies only when needed
-FROM base AS deps
-WORKDIR /app
-
-# Install dependencies with bun
-COPY bun.lock ./
-COPY package.json ./
-RUN bun install --frozen-lockfile
-
-
-# Rebuild the source code only when needed
+# Install dependencies and build the application
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+
+# Copy package files first for better caching
+COPY bun.lock package.json ./
+
+# Install dependencies with bun
+RUN bun install --frozen-lockfile
+
+# Copy the rest of the application
 COPY . .
 
-# Build with Turbopack
+# Build the application
 RUN bun run build
 
-# Production image, copy all the files and run next
+# Production image
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Create a non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy static files
+# Copy built files from builder
 COPY --from=builder /app/public ./public
-
-# Copy built files
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Switch to non-root user
 USER nextjs
 
 EXPOSE 3000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-# Use bun to run the server
+# Start the application
 CMD ["bun", "run", "server.js"]
