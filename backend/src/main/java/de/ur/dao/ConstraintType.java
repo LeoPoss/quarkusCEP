@@ -1,0 +1,13 @@
+package de.ur.dao;
+
+public enum ConstraintType {
+    EXISTENCE,
+    RESPONDED_EXISTENCE,
+    RESPONSE,
+    ALTERNATE_RESPONSE,
+    CHAIN_RESPONSE,
+    PRECEDENCE,
+    ALTERNATE_PRECEDENCE,
+    CHAIN_PRECEDENCE,
+    NOT_RESPONSE
+}
