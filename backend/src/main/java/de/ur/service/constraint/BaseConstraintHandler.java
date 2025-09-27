@@ -18,7 +18,7 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
     public void createDetectionQuery(StatementType type, String name, String event, ConditionRequest condition) {
         String query = """
                 INSERT INTO constraintStatus
-                SELECT id, '%s' as name, '%s' as type
+                SELECT id, '%s' as name, '%s' as type, timestamp
                 FROM GenericEvent WHERE eventType = '%s'
                 """.formatted(name, type, event);
 

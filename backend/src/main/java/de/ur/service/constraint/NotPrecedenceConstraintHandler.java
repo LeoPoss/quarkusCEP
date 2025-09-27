@@ -7,10 +7,10 @@ import de.ur.service.GenericStatusUpdateListener;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class ExistenceConstraintHandler extends BaseConstraintHandler {
+public class NotPrecedenceConstraintHandler extends BaseConstraintHandler {
     @Override
     public ConstraintType getType() {
-        return ConstraintType.EXISTENCE;
+        return ConstraintType.NOT_PRECEDENCE;
     }
 
     @Override
@@ -24,10 +24,22 @@ public class ExistenceConstraintHandler extends BaseConstraintHandler {
         var statement = esperService.deployStatements(name, query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, false, constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
+
     }
 
     @Override
     public void createTemporaryViolationQuery(String name) {
-        // No temporary violation for existence constraint
+    }
+
+    @Override
+    public void createPermanentViolationQuery(String name) {
+        String query = """
+                SELECT b.id, b.name, b.type, b.timestamp as timestamp
+                FROM PATTERN [every a=constraintStatus(type='TARGET', name='%s') -> (timer:interval(1 sec) and not b=constraintStatus(type='ACTIVATION', name='%s'))]
+                """.formatted(name, name);
+
+        var statement = esperService.deployStatements(name, query);
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }
 }

@@ -4,7 +4,6 @@ import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
 import de.ur.dto.ConstraintRequest;
 import de.ur.service.ConstraintService;
-import de.ur.service.EsperService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -18,10 +17,6 @@ import java.net.URI;
 @Consumes(MediaType.APPLICATION_JSON)
 @Slf4j
 public class ConstraintResource {
-
-    @Inject
-    EsperService esperService;
-
     @Inject
     ConstraintService constraintService;
 
@@ -161,7 +156,22 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
-                ConstraintStatus.FULFILLED
+                ConstraintStatus.INIT
+        );
+        return Response.created(URI.create(request.name())).build();
+    }
+
+    @POST
+    @Path("/notprecedence")
+    public Response createNotPrecedenceConstraint(ConstraintRequest request) {
+        constraintService.setupConstraint(
+                ConstraintType.NOT_PRECEDENCE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                ConstraintStatus.INIT
         );
         return Response.created(URI.create(request.name())).build();
     }

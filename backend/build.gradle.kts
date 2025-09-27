@@ -13,9 +13,10 @@ val quarkusPlatformArtifactId: String by project
 val quarkusPlatformVersion: String by project
 
 val esperVersion = "9.0.0"
-val lombokVersion = "1.18.38"
+val lombokVersion = "1.18.42"
 
 dependencies {
+    implementation("io.quarkus:quarkus-smallrye-health")
     implementation("io.quarkus:quarkus-container-image-docker")
     implementation("io.quarkus:quarkus-smallrye-openapi")
     implementation(enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"))

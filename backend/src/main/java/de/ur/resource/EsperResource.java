@@ -14,8 +14,10 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Path("/esper")
 @Produces(MediaType.APPLICATION_JSON)
@@ -60,15 +62,60 @@ public class EsperResource {
 
     @POST
     @Path("/event")
-    public Response sendEvent(GenericEvent event) {
+    public Response sendEvent(Map<String, Object> event) {
         try {
             log.info("Received event: {}", event);
-            esperService.sendEvent(event);
+            processSingleEvent(event);
             return Response.ok(Map.of("status", "Event sent successfully")).build();
         } catch (Exception e) {
             log.error("Failed to send event", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(Map.of("error", e.getMessage())).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", e.getMessage())).build();
         }
+    }
+
+
+    @POST
+    @Path("/events/batch")
+    public Response receiveEventBatch(List<Map<String, Object>> events) {
+        if (events == null || events.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Event list cannot be null or empty")).build();
+        }
+        try {
+            log.debug("Received event batch of size: {}", events.size());
+            // Loop through the list and process each event
+            for (Map<String, Object> event : events) {
+                processSingleEvent(event);
+            }
+            return Response.ok(Map.of("status", "Batch of " + events.size() + " events sent successfully")).build();
+        } catch (Exception e) {
+            log.error("Failed to process event batch", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", e.getMessage())).build();
+        }
+    }
+
+    private void processSingleEvent(Map<String, Object> event) {
+        Map<String, String> payload = null;
+        Object payloadObj = event.get("payload");
+
+        if (payloadObj instanceof Map<?, ?> map) {
+            payload = map.entrySet().stream()
+                    .collect(Collectors.toMap(
+                            e -> e.getKey().toString(),
+                            e -> e.getValue() != null ? e.getValue().toString() : null
+                    ));
+        }
+
+        GenericEvent genericEvent = new GenericEvent(
+                UUID.randomUUID().toString(),
+                String.valueOf(event.get("eventType")),
+                System.nanoTime(),
+                payload
+        );
+
+        esperService.sendEvent(genericEvent);
     }
 
     @POST

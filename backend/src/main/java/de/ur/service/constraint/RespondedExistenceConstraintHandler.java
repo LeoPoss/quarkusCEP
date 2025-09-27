@@ -1,35 +1,59 @@
 package de.ur.service.constraint;
 
-import com.espertech.esper.common.client.EventBean;
 import de.ur.dao.ConstraintStatus;
+import de.ur.dao.ConstraintType;
 import de.ur.dao.StatementType;
+import de.ur.service.GenericStatusUpdateListener;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
     @Override
+    public ConstraintType getType() {
+        return ConstraintType.RESPONDED_EXISTENCE;
+    }
+
+    @Override
     public void createFulfillmentQuery(String name) {
-        // Responded existence doesn't have a separate fulfillment query
-        // as it's immediately fulfilled when activation is detected
+        String query = """
+                SELECT a.id, a.name, a.type, a.timestamp as timestamp
+                FROM pattern [
+                    every (
+                        b=constraintStatus(type='TARGET', name='%1$s')
+                        -> a=constraintStatus(type='ACTIVATION', name='%1$s')
+                    )
+                ]
+                """.formatted(name);
+
+        var statement = esperService.deployStatements(name + "_fulfill", query);
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
+
+
+        // Also need to handle the case when B happens after A
+        String query2 = """
+                SELECT b.id, b.name, b.type, b.timestamp as timestamp
+                FROM pattern [
+                    every a=constraintStatus(type='ACTIVATION', name='%1$s')
+                    -> b=constraintStatus(type='TARGET', name='%1$s')
+                ]
+                """.formatted(name);
+
+        var statement2 = esperService.deployStatements(name + "_fulfill_after", query2);
+        statement2.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
+        addConstraintStatement(name, statement2.getDeploymentId(), StatementType.FULFILLMENT, query2);
     }
 
     @Override
     public void createTemporaryViolationQuery(String name) {
         String query = """
-                SELECT id, name, type
+                SELECT id, name, type, timestamp
                 FROM constraintStatus
                 WHERE name = '%s' AND type = 'ACTIVATION'
                 """.formatted(name);
 
         var statement = esperService.deployStatements(name + "_temp_vio", query);
-        statement.addListener((newEvents, oldEvents, s, r) -> {
-            if (newEvents != null) {
-                for (EventBean newEvent : newEvents) {
-                    constraintService.getLogger().info("Reacting to temporary violation of: {}", newEvent.getUnderlying());
-                    constraintService.getConstraints().get(name).updateStatus(ConstraintStatus.TEMPORARY_VIOLATION);
-                }
-            }
-        });
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
     }
 

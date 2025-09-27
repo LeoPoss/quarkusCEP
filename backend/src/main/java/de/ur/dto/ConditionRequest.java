@@ -1,25 +1,26 @@
 package de.ur.dto;
 
+import java.math.BigDecimal;
+
 public record ConditionRequest(String param, String operator, String value) {
     public boolean isValid() {
         return (param != null && operator != null && value != null && !param.isBlank() && !operator.isBlank() && !value.isBlank());
     }
 
     public String getConditionQueryPart() {
-
-        String querySegment;
+        String safeParam = this.param.replace("'", "''");
 
         if ("true".equalsIgnoreCase(this.value) || "false".equalsIgnoreCase(this.value)) {
             String booleanLiteral = this.value.toUpperCase();
-            querySegment = " AND cast(payload('%s'), boolean) %s %s".formatted(this.param, this.operator, booleanLiteral);
-        } else {
-            try {
-                querySegment = " AND cast(payload('%s'), double) %s %s".formatted(this.param, this.operator, this.value);
-            } catch (NumberFormatException e) {
-                String sqlSafeString = this.value.replace("'", "''");
-                querySegment = " AND payload('%s') %s '%s'".formatted(this.param, this.operator, sqlSafeString);
-            }
+            return " AND cast(payload('%s'), boolean) %s %s".formatted(safeParam, this.operator, booleanLiteral);
         }
-        return querySegment;
+
+        try {
+            new BigDecimal(this.value);
+            return " AND cast(payload('%s'), double) %s %s".formatted(safeParam, this.operator, this.value);
+        } catch (NumberFormatException e) {
+            String safeValue = this.value.replace("'", "''");
+            return " AND payload('%s') %s '%s'".formatted(safeParam, this.operator, safeValue);
+        }
     }
 }

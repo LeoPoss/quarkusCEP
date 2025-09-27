@@ -10,30 +10,14 @@ import java.util.Map;
 
 @ApplicationScoped
 public class ConstraintHandlerFactory {
-    private final Map<ConstraintType, ConstraintHandler> handlers = new EnumMap<>(ConstraintType.class);
+    private final Map<ConstraintType, ConstraintHandler> handlers;
 
     @Inject
     public ConstraintHandlerFactory(Instance<ConstraintHandler> handlerInstances) {
+        this.handlers = new EnumMap<>(ConstraintType.class);
         for (ConstraintHandler handler : handlerInstances) {
-            if (handler instanceof ResponseConstraintHandler) {
-                handlers.put(ConstraintType.RESPONSE, handler);
-            } else if (handler instanceof PrecedenceConstraintHandler) {
-                handlers.put(ConstraintType.PRECEDENCE, handler);
-            } else if (handler instanceof ExistenceConstraintHandler) {
-                handlers.put(ConstraintType.EXISTENCE, handler);
-            } else if (handler instanceof RespondedExistenceConstraintHandler) {
-                handlers.put(ConstraintType.RESPONDED_EXISTENCE, handler);
-            } else if (handler instanceof AlternateResponseConstraintHandler) {
-                handlers.put(ConstraintType.ALTERNATE_RESPONSE, handler);
-            } else if (handler instanceof ChainResponseConstraintHandler) {
-                handlers.put(ConstraintType.CHAIN_RESPONSE, handler);
-            } else if (handler instanceof AlternatePrecedenceConstraintHandler) {
-                handlers.put(ConstraintType.ALTERNATE_PRECEDENCE, handler);
-            } else if (handler instanceof NotResponseConstraintHandler) {
-                handlers.put(ConstraintType.NOT_RESPONSE, handler);
-            } else if (handler instanceof ChainPrecedenceConstraintHandler) {
-                handlers.put(ConstraintType.CHAIN_PRECEDENCE, handler);
-            }
+            ConstraintType type = handler.getType();
+            handlers.put(type, handler);
         }
     }
 

@@ -9,5 +9,6 @@ public enum ConstraintType {
     PRECEDENCE,
     ALTERNATE_PRECEDENCE,
     CHAIN_PRECEDENCE,
-    NOT_RESPONSE
+    NOT_RESPONSE,
+    NOT_PRECEDENCE
 }
