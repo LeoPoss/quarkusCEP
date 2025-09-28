@@ -2,6 +2,7 @@ package de.ur.service.constraint;
 
 import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
+import de.ur.dao.CorrelationCondition;
 import de.ur.dao.StatementType;
 import de.ur.service.GenericStatusUpdateListener;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,7 +15,7 @@ public class AlternateResponseConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createFulfillmentQuery(String name) {
+    public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM pattern [
@@ -23,13 +24,17 @@ public class AlternateResponseConstraintHandler extends BaseConstraintHandler {
                 ]
                 """.formatted(name);
 
+        if (correlation != null && correlation.isValid()) {
+            query = appendCondition(query, correlation.getCorrelationQueryPart());
+        }
+
         var statement = esperService.deployStatements(name + "_fulfill", query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }
 
     @Override
-    public void createTemporaryViolationQuery(String name) {
+    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM pattern [
@@ -40,23 +45,31 @@ public class AlternateResponseConstraintHandler extends BaseConstraintHandler {
                 ]
                 """.formatted(name);
 
+        if (correlation != null && correlation.isValid()) {
+            query = appendCondition(query, correlation.getCorrelationQueryPart());
+        }
+
         var statement = esperService.deployStatements(name + "_temp_vio", query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
     }
 
     @Override
-    public void createPermanentViolationQuery(String name) {
+    public void createPermanentViolationQuery(String name, CorrelationCondition correlation) {
         String query = """
-                SELECT c.id, c.name, c.type, c.timestamp as timestamp
+                SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM pattern [
                     every (
                         a=constraintStatus(type='ACTIVATION', name='%1$s')
-                        -> b=constraintStatus(type='ACTIVATION', name='%1$s')
-                        -> c=constraintStatus(type='TARGET', name='%1$s')
+                        -> c=constraintStatus(type='ACTIVATION', name='%1$s')
+                        -> b=constraintStatus(type='TARGET', name='%1$s')
                     )
                 ]
                 """.formatted(name);
+
+        if (correlation != null && correlation.isValid()) {
+            query = appendCondition(query, correlation.getCorrelationQueryPart());
+        }
 
         var statement = esperService.deployStatements(name + "_perm_vio", query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));

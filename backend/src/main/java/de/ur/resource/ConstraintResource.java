@@ -36,6 +36,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
+                request.correlationCondition(),
                 ConstraintStatus.TEMPORARY_VIOLATION
         );
         return Response.created(URI.create(request.name())).build();
@@ -51,6 +52,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
+                request.correlationCondition(),
                 ConstraintStatus.INIT
         );
         return Response.created(URI.create(request.name())).build();
@@ -66,6 +68,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
+                request.correlationCondition(),
                 ConstraintStatus.INIT
         );
         return Response.created(URI.create(request.name())).build();
@@ -81,6 +84,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
+                request.correlationCondition(),
                 ConstraintStatus.INIT
         );
         return Response.created(URI.create(request.name())).build();
@@ -96,6 +100,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
+                request.correlationCondition(),
                 ConstraintStatus.INIT
         );
         return Response.created(URI.create(request.name())).build();
@@ -111,6 +116,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
+                request.correlationCondition(),
                 ConstraintStatus.INIT
         );
         return Response.created(URI.create(request.name())).build();
@@ -126,6 +132,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
+                request.correlationCondition(),
                 ConstraintStatus.INIT
         );
         return Response.created(URI.create(request.name())).build();
@@ -141,6 +148,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
+                request.correlationCondition(),
                 ConstraintStatus.INIT
         );
         return Response.created(URI.create(request.name())).build();
@@ -156,6 +164,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
+                request.correlationCondition(),
                 ConstraintStatus.INIT
         );
         return Response.created(URI.create(request.name())).build();
@@ -171,6 +180,7 @@ public class ConstraintResource {
                 request.activationCondition(),
                 request.targetEvent(),
                 request.targetCondition(),
+                request.correlationCondition(),
                 ConstraintStatus.INIT
         );
         return Response.created(URI.create(request.name())).build();

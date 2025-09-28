@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @ApplicationScoped
@@ -31,29 +32,32 @@ public class ConstraintService {
 
     public void setupConstraint(ConstraintType type, String name, String activationEvent,
                                 ConditionRequest activationCondition, String targetEvent,
-                                ConditionRequest targetCondition, ConstraintStatus status) {
+                                ConditionRequest targetCondition, CorrelationCondition correlationCondition, ConstraintStatus status) {
         // Create default empty conditions if null
         ConditionRequest safeActivationCondition = activationCondition != null ? activationCondition : new ConditionRequest("", "", "");
         ConditionRequest safeTargetCondition = targetCondition != null ? targetCondition : new ConditionRequest("", "", "");
 
+        Set<String> relevantKeys = getRelevantKeys(correlationCondition, safeActivationCondition, safeTargetCondition);
+
         // Create and add the constraint to the map first
         Constraint constraint = new Constraint(
-            name, 
-            new ArrayList<>(), 
-            activationEvent,
-            safeActivationCondition.isValid() ? new ConstraintCondition(
-                safeActivationCondition.param(), 
-                safeActivationCondition.operator(), 
-                safeActivationCondition.value()
-            ) : null,
-            targetEvent,
-            safeTargetCondition.isValid() ? new ConstraintCondition(
-                safeTargetCondition.param(), 
-                safeTargetCondition.operator(), 
-                safeTargetCondition.value()
-            ) : null,
-            type, 
-            status
+                name,
+                new ArrayList<>(),
+                activationEvent,
+                safeActivationCondition.isValid() ? new ConstraintCondition(
+                        safeActivationCondition.param(),
+                        safeActivationCondition.operator(),
+                        safeActivationCondition.value()
+                ) : null,
+                targetEvent,
+                safeTargetCondition.isValid() ? new ConstraintCondition(
+                        safeTargetCondition.param(),
+                        safeTargetCondition.operator(),
+                        safeTargetCondition.value()
+                ) : null,
+                correlationCondition,
+                type,
+                status
         );
         constraints.put(name, constraint);
 
@@ -61,17 +65,32 @@ public class ConstraintService {
 
         // Only create activation detection query if activationEvent is provided
         if (activationEvent != null && !activationEvent.isBlank()) {
-            handler.createDetectionQuery(StatementType.ACTIVATION, name, activationEvent, safeActivationCondition);
-        }
-        
-        // Only create target detection query if targetEvent is provided
-        if (targetEvent != null && !targetEvent.isBlank()) {
-            handler.createDetectionQuery(StatementType.TARGET, name, targetEvent, safeTargetCondition);
+            handler.createDetectionQuery(StatementType.ACTIVATION, name, activationEvent, safeActivationCondition, correlationCondition, relevantKeys);
         }
 
-        handler.createFulfillmentQuery(name);
-        handler.createTemporaryViolationQuery(name);
-        handler.createPermanentViolationQuery(name);
+        // Only create target detection query if targetEvent is provided
+        if (targetEvent != null && !targetEvent.isBlank()) {
+            handler.createDetectionQuery(StatementType.TARGET, name, targetEvent, safeTargetCondition, correlationCondition, relevantKeys);
+        }
+
+        handler.createFulfillmentQuery(name, correlationCondition);
+        handler.createTemporaryViolationQuery(name, correlationCondition);
+        handler.createPermanentViolationQuery(name, correlationCondition);
+    }
+
+    private static Set<String> getRelevantKeys(CorrelationCondition correlationCondition, ConditionRequest safeActivationCondition, ConditionRequest safeTargetCondition) {
+        Set<String> relevantKeys = new java.util.HashSet<>();
+        if (safeActivationCondition.isValid()) {
+            relevantKeys.add(safeActivationCondition.param());
+        }
+        if (safeTargetCondition.isValid()) {
+            relevantKeys.add(safeTargetCondition.param());
+        }
+        if (correlationCondition != null && correlationCondition.isValid()) {
+            relevantKeys.add(correlationCondition.activationParam());
+            relevantKeys.add(correlationCondition.targetParam());
+        }
+        return relevantKeys;
     }
 
     public void addConstraintStatement(String name, String eplId, StatementType eplType, String eplStatement) {

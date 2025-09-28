@@ -2,6 +2,7 @@ package de.ur.service.constraint;
 
 import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
+import de.ur.dao.CorrelationCondition;
 import de.ur.dao.StatementType;
 import de.ur.service.GenericStatusUpdateListener;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,11 +15,15 @@ public class ResponseConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createFulfillmentQuery(String name) {
+    public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM PATTERN [every a=constraintStatus(type='ACTIVATION', name='%s') -> b=constraintStatus(type='TARGET', name='%s')]
                 """.formatted(name, name);
+
+        if (correlation != null && correlation.isValid()) {
+            query = appendCondition(query, correlation.getCorrelationQueryPart());
+        }
 
         var statement = esperService.deployStatements(name, query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, false, constraintService, esperService));
@@ -26,13 +31,12 @@ public class ResponseConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createTemporaryViolationQuery(String name) {
+    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
         String query = """
                 SELECT id, name, type, timestamp
                 FROM constraintStatus
                 WHERE name = '%s' AND type = 'ACTIVATION'
                 """.formatted(name);
-
 
         var statement = esperService.deployStatements(name, query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));

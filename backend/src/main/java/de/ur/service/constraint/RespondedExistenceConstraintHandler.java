@@ -2,6 +2,7 @@ package de.ur.service.constraint;
 
 import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
+import de.ur.dao.CorrelationCondition;
 import de.ur.dao.StatementType;
 import de.ur.service.GenericStatusUpdateListener;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,7 +15,7 @@ public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createFulfillmentQuery(String name) {
+    public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
         String query = """
                 SELECT a.id, a.name, a.type, a.timestamp as timestamp
                 FROM pattern [
@@ -24,6 +25,10 @@ public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
                     )
                 ]
                 """.formatted(name);
+
+        if (correlation != null && correlation.isValid()) {
+            query = appendCondition(query, correlation.getCorrelationQueryPart());
+        }
 
         var statement = esperService.deployStatements(name + "_fulfill", query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
@@ -39,13 +44,17 @@ public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
                 ]
                 """.formatted(name);
 
+        if (correlation != null && correlation.isValid()) {
+            query2 = appendCondition(query2, correlation.getCorrelationQueryPart());
+        }
+
         var statement2 = esperService.deployStatements(name + "_fulfill_after", query2);
         statement2.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
         addConstraintStatement(name, statement2.getDeploymentId(), StatementType.FULFILLMENT, query2);
     }
 
     @Override
-    public void createTemporaryViolationQuery(String name) {
+    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
         String query = """
                 SELECT id, name, type, timestamp
                 FROM constraintStatus
@@ -58,7 +67,7 @@ public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createPermanentViolationQuery(String name) {
+    public void createPermanentViolationQuery(String name, CorrelationCondition correlation) {
         // Responded existence doesn't have a permanent violation
     }
 }

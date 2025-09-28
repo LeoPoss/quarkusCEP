@@ -2,6 +2,7 @@ package de.ur.service.constraint;
 
 import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
+import de.ur.dao.CorrelationCondition;
 import de.ur.dao.StatementType;
 import de.ur.service.GenericStatusUpdateListener;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,7 +15,7 @@ public class ExistenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createFulfillmentQuery(String name) {
+    public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
         String query = """
                 SELECT id, name, type, timestamp
                 FROM constraintStatus
@@ -27,7 +28,7 @@ public class ExistenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createTemporaryViolationQuery(String name) {
+    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
         // No temporary violation for existence constraint
     }
 }

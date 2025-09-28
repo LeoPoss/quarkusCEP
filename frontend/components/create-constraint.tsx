@@ -26,26 +26,43 @@ export default function CreateConstraint() {
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData);
 
+    // Prepare the request payload
+    const payload: any = {
+      name: data.name,
+      activationEvent: data.activationEvent,
+      targetEvent: data.targetEvent,
+    };
+
+    // Add activation condition if MP-Declare is enabled and not an existence constraint
+    if (isMPDeclareEnabled && data.type !== 'existence') {
+      payload.activationCondition = {
+        param: data.activationParam,
+        operator: data.activationOperator,
+        value: data.activationValue,
+      };
+
+      // Add target condition if fields are filled
+      if (data.targetParam && data.targetOperator && data.targetValue) {
+        payload.targetCondition = {
+          param: data.targetParam,
+          operator: data.targetOperator,
+          value: data.targetValue,
+        };
+      }
+
+      // Add correlation condition if all fields are filled
+      if (data.correlationActivationParam && data.correlationOperator && data.correlationTargetParam) {
+        payload.correlationCondition = {
+          activationParam: data.correlationActivationParam,
+          operator: data.correlationOperator,
+          targetParam: data.correlationTargetParam
+        };
+      }
+    }
+
     ky.post(
-      "http://localhost:8080/constraints/" +
-        (data.type as string).toLowerCase(),
-      {
-        json: {
-          name: data.name,
-          activationEvent: data.activationEvent,
-          targetEvent: data.targetEvent,
-          activationCondition: {
-            param: data.activationParam,
-            operator: data.activationOperator,
-            value: data.activationValue,
-          },
-          targetCondition: {
-            param: data.targetParam,
-            operator: data.targetOperator,
-            value: data.targetValue,
-          },
-        },
-      },
+      `http://localhost:8080/constraints/${(data.type as string).toLowerCase()}`,
+      { json: payload }
     );
     setErrors({});
   };

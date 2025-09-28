@@ -14,6 +14,7 @@ public class Constraint {
     private ConstraintCondition activationCondition;
     private String targetEvent;
     private ConstraintCondition targetCondition;
+    private CorrelationCondition correlationCondition;
     private ConstraintType type;
     private ConstraintStatus status;
 
