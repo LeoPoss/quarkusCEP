@@ -1,5 +1,9 @@
 import { Card, CardBody, CardHeader, Chip, Spinner } from "@heroui/react";
-import { CheckCircleIcon, CompassRoseIcon, XCircleIcon } from "@phosphor-icons/react";
+import {
+  CheckCircleIcon,
+  CompassRoseIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import ky from "ky";

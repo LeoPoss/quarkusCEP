@@ -33,8 +33,8 @@ export default function CreateConstraint() {
       targetEvent: data.targetEvent,
     };
 
-    // Add activation condition if MP-Declare is enabled and not an existence constraint
-    if (isMPDeclareEnabled && data.type !== "existence") {
+    // Add activation condition if MP-Declare is enabled
+    if (isMPDeclareEnabled) {
       payload.activationCondition = {
         param: data.activationParam,
         operator: data.activationOperator,

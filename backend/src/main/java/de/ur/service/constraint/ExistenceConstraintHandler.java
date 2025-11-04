@@ -22,6 +22,10 @@ public class ExistenceConstraintHandler extends BaseConstraintHandler {
                 WHERE name = '%s' AND type = 'TARGET'
                 """.formatted(name);
 
+        if (correlation != null && correlation.isValid()) {
+            query = appendCondition(query, correlation.getCorrelationQueryPart());
+        }
+
         var statement = esperService.deployStatements(name, query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, false, constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
