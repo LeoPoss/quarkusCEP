@@ -71,8 +71,8 @@ export default function SendEvent() {
   return (
     <Card>
       <CardHeader className={cardHeader()}>
-        <PaperPlaneTiltIcon className="mr-4" size={24} />
-        Send Event
+        <PaperPlaneTiltIcon className="mr-4" size={32} />
+        Send Event/Complete Task
       </CardHeader>
       <CardBody>
         <div className="grid gap-4  h-full">

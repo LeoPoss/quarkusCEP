@@ -1,12 +1,12 @@
 import React from "react";
 import { Button, Card, CardBody, CardHeader, Form, Input } from "@heroui/react";
 import ky from "ky";
-import { PlusIcon } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
 
 import { cardHeader } from "./primitives";
 
 import { useMPDeclare } from "@/contexts/mpDeclareContext";
+import { FilePlusIcon } from "@phosphor-icons/react";
 
 const DynamicFormFields = dynamic(
   () => import("./create-constraint-form-fields"),
@@ -34,7 +34,7 @@ export default function CreateConstraint() {
     };
 
     // Add activation condition if MP-Declare is enabled and not an existence constraint
-    if (isMPDeclareEnabled && data.type !== 'existence') {
+    if (isMPDeclareEnabled && data.type !== "existence") {
       payload.activationCondition = {
         param: data.activationParam,
         operator: data.activationOperator,
@@ -51,18 +51,22 @@ export default function CreateConstraint() {
       }
 
       // Add correlation condition if all fields are filled
-      if (data.correlationActivationParam && data.correlationOperator && data.correlationTargetParam) {
+      if (
+        data.correlationActivationParam &&
+        data.correlationOperator &&
+        data.correlationTargetParam
+      ) {
         payload.correlationCondition = {
           activationParam: data.correlationActivationParam,
           operator: data.correlationOperator,
-          targetParam: data.correlationTargetParam
+          targetParam: data.correlationTargetParam,
         };
       }
     }
 
     ky.post(
       `http://localhost:8080/constraints/${(data.type as string).toLowerCase()}`,
-      { json: payload }
+      { json: payload },
     );
     setErrors({});
   };
@@ -70,7 +74,7 @@ export default function CreateConstraint() {
   return (
     <Card>
       <CardHeader className={cardHeader()}>
-        <PlusIcon className="w-6 h-6 mr-4" /> Create new Constraint
+        <FilePlusIcon className="mr-4" size={32} /> Create new Constraint
       </CardHeader>
       <Form
         className="space-y-4"

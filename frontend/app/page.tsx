@@ -17,23 +17,23 @@ export default function Home() {
   return (
     <section className="flex flex-col gap-4">
       <h2 className={title()}>Synergistic CEP for MP-Declare</h2>
-      <div className="flex items-center gap-2 bg-gradient-to-br from-primary-200 via-transparent p-2 w-fit">
-        <Chip color="primary">MP-Declare</Chip>
-        <Switch
-          checked={isMPDeclareEnabled}
-          color="primary"
-          size="sm"
-          onChange={toggleMPDeclare}
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2 space-y-4">
-          <CreateConstraint />
-          <SendEvent />
-        </div>
-        <div className="md:col-span-1">
           <AnalysisPanel />
         </div>
+        <div className="flex items-center col-span-2 gap-2 bg-gradient-to-br from-primary-200 via-transparent p-2 w-fit">
+          <Chip color="primary">MP-Declare</Chip>
+          <Switch
+            checked={isMPDeclareEnabled}
+            color="primary"
+            size="sm"
+            onChange={toggleMPDeclare}
+          />
+        </div>
+        <CreateConstraint />
+        <SendEvent />
+        <div className="md:col-span-1 space-y-4"></div>
       </div>
 
       <h2 className={subtitle()}>Current constraints</h2>

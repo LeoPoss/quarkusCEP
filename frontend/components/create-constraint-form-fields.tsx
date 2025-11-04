@@ -16,6 +16,13 @@ export default function FormFields({
     <>
       <Select
         isRequired
+        disabledKeys={[
+          "alternateResponse",
+          "chainResponse",
+          "alternatePrecedence",
+          "chainPrecedence",
+          "notPrecedence",
+        ]}
         label="Type"
         name="type"
         size="sm"
@@ -28,25 +35,17 @@ export default function FormFields({
         <SelectSection title="Relation Constraints">
           <SelectItem key="respondedExistence">Responded Existence</SelectItem>
           <SelectItem key="response">Response</SelectItem>
-          <SelectItem isDisabled key="alternateResponse">
-            Alternate Response
-          </SelectItem>
-          <SelectItem isDisabled key="chainResponse">
-            Chain Response
-          </SelectItem>
+          <SelectItem key="alternateResponse">Alternate Response</SelectItem>
+          <SelectItem key="chainResponse">Chain Response</SelectItem>
           <SelectItem key="precedence">Precedence</SelectItem>
-          <SelectItem isDisabled key="alternatePrecedence">
+          <SelectItem key="alternatePrecedence">
             Alternate Precedence
           </SelectItem>
-          <SelectItem isDisabled key="chainPrecedence">
-            Chain Precedence
-          </SelectItem>
+          <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>
         </SelectSection>
         <SelectSection title="Negative Relation Constraints">
           <SelectItem key="notResponse">Not Response</SelectItem>
-          <SelectItem isDisabled key="notPrecedence">
-            Not Precedence
-          </SelectItem>
+          <SelectItem key="notPrecedence">Not Precedence</SelectItem>
         </SelectSection>
       </Select>
       <Input
