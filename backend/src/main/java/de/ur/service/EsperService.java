@@ -7,7 +7,9 @@ import com.espertech.esper.compiler.client.CompilerArguments;
 import com.espertech.esper.compiler.client.EPCompiler;
 import com.espertech.esper.compiler.client.EPCompilerProvider;
 import com.espertech.esper.runtime.client.*;
+import de.ur.dao.EndTestEvent;
 import de.ur.dao.GenericEvent;
+import de.ur.dao.StartTestEvent;
 import de.ur.dao.StatementType;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -44,6 +46,19 @@ public class EsperService {
         runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
         log.info("Esper runtime initialized");
 
+//        try {
+//            CompilerArguments args = new CompilerArguments();
+//            args.getPath().add(runtime.getRuntimePath());
+//
+//            args.getOptions()
+//                    .setAccessModifierEventType(env -> NameAccessModifier.PUBLIC);
+//            EPCompiled compiled = compiler.compile("CREATE CONTEXT TestContext START StartTestEvent END EndTestEvent", args);
+//
+//            EPDeployment deployment = runtime.getDeploymentService()
+//                    .deploy(compiled);
+//        } catch (Exception e) {
+//            log.error("Error while trying to deploy context", e);
+//        }
 
         CompilerArguments compilerArgs = new CompilerArguments();
         compilerArgs.getPath().add(runtime.getRuntimePath());
@@ -58,8 +73,18 @@ public class EsperService {
 
     private void configureEventTypes(Configuration configuration) {
         configuration.getCommon().addEventType(GenericEvent.class);
+        configuration.getCommon().addEventType("StartTestEvent", StartTestEvent.class);
+        configuration.getCommon().addEventType("EndTestEvent", EndTestEvent.class);
     }
 
+
+    public EPStatement deployStatements(String name, String query, String contextName) {
+        var prefixedQuery = query;
+        if (contextName != null && !contextName.trim().isEmpty()) {
+            prefixedQuery = "CONTEXT " + contextName + " " + query;
+        }
+        return deployStatements(name, prefixedQuery);
+    }
 
     public EPStatement deployStatements(String name, String query) {
         try {

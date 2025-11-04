@@ -8,8 +8,7 @@ import jakarta.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @ApplicationScoped
@@ -21,6 +20,9 @@ public class ConstraintService {
 
     @Getter
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
+
+    @Getter
+    private ConcurrentHashMap<String, ConcurrentHashMap<String, Map<String, String>>> constraintByEventTest = new ConcurrentHashMap<>();
 
     public org.slf4j.Logger getLogger() {
         return log;

@@ -28,7 +28,7 @@ public class NotResponseConstraintHandler extends BaseConstraintHandler {
     @Override
     public void createPermanentViolationQuery(String name, CorrelationCondition correlation) {
         String query = """
-                SELECT b.id, b.name, b.type, b.timestamp as timestamp
+                SELECT b.id as id, b.name as name, b.type as type, b.timestamp as timestamp, b.test as test
                 FROM PATTERN [
                     every a=constraintStatus(type='ACTIVATION', name='%s')
                     -> b=constraintStatus(type='TARGET', name='%s')
@@ -40,7 +40,9 @@ public class NotResponseConstraintHandler extends BaseConstraintHandler {
         }
 
         var statement = esperService.deployStatements(name + "_perm_vio", query);
+       // var statement2 = esperService.deployStatements(name + "_perm_vio", query, "TestContext");
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
+      //  statement2.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, false, constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }
 }

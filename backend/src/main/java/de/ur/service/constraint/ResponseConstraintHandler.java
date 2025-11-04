@@ -17,7 +17,7 @@ public class ResponseConstraintHandler extends BaseConstraintHandler {
     @Override
     public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
         String query = """
-                SELECT b.id, b.name, b.type, b.timestamp as timestamp
+                SELECT b.id as id, b.name as name, b.type as type, b.timestamp as timestamp, b.test as test
                 FROM PATTERN [every a=constraintStatus(type='ACTIVATION', name='%s') -> b=constraintStatus(type='TARGET', name='%s')]
                 """.formatted(name, name);
 
@@ -33,7 +33,7 @@ public class ResponseConstraintHandler extends BaseConstraintHandler {
     @Override
     public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
         String query = """
-                SELECT id, name, type, timestamp
+                SELECT id, name, type, timestamp, test
                 FROM constraintStatus
                 WHERE name = '%s' AND type = 'ACTIVATION'
                 """.formatted(name);

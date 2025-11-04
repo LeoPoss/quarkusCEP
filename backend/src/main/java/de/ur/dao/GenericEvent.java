@@ -11,5 +11,6 @@ public class GenericEvent {
     private String id;
     private String eventType;
     private long timestamp;
+    private boolean test;
     private Map<String, String> payload;
 }

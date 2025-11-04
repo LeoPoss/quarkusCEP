@@ -65,8 +65,8 @@ public class EsperResource {
     public Response sendEvent(Map<String, Object> event) {
         try {
             log.info("Received event: {}", event);
-            processSingleEvent(event);
-            return Response.ok(Map.of("status", "Event sent successfully")).build();
+            var createdEvent = processSingleEvent(event);
+            return Response.ok(createdEvent).build();
         } catch (Exception e) {
             log.error("Failed to send event", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -96,7 +96,7 @@ public class EsperResource {
         }
     }
 
-    private void processSingleEvent(Map<String, Object> event) {
+    private GenericEvent processSingleEvent(Map<String, Object> event) {
         Map<String, String> payload = null;
         Object payloadObj = event.get("payload");
 
@@ -108,14 +108,55 @@ public class EsperResource {
                     ));
         }
 
+        boolean isTest = event.get("test") != null && Boolean.parseBoolean(event.get("test").toString());
+        String eventUuid = UUID.randomUUID().toString();
+
         GenericEvent genericEvent = new GenericEvent(
-                UUID.randomUUID().toString(),
+                eventUuid,
                 String.valueOf(event.get("eventType")),
                 System.nanoTime(),
+                isTest,
                 payload
         );
 
         esperService.sendEvent(genericEvent);
+
+        return genericEvent;
+    }
+
+    @POST
+    @Path("/testEvent")
+    public Response testEvent(Map<String, Object> event) {
+        log.info("Received TEST event: {}", event);
+        var sentEvent = processSingleEvent(event);
+        var testEventId = sentEvent.getId();
+
+        try {
+            // Wait for all listeners to (hopefully) finish
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        var eventResults = constraintService.getConstraintByEventTest().get(testEventId);
+
+        var isPermanentlyViolated = false;
+
+        if (eventResults != null) {
+            isPermanentlyViolated = eventResults.values().stream()
+                    .flatMap(constraint -> constraint.values().stream())
+                    .anyMatch("PERMANENT_VIOLATION"::equals);
+        }
+
+        if (isPermanentlyViolated) {
+            // Event execution should be blocked
+            System.out.println("TEST FAILED: Event " + testEventId + " would cause a PERMANENT_VIOLATION.");
+        } else {
+            // Event execution is safe (relative to permanent violations)
+            System.out.println("TEST PASSED: Event " + testEventId + " is safe.");
+        }
+
+        return Response.ok(isPermanentlyViolated).build();
     }
 
     @POST

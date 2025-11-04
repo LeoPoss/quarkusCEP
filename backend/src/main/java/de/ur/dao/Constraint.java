@@ -25,6 +25,22 @@ public class Constraint {
         this.status = status;
     }
 
+    public Constraint(Constraint original) {
+        this.name = original.name;
+        this.activationEvent = original.activationEvent;
+        this.targetEvent = original.targetEvent;
+        this.type = original.type;
+        this.status = original.status;
+
+        this.eplStatements = (original.eplStatements != null)
+                ? new ArrayList<>(original.eplStatements)
+                : null;
+
+        this.activationCondition = original.activationCondition;
+        this.targetCondition = original.targetCondition;
+        this.correlationCondition = original.correlationCondition;
+    }
+
     public void updateStatus(ConstraintStatus status, ConstraintType type) {
         switch (type) {
             case ALTERNATE_PRECEDENCE:

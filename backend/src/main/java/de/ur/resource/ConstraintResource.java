@@ -25,6 +25,12 @@ public class ConstraintResource {
         return Response.ok(constraintService.getConstraints().values()).build();
     }
 
+    @GET
+    @Path("/test")
+    public Response getTestedConstraints() {
+        return Response.ok(constraintService.getConstraintByEventTest().entrySet()).build();
+    }
+
 
     @POST
     @Path("/existence")

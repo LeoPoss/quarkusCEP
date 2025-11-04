@@ -30,6 +30,7 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
         selectClause.add("'" + name + "' as name");
         selectClause.add("'" + type + "' as type");
         selectClause.add("timestamp");
+        selectClause.add("test");
         for (String key : relevantKeys) {
             selectClause.add("payload('" + key + "') as " + key);
         }
