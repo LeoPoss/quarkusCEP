@@ -5,11 +5,11 @@ import com.espertech.esper.runtime.client.EPStatement;
 import de.ur.dao.GenericEvent;
 import de.ur.service.ConstraintService;
 import de.ur.service.EsperService;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,13 +23,10 @@ import java.util.stream.Collectors;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Slf4j
+@RequiredArgsConstructor
 public class EsperResource {
-
-    @Inject
-    EsperService esperService;
-
-    @Inject
-    ConstraintService constraintService;
+    private final EsperService esperService;
+    private final ConstraintService constraintService;
 
     @GET
     public Response getDeployments() {
@@ -128,6 +125,7 @@ public class EsperResource {
                 payload
         );
 
+        // TODO Fix for MP, KnownEvents must include the payload or move up
         if (constraintService.getKnownEvents().contains(eventType)) {
             constraintService.getTrace().add(eventType);
         }

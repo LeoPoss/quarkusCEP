@@ -1,4 +1,4 @@
-package de.ur.resource;
+package de.ur.service;
 
 import de.ur.dao.Constraint;
 import de.ur.dao.ConstraintStatus;
@@ -10,10 +10,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static de.ur.dao.ConstraintStatus.*;
+import static de.ur.dao.ConstraintType.CHAIN_RESPONSE;
 
 @ApplicationScoped
 @Slf4j
-public class WhatIfAnalyzer {
+public class AnalyzerService {
 
     public Map<String, Object> checkFinishability(List<Constraint> constraints) {
         List<String> reasons = new ArrayList<>();
@@ -113,9 +114,17 @@ public class WhatIfAnalyzer {
         List<String> actEvents = getEventsFromField(constraint.getActivationEvent());
         List<String> trgEvents = getEventsFromField(constraint.getTargetEvent());
 
-        // If the event is not relevant to this constraint, status doesn't change
-        if (!actEvents.contains(event) && !trgEvents.contains(event)) {
-            return currentStatus;
+        boolean isDirectlyRelevant = actEvents.contains(event) || trgEvents.contains(event);
+
+        if (!isDirectlyRelevant) {
+            // Event is not A or C.
+            // Is it an active CHAIN_RESPONSE? If so, it's a potential violation.
+            if (cType == CHAIN_RESPONSE && TEMPORARY_VIOLATION.equals(currentStatus)) {
+                // This is Event 'B'. We must let the switch logic handle it.
+            } else {
+                // For all other constraints, this event is truly irrelevant.
+                return currentStatus;
+            }
         }
 
         switch (cType) {
@@ -130,7 +139,6 @@ public class WhatIfAnalyzer {
 
             // --- Response Family ---
             case RESPONSE:
-            case RESPONDED_EXISTENCE:
             case ALTERNATE_RESPONSE:
                 if (INIT.equals(currentStatus) && actEvents.contains(event))
                     return TEMPORARY_VIOLATION;
@@ -138,15 +146,56 @@ public class WhatIfAnalyzer {
                     return FULFILLED;
                 break;
 
-            case CHAIN_RESPONSE:
-                if (INIT.equals(currentStatus) && actEvents.contains(event))
-                    return TEMPORARY_VIOLATION;
+            case RESPONDED_EXISTENCE:
+                // This logic works both ways (past or future)
+                if (INIT.equals(currentStatus)) {
+                    if (actEvents.contains(event)) { // Event 'A' happens
+                        if (traceContainsAny(trace, trgEvents)) { // Checks if 'B' is in trace
+                            // 'B' is in trace, net result is FULFILLED
+                            return FULFILLED;
+                        } else {
+                            // 'B' is not in trace, net result is TEMPORARY_VIOLATION
+                            return TEMPORARY_VIOLATION;
+                        }
+                    }
+                }
+
                 if (TEMPORARY_VIOLATION.equals(currentStatus)) {
-                    return trgEvents.contains(event) ? FULFILLED : PERMANENT_VIOLATION;
+                    // This status means 'A' happened, and we are waiting for 'B'.
+                    if (trgEvents.contains(event)) {
+                        return FULFILLED;
+                    }
+                    // Another 'A' just re-triggers the violation state.
+                    if (actEvents.contains(event)) {
+                        return TEMPORARY_VIOLATION;
+                    }
                 }
                 break;
 
-            // --- Precedence Family (UPDATED) ---
+            case CHAIN_RESPONSE:
+                if (INIT.equals(currentStatus)) {
+                    if (actEvents.contains(event))
+                        return TEMPORARY_VIOLATION;
+
+                } else if (TEMPORARY_VIOLATION.equals(currentStatus)) {
+                    // We are in the "immediate" window, waiting for Target 'C'.
+
+                    // 1. Is it the Target ('C')?
+                    if (trgEvents.contains(event)) {
+                        return FULFILLED; // SAFE
+                    }
+
+                    // 2. Is it another Activation ('A')?
+                    if (actEvents.contains(event)) {
+                        return TEMPORARY_VIOLATION; // SAFE (re-activates)
+                    }
+
+                    // 3. Is it anything else? ('B', 'D', etc.)
+                    // This is the chain-breaking violation.
+                    return PERMANENT_VIOLATION; // UNSAFE
+                }
+                break;
+
             case PRECEDENCE:
             case ALTERNATE_PRECEDENCE:
                 if (INIT.equals(currentStatus)) {
@@ -197,19 +246,61 @@ public class WhatIfAnalyzer {
 
             // --- Negative Relations ---
             case NOT_RESPONSE:
-                if (INIT.equals(currentStatus) && trgEvents.contains(event))
-                    return PERMANENT_VIOLATION; // This only works if actEvent is null/empty
+                if (INIT.equals(currentStatus)) {
+                    if (actEvents.contains(event)) {
+                        return TEMPORARY_VIOLATION;
+                    }
+                    if (trgEvents.contains(event)) {
+                        if (traceContainsAny(trace, actEvents)) {
+                            return PERMANENT_VIOLATION;
+                        }
+                        return INIT;
+                    }
+                }
+
+                if (TEMPORARY_VIOLATION.equals(currentStatus)) {
+                    if (trgEvents.contains(event)) {
+                        return PERMANENT_VIOLATION;
+                    }
+                }
                 break;
 
             case NOT_PRECEDENCE:
                 if (INIT.equals(currentStatus)) {
-                    if (actEvents.contains(event))
-                        return TEMPORARY_VIOLATION; // A happened, B is now forbidden
-                    if (trgEvents.contains(event))
-                        return FULFILLED; // B happened without A, which is good
+                    if (trgEvents.contains(event)) {
+                        // --- TRACE-AWARE LOGIC ---
+                        // This is Event 'B' (target). We must check the trace for 'A' (activation).
+                        boolean activationEventExists = traceContainsAny(trace, actEvents);
+
+                        if (activationEventExists) {
+                            // 'A' IS in the trace. 'B' happened *after* 'A'.
+                            // This is the violation.
+                            return PERMANENT_VIOLATION;
+                        } else {
+                            // 'A' IS NOT in the trace. 'B' happened *without* 'A' before it.
+                            // This is the "good" path.
+                            return FULFILLED;
+                        }
+                    }
+                    if (actEvents.contains(event)) {
+                        // This is Event 'A'. It doesn't cause a violation yet,
+                        // but it "arms" the constraint. We use TEMPORARY_VIOLATION
+                        // to represent this "armed" state.
+                        return TEMPORARY_VIOLATION;
+                    }
                 }
-                if (TEMPORARY_VIOLATION.equals(currentStatus) && trgEvents.contains(event))
-                    return PERMANENT_VIOLATION;
+
+                if (TEMPORARY_VIOLATION.equals(currentStatus)) {
+                    // This status means 'A' has already happened (the rule is "armed").
+                    if (trgEvents.contains(event)) {
+                        // Event 'B' happens *after* 'A'. This is the violation.
+                        return PERMANENT_VIOLATION;
+                    }
+                    if (actEvents.contains(event)) {
+                        // Another 'A' event just keeps the rule "armed".
+                        return TEMPORARY_VIOLATION;
+                    }
+                }
                 break;
         }
 

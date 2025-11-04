@@ -7,6 +7,7 @@ import { Chip } from "@heroui/chip";
 import ConstraintsOverview from "@/components/constraints";
 import CreateConstraint from "@/components/create-constraint";
 import SendEvent from "@/components/send-event";
+import AnalysisPanel from "@/components/analysis-panel";
 import { useMPDeclare } from "@/contexts/mpDeclareContext";
 import { subtitle, title } from "@/components/primitives";
 
@@ -25,11 +26,14 @@ export default function Home() {
           onChange={toggleMPDeclare}
         />
       </div>
-      <div className="grid grid-cols-3 gap-8">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-2 space-y-4">
           <CreateConstraint />
+          <SendEvent />
         </div>
-        <SendEvent />
+        <div className="md:col-span-1">
+          <AnalysisPanel />
+        </div>
       </div>
 
       <h2 className={subtitle()}>Current constraints</h2>

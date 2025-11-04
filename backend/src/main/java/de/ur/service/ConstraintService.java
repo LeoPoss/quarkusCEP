@@ -26,7 +26,6 @@ public class ConstraintService {
     @Getter
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
 
-
     @Getter
     private List<String> trace = new ArrayList<>();
 
