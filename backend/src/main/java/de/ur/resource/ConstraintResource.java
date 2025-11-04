@@ -43,6 +43,22 @@ public class ConstraintResource {
     }
 
     @POST
+    @Path("/notexistence")
+    public Response createNotExistenceConstraint(ConstraintRequest request) {
+        constraintService.setupConstraint(
+                ConstraintType.NOT_EXISTENCE,
+                request.name(),
+                request.activationEvent(),
+                request.activationCondition(),
+                request.targetEvent(),
+                request.targetCondition(),
+                request.correlationCondition(),
+                ConstraintStatus.INIT
+        );
+        return Response.created(URI.create(request.name())).build();
+    }
+
+    @POST
     @Path("/response")
     public Response createResponseConstraint(ConstraintRequest request) {
         constraintService.setupConstraint(

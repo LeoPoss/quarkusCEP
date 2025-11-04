@@ -36,6 +36,18 @@ public class EsperResource {
         return Response.ok(esperService.getRuntime().getDeploymentService().getDeployments()).build();
     }
 
+    @GET
+    @Path("/trace")
+    public Response getTrace() {
+        return Response.ok(constraintService.getTrace()).build();
+    }
+
+    @GET
+    @Path("/knownEvents")
+    public Response getKnownEvents() {
+        return Response.ok(constraintService.getKnownEvents()).build();
+    }
+
     @POST
     @Path("/deploy")
     public Response deployStatement(DeployStatementRequest request) {
@@ -108,12 +120,17 @@ public class EsperResource {
                     ));
         }
 
+        String eventType = String.valueOf(event.get("eventType"));
         GenericEvent genericEvent = new GenericEvent(
                 UUID.randomUUID().toString(),
-                String.valueOf(event.get("eventType")),
+                eventType,
                 System.nanoTime(),
                 payload
         );
+
+        if (constraintService.getKnownEvents().contains(eventType)) {
+            constraintService.getTrace().add(eventType);
+        }
 
         esperService.sendEvent(genericEvent);
     }
@@ -124,6 +141,7 @@ public class EsperResource {
         try {
             esperService.reset();
             constraintService.resetConstraints();
+            constraintService.getTrace().clear();
             return Response.ok(Map.of(
                     "status", "Esper engine has been reset and reinitialized",
                     "timestamp", java.time.Instant.now()

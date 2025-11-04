@@ -9,8 +9,12 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @ApplicationScoped
 @Slf4j
@@ -22,9 +26,24 @@ public class ConstraintService {
     @Getter
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
 
+
+    @Getter
+    private List<String> trace = new ArrayList<>();
+
     public org.slf4j.Logger getLogger() {
         return log;
     }
+
+    public Set<String> getKnownEvents() {
+        return getConstraints().values().stream()
+                .flatMap(constraint -> Stream.of(
+                        constraint.getActivationEvent(),
+                        constraint.getTargetEvent()
+                ))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
 
     public void resetConstraints() {
         constraints.clear();

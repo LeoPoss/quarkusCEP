@@ -23,6 +23,7 @@ export default function FormFields({
       >
         <SelectSection title="Existence Constraints">
           <SelectItem key="existence">Existence</SelectItem>
+          <SelectItem key="notexistence">NotExistence</SelectItem>
         </SelectSection>
         <SelectSection title="Relation Constraints">
           <SelectItem key="respondedExistence">Responded Existence</SelectItem>
@@ -41,8 +42,12 @@ export default function FormFields({
         </SelectSection>
       </Select>
       <Input
-        isDisabled={constraintType === "existence"}
-        isRequired={constraintType !== "existence"}
+        isDisabled={
+          constraintType === "existence" || constraintType === "notexistence"
+        }
+        isRequired={
+          constraintType !== "existence" && constraintType !== "notexistence"
+        }
         label="Activation Event"
         name="activationEvent"
         size="sm"
