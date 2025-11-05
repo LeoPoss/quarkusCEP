@@ -125,9 +125,9 @@ public class EsperResource {
                 payload
         );
 
-        // TODO Fix for MP, KnownEvents must include the payload or move up
+        // Add to trace if this is a known event type
         if (constraintService.getKnownEvents().contains(eventType)) {
-            constraintService.getTrace().add(eventType);
+            constraintService.addToTrace(eventType, payload);
         }
 
         esperService.sendEvent(genericEvent);

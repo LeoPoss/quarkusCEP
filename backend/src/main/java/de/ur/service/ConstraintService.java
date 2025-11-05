@@ -8,10 +8,7 @@ import jakarta.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,7 +24,7 @@ public class ConstraintService {
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
 
     @Getter
-    private List<String> trace = new ArrayList<>();
+    private List<Map<String, Object>> trace = new ArrayList<>();
 
     public org.slf4j.Logger getLogger() {
         return log;
@@ -41,6 +38,13 @@ public class ConstraintService {
                 ))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+    }
+    
+    public void addToTrace(String eventType, Map<String, String> payload) {
+        Map<String, Object> traceEvent = new HashMap<>();
+        traceEvent.put("eventType", eventType);
+        traceEvent.put("payload", payload != null ? new HashMap<>(payload) : null);
+        trace.add(traceEvent);
     }
 
 

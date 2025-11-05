@@ -1,5 +1,6 @@
 package de.ur.resource;
 
+import de.ur.dto.AllowedTaskResponse;
 import de.ur.dto.FinishabilityResponse;
 import de.ur.dto.TaskAnalysisResponse;
 import de.ur.service.AnalyzerService;
@@ -33,11 +34,8 @@ public class AnalysisResource {
                 constraintService.getKnownEvents(),
                 constraintService.getTrace()
         );
-
-        var response = taskAnalysis.entrySet().stream()
-                .map(entry -> new TaskAnalysisResponse(entry.getKey(), entry.getValue()))
-                .toList();
-        return Response.ok(response).build();
+        
+        return Response.ok(taskAnalysis).build();
     }
 
     @GET
