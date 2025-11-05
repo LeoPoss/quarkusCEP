@@ -18,7 +18,6 @@ export default function FormFields({
         isRequired
         disabledKeys={[
           "alternateResponse",
-          "chainResponse",
           "alternatePrecedence",
           "chainPrecedence",
           "notPrecedence",
