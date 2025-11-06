@@ -37,6 +37,8 @@ dependencies {
 
     testCompileOnly("org.projectlombok:lombok:$lombokVersion")
     testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
+
+    implementation("org.jspecify:jspecify:1.0.0")
 }
 
 group = "de.ur"
