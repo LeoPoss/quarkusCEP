@@ -1,9 +1,10 @@
 package de.ur.service;
 
 import de.ur.dao.Constraint;
-import de.ur.dao.ConstraintCondition;
 import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
+import de.ur.dao.ConstraintCondition;
+import de.ur.dao.Event;
 import de.ur.dto.AllowedTaskResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,8 @@ import static de.ur.dao.ConstraintType.*;
 @ApplicationScoped
 @Slf4j
 public class AnalyzerService {
+    // In-memory storage for the most recent signal values
+    private final Map<String, Map<String, String>> signalStates = new HashMap<>();
     public Map<String, Object> checkFinishability(List<Constraint> constraints) {
         List<String> reasons = constraints.stream().filter(constraint -> {
             ConstraintStatus status = constraint.getStatus();
@@ -43,8 +46,8 @@ public class AnalyzerService {
                 return !FULFILLED.equals(currentStatus) && !PERMANENT_VIOLATION.equals(currentStatus);
             }).filter(constraint -> {
                 // Check if this event is relevant to the constraint
-                List<String> actEvents = getEventsFromField(constraint.getActivationEvent());
-                List<String> trgEvents = getEventsFromField(constraint.getTargetEvent());
+                List<String> actEvents = getEventsFromField(constraint.getActivationEvent() != null ? constraint.getActivationEvent().name() : null);
+                List<String> trgEvents = getEventsFromField(constraint.getTargetEvent().name() != null ? constraint.getTargetEvent().name() : null);
                 return actEvents.contains(event) || trgEvents.contains(event);
             }).toList();
 
@@ -62,13 +65,13 @@ public class AnalyzerService {
                     Map<String, String> conditions = new HashMap<>();
 
                     // Check if it's an activation or target event and get the corresponding condition
-                    List<String> actEvents = getEventsFromField(constraint.getActivationEvent());
+                    List<String> actEvents = getEventsFromField(constraint.getActivationEvent().name());
                     if (actEvents.contains(event) && constraint.getActivationCondition() != null) {
                         var cond = constraint.getActivationCondition();
                         conditions.put(cond.param(), cond.operator() + " " + cond.value());
                     }
 
-                    List<String> trgEvents = getEventsFromField(constraint.getTargetEvent());
+                    List<String> trgEvents = getEventsFromField(constraint.getTargetEvent().name());
                     if (trgEvents.contains(event) && constraint.getTargetCondition() != null) {
                         var cond = constraint.getTargetCondition();
                         conditions.put(cond.param(), cond.operator() + " " + cond.value());
@@ -85,6 +88,27 @@ public class AnalyzerService {
         }).collect(Collectors.toList());
     }
 
+    /**
+     * Updates the current state of a signal event.
+     * @param signalName The name of the signal
+     * @param payload The current payload/values of the signal
+     */
+    public void updateSignalState(String signalName, Map<String, String> payload) {
+        if (signalName != null && payload != null) {
+            signalStates.put(signalName, new HashMap<>(payload));
+            log.debug("Updated signal state for '{}': {}", signalName, payload);
+        }
+    }
+    
+    /**
+     * Gets the current state of a signal.
+     * @param signalName The name of the signal
+     * @return The current payload of the signal, or null if not found
+     */
+    public Map<String, String> getSignalState(String signalName) {
+        return signalStates.get(signalName);
+    }
+
     private ConstraintStatus getStatusOrInit(Constraint constraint) {
         return constraint.getStatus() != null ? constraint.getStatus() : INIT;
     }
@@ -93,11 +117,45 @@ public class AnalyzerService {
         if (eventField == null || eventField.trim().isEmpty()) {
             return Collections.emptyList();
         }
-        return Arrays.stream(eventField.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toList());
+        return Arrays.stream(eventField.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Gets event names from an Event object.
+     */
+    private List<String> getEventNames(Event event) {
+        if (event == null || event.name() == null) {
+            return Collections.emptyList();
+        }
+        return List.of(event.name());
     }
 
-    private boolean checkEventsWithConditions(List<Map<String, Object>> trace, List<String> eventsToFind, ConstraintCondition condition) {
-        if (trace.isEmpty() || eventsToFind == null || eventsToFind.isEmpty()) {
+    private boolean checkEventsWithConditions(List<Map<String, Object>> trace, 
+                                           List<String> eventsToFind,
+                                           ConstraintCondition condition,
+                                           Event eventInfo) {
+        if (eventsToFind == null || eventsToFind.isEmpty()) {
+            return false;
+        }
+        
+        // If it's a signal event, check current signal state
+        if (eventInfo != null && eventInfo.type() == Event.EventType.SIGNAL) {
+            for (String eventName : eventsToFind) {
+                Map<String, String> signalState = getSignalState(eventName);
+                if (signalState != null) {
+                    if (condition == null || matchesCondition(condition, signalState)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        // For task events, check the trace
+        if (trace.isEmpty()) {
             return false;
         }
 
@@ -106,7 +164,7 @@ public class AnalyzerService {
             if (eventsToFind.contains(eventType)) {
                 // If there's a condition, check if it matches the payload
                 if (condition != null) {
-
+                    @SuppressWarnings("unchecked")
                     Map<String, String> payload = (Map<String, String>) event.get("payload");
                     if (payload == null || !matchesCondition(condition, payload)) {
                         continue;
@@ -174,24 +232,49 @@ public class AnalyzerService {
         ConstraintType cType = constraint.getType();
         ConstraintStatus currentStatus = getStatusOrInit(constraint);
 
-        List<String> actEvents = getEventsFromField(constraint.getActivationEvent());
-        List<String> trgEvents = getEventsFromField(constraint.getTargetEvent());
+        List<String> actEvents = getEventsFromField(constraint.getActivationEvent().name());
+        List<String> trgEvents = getEventsFromField(constraint.getTargetEvent().name());
+        
+        // Determine if events are signals or tasks
+        boolean actIsSignal = constraint.getActivationEvent() != null && 
+                             constraint.getActivationEvent().type() == Event.EventType.SIGNAL;
+        boolean trgIsSignal = constraint.getTargetEvent() != null && 
+                             constraint.getTargetEvent().type() == Event.EventType.SIGNAL;
 
         // Check if the event matches the activation or target event type and conditions
         boolean isAct = actEvents.contains(event);
         boolean isTrg = trgEvents.contains(event);
         boolean isDirectlyRelevant = isAct || isTrg;
 
-        // If we have conditions, we need to check if they match the event's payload
-        if (isDirectlyRelevant && !trace.isEmpty()) {
-            Map<String, Object> lastEvent = trace.getLast();
-            Map<String, String> payload = (Map<String, String>) lastEvent.get("payload");
+        // Check conditions for the hypothetical event
+        // For signal events, check current signal state
+        // For task events, check the payload from the last event in trace
+        if (isDirectlyRelevant) {
+            Map<String, String> payload = null;
+            if (!trace.isEmpty()) {
+                Map<String, Object> lastEvent = trace.getLast();
+                @SuppressWarnings("unchecked")
+                Map<String, String> temp = (Map<String, String>) lastEvent.get("payload");
+                payload = temp;
+            }
 
             if (isAct && constraint.getActivationCondition() != null) {
-                isAct = matchesCondition(constraint.getActivationCondition(), payload);
+                // For signals, check current state; for tasks, check payload
+                if (actIsSignal) {
+                    Map<String, String> signalState = getSignalState(constraint.getActivationEvent().name());
+                    isAct = matchesCondition(constraint.getActivationCondition(), signalState);
+                } else {
+                    isAct = matchesCondition(constraint.getActivationCondition(), payload);
+                }
             }
             if (isTrg && constraint.getTargetCondition() != null) {
-                isTrg = matchesCondition(constraint.getTargetCondition(), payload);
+                // For signals, check current state; for tasks, check payload
+                if (trgIsSignal) {
+                    Map<String, String> signalState = getSignalState(constraint.getTargetEvent().name());
+                    isTrg = matchesCondition(constraint.getTargetCondition(), signalState);
+                } else {
+                    isTrg = matchesCondition(constraint.getTargetCondition(), payload);
+                }
             }
 
             isDirectlyRelevant = isAct || isTrg;
@@ -259,8 +342,8 @@ public class AnalyzerService {
 
             case RESPONDED_EXISTENCE -> {
                 // Compute based on events seen in trace + hypothetical event
-                boolean seenAct = checkEventsWithConditions(trace, actEvents, constraint.getActivationCondition()) || isAct;
-                boolean seenTrg = checkEventsWithConditions(trace, trgEvents, constraint.getTargetCondition()) || isTrg;
+                boolean seenAct = checkEventsWithConditions(trace, actEvents, constraint.getActivationCondition(), constraint.getActivationEvent()) || isAct;
+                boolean seenTrg = checkEventsWithConditions(trace, trgEvents, constraint.getTargetCondition(), constraint.getTargetEvent()) || isTrg;
                 if (FULFILLED.equals(currentStatus) || PERMANENT_VIOLATION.equals(currentStatus)) {
                     yield currentStatus;
                 }
@@ -294,23 +377,38 @@ public class AnalyzerService {
                 if (isTrg) {
                     // Check if there's a matching activation event with conditions
                     boolean hasMatchingActivation = false;
-                    for (Map<String, Object> traceEvent : trace) {
-                        String eventType = (String) traceEvent.get("eventType");
-                        if (actEvents.contains(eventType)) {
-                            // If there's an activation condition, check if it matches
-                            if (constraint.getActivationCondition() != null) {
-                                Map<String, String> payload = (Map<String, String>) traceEvent.get("payload");
-                                if (payload != null && matchesCondition(constraint.getActivationCondition(), payload)) {
+                    
+                    // For signal-based activation events, check current signal state
+                    if (actIsSignal) {
+                        if (constraint.getActivationCondition() != null) {
+                            Map<String, String> signalState = getSignalState(constraint.getActivationEvent().name());
+                            hasMatchingActivation = signalState != null && matchesCondition(constraint.getActivationCondition(), signalState);
+                        } else {
+                            // No condition, check if signal exists
+                            hasMatchingActivation = getSignalState(constraint.getActivationEvent().name()) != null;
+                        }
+                    } else {
+                        // For task-based activation events, check the trace
+                        for (Map<String, Object> traceEvent : trace) {
+                            String eventType = (String) traceEvent.get("eventType");
+                            if (actEvents.contains(eventType)) {
+                                // If there's an activation condition, check if it matches
+                                if (constraint.getActivationCondition() != null) {
+                                    @SuppressWarnings("unchecked")
+                                    Map<String, String> payload = (Map<String, String>) traceEvent.get("payload");
+                                    if (payload != null && matchesCondition(constraint.getActivationCondition(), payload)) {
+                                        hasMatchingActivation = true;
+                                        break;
+                                    }
+                                } else {
+                                    // No condition, any activation event matches
                                     hasMatchingActivation = true;
                                     break;
                                 }
-                            } else {
-                                // No condition, any activation event matches
-                                hasMatchingActivation = true;
-                                break;
                             }
                         }
                     }
+                    
                     // If we found a matching activation, the constraint is fulfilled
                     // Otherwise, it's a violation
                     yield hasMatchingActivation ? FULFILLED : PERMANENT_VIOLATION;
@@ -349,7 +447,7 @@ public class AnalyzerService {
                         yield TEMPORARY_VIOLATION;
                     }
                     if (isTrg) {
-                        boolean priorAct = checkEventsWithConditions(trace, actEvents, constraint.getActivationCondition());
+                        boolean priorAct = checkEventsWithConditions(trace, actEvents, constraint.getActivationCondition(), constraint.getActivationEvent());
                         yield priorAct ? PERMANENT_VIOLATION : currentStatus;
                     }
                 }
@@ -362,7 +460,7 @@ public class AnalyzerService {
             case NOT_PRECEDENCE -> {
                 if (INIT.equals(currentStatus)) {
                     if (isTrg) {
-                        boolean priorAct = checkEventsWithConditions(trace, actEvents, constraint.getActivationCondition());
+                        boolean priorAct = checkEventsWithConditions(trace, actEvents, constraint.getActivationCondition(), constraint.getActivationEvent());
                         // Violation if B is preceded by A (forbids precedence)
                         yield priorAct ? PERMANENT_VIOLATION : FULFILLED;
                     }

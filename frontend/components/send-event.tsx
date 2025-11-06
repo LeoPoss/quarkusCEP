@@ -117,22 +117,38 @@ export default function SendEvent() {
               onChange={(v) => setCustomEventType(v.target.value)}
             />
           )}
-          <Button
-            className="w-full"
-            onPress={() =>
-              sendEvent({
-                eventType: customEventType,
-                payload:
-                  payloadName && payloadValue
-                    ? {
-                        [payloadName]: payloadValue,
-                      }
-                    : undefined,
-              })
-            }
-          >
-            Send
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onPress={() =>
+                sendEvent({
+                  eventType: customEventType,
+                  payload:
+                    payloadName && payloadValue
+                      ? {
+                          [payloadName]: payloadValue,
+                        }
+                      : undefined,
+                })
+              }
+            >
+              Send Signal
+            </Button>
+            <Button
+              onPress={() =>
+                sendEvent({
+                  eventType: customEventType,
+                  payload:
+                    payloadName && payloadValue
+                      ? {
+                          [payloadName]: payloadValue,
+                        }
+                      : undefined,
+                })
+              }
+            >
+              Finish Task
+            </Button>
+          </div>
         </div>
         <Divider className="my-2" />
         <div className="flex flex-row gap-2 items-center">

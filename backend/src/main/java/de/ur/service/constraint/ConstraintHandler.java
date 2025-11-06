@@ -10,7 +10,7 @@ import java.util.Set;
 public interface ConstraintHandler {
     ConstraintType getType();
 
-    void createDetectionQuery(StatementType type, String name, String event, ConditionRequest condition, CorrelationCondition correlationCondition, Set<String> relevantKeys);
+    void createDetectionQuery(StatementType type, String name, de.ur.dao.Event event, ConditionRequest condition, CorrelationCondition correlationCondition, Set<String> relevantKeys);
 
     void createFulfillmentQuery(String name, CorrelationCondition correlation);
 

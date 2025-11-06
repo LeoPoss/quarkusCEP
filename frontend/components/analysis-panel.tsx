@@ -1,9 +1,5 @@
 import { Card, CardBody, CardHeader, Chip, Spinner } from "@heroui/react";
-import {
-  CheckCircleIcon,
-  CompassRoseIcon,
-  XCircleIcon,
-} from "@phosphor-icons/react";
+import { CheckCircleIcon, CompassRoseIcon, XCircleIcon } from "@phosphor-icons/react";
 import * as React from "react";
 import { useEffect, useState } from "react";
 import ky from "ky";
@@ -118,79 +114,75 @@ export default function AnalysisPanel() {
         ) : (
           <div className="flex flex-col gap-2">
             {finishability ? (
-              <div className="bg-white dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
-                <div
-                  className={`flex items-start gap-3 ${finishability.canFinish ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-                >
-                  {finishability.canFinish ? (
-                    <CheckCircleIcon
-                      size={24}
-                      weight="fill"
-                      className="mt-0.5 flex-shrink-0"
-                    />
-                  ) : (
-                    <XCircleIcon
-                      size={24}
-                      weight="fill"
-                      className="mt-0.5 flex-shrink-0"
-                    />
-                  )}
-                  <div>
-                    <h3 className="font-medium text-lg">
-                      {finishability.canFinish
-                        ? "Process can be finished"
-                        : "Process cannot be finished"}
-                    </h3>
+              <div
+                className={`flex items-start gap-3 ${finishability.canFinish ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+              >
+                {finishability.canFinish ? (
+                  <CheckCircleIcon
+                    size={24}
+                    weight="fill"
+                    className="mt-0.5 flex-shrink-0"
+                  />
+                ) : (
+                  <XCircleIcon
+                    size={24}
+                    weight="fill"
+                    className="mt-0.5 flex-shrink-0"
+                  />
+                )}
+                <div>
+                  <h3 className="font-medium text-lg">
+                    {finishability.canFinish
+                      ? "Process can be finished"
+                      : "Process cannot be finished"}
+                  </h3>
 
-                    {finishability.reasons.length > 0 && (
-                      <div className="mt-3">
-                        <div className="space-y-2">
-                          {finishability.reasons.map((reason, index) => {
-                            // Try to parse constraint information from the reason
-                            const match = reason.match(/(.*?):\s*(.*)/);
-                            const [constraintType, constraintDetail] = match
-                              ? [match[1], match[2]]
-                              : [null, reason];
+                  {finishability.reasons.length > 0 && (
+                    <div className="mt-3">
+                      <div className="space-y-2">
+                        {finishability.reasons.map((reason, index) => {
+                          // Try to parse constraint information from the reason
+                          const match = reason.match(/(.*?):\s*(.*)/);
+                          const [constraintType, constraintDetail] = match
+                            ? [match[1], match[2]]
+                            : [null, reason];
 
-                            return (
-                              <div
-                                key={index}
-                                className={`flex items-start gap-2 p-2 rounded-md ${
-                                  finishability.canFinish
-                                    ? "bg-green-50 dark:bg-green-900/20"
-                                    : "bg-red-50 dark:bg-red-900/20"
-                                }`}
-                              >
-                                {finishability.canFinish ? (
-                                  <CheckCircleIcon
-                                    size={18}
-                                    weight="fill"
-                                    className="mt-0.5 flex-shrink-0 text-green-600 dark:text-green-400"
-                                  />
-                                ) : (
-                                  <XCircleIcon
-                                    size={18}
-                                    weight="fill"
-                                    className="mt-0.5 flex-shrink-0 text-red-600 dark:text-red-400"
-                                  />
-                                )}
-                                <div className="text-sm">
-                                  {constraintType && (
-                                    <span className="font-medium text-gray-800 dark:text-gray-200">
-                                      {constraintType}:
-                                    </span>
-                                  )}
-                                  <span className="ml-1">
-                                    {constraintDetail}
+                          return (
+                            <div
+                              key={index}
+                              className={`flex items-start gap-2 p-2 rounded-md ${
+                                finishability.canFinish
+                                  ? "bg-green-50 dark:bg-green-900/20"
+                                  : "bg-red-50 dark:bg-red-900/20"
+                              }`}
+                            >
+                              {finishability.canFinish ? (
+                                <CheckCircleIcon
+                                  size={18}
+                                  weight="fill"
+                                  className="mt-0.5 flex-shrink-0 text-green-600 dark:text-green-400"
+                                />
+                              ) : (
+                                <XCircleIcon
+                                  size={18}
+                                  weight="fill"
+                                  className="mt-0.5 flex-shrink-0 text-red-600 dark:text-red-400"
+                                />
+                              )}
+                              <div className="text-sm">
+                                {constraintType && (
+                                  <span className="font-medium text-gray-800 dark:text-gray-200">
+                                    {constraintType}:
                                   </span>
-                                </div>
+                                )}
+                                <span className="ml-1">{constraintDetail}</span>
                               </div>
-                            );
-                          })}
-                        </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

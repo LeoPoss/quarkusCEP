@@ -10,9 +10,9 @@ import java.util.ArrayList;
 public class Constraint {
     private String name;
     private ArrayList<EplStatement> eplStatements;
-    private String activationEvent;
+    private Event activationEvent;
     private ConstraintCondition activationCondition;
-    private String targetEvent;
+    private Event targetEvent;
     private ConstraintCondition targetCondition;
     private CorrelationCondition correlationCondition;
     private ConstraintType type;

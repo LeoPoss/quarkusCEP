@@ -19,7 +19,7 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
 
     @Override
     public void createDetectionQuery(
-            StatementType type, String name, String event,
+            StatementType type, String name, de.ur.dao.Event event,
             ConditionRequest condition,
             CorrelationCondition correlation,
             java.util.Set<String> relevantKeys
@@ -40,7 +40,7 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
         java.util.List<String> conditions = new java.util.ArrayList<>();
 
         // Condition A: The base event type
-        conditions.add("eventType = '" + event + "'");
+        conditions.add("eventType = '" + event.name() + "'");
 
         // Condition B: The simple activation/target condition
         if (condition != null && condition.isValid()) {

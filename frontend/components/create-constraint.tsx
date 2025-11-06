@@ -29,8 +29,10 @@ export default function CreateConstraint() {
     // Prepare the request payload
     const payload: any = {
       name: data.name,
-      activationEvent: data.activationEvent,
-      targetEvent: data.targetEvent,
+      activationEvent: data.activationEvent || null,
+      targetEvent: data.targetEvent || null,
+      activationEventType: data.activationEventType || 'signal',
+      targetEventType: data.targetEventType || 'task',
     };
 
     // Add activation condition if MP-Declare is enabled
@@ -83,14 +85,7 @@ export default function CreateConstraint() {
         onSubmit={onSubmit}
       >
         <CardBody>
-          <div className="grid grid-cols-3 gap-4">
-            <Input
-              isRequired
-              className="col-span-3"
-              label="Name"
-              name="name"
-              size="sm"
-            />
+          <div className="space-y-4">
             <DynamicFormFields
               constraintType={constraintType}
               isMPDeclareEnabled={isMPDeclareEnabled}

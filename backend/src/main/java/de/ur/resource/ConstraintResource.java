@@ -38,7 +38,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.TEMPORARY_VIOLATION
+                ConstraintStatus.TEMPORARY_VIOLATION,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
@@ -54,7 +56,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.INIT,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
@@ -70,7 +74,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.INIT,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
@@ -86,7 +92,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.INIT,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
@@ -102,7 +110,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.INIT,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
@@ -118,7 +128,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.INIT,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
@@ -134,7 +146,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.INIT,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
@@ -150,7 +164,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.INIT,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
@@ -166,7 +182,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.INIT,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
@@ -182,7 +200,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.INIT,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
@@ -198,7 +218,9 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.INIT
+                ConstraintStatus.INIT,
+                request.activationEventType(),
+                request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }

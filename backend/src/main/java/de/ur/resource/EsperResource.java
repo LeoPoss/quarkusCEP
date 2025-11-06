@@ -3,6 +3,7 @@ package de.ur.resource;
 import com.espertech.esper.common.client.EventBean;
 import com.espertech.esper.runtime.client.EPStatement;
 import de.ur.dao.GenericEvent;
+import de.ur.service.AnalyzerService;
 import de.ur.service.ConstraintService;
 import de.ur.service.EsperService;
 import jakarta.ws.rs.*;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 public class EsperResource {
     private final EsperService esperService;
     private final ConstraintService constraintService;
+    private final AnalyzerService analyzerService;
 
     @GET
     public Response getDeployments() {
@@ -125,9 +127,14 @@ public class EsperResource {
                 payload
         );
 
-        // Add to trace if this is a known event type
+        // Add to trace if this is a known task event
         if (constraintService.getKnownEvents().contains(eventType)) {
             constraintService.addToTrace(eventType, payload);
+        }
+        
+        // Update signal state if this is a known signal event
+        if (constraintService.getKnownSignals().contains(eventType)) {
+            analyzerService.updateSignalState(eventType, payload);
         }
 
         esperService.sendEvent(genericEvent);

@@ -31,15 +31,18 @@ public class ConstraintService {
     }
 
     public Set<String> getKnownEvents() {
-        return getConstraints().values().stream()
-                .flatMap(constraint -> Stream.of(
-                        constraint.getActivationEvent(),
-                        constraint.getTargetEvent()
-                ))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+        return getConstraints().values().stream().flatMap(constraint -> Stream.of(constraint.getActivationEvent(), constraint.getTargetEvent())).filter(Objects::nonNull).filter(event -> event.type() == Event.EventType.TASK).map(Event::name).collect(Collectors.toSet());
     }
     
+    public Set<String> getKnownSignals() {
+        return getConstraints().values().stream()
+                .flatMap(constraint -> Stream.of(constraint.getActivationEvent(), constraint.getTargetEvent()))
+                .filter(Objects::nonNull)
+                .filter(event -> event.type() == Event.EventType.SIGNAL)
+                .map(Event::name)
+                .collect(Collectors.toSet());
+    }
+
     public void addToTrace(String eventType, Map<String, String> payload) {
         Map<String, Object> traceEvent = new HashMap<>();
         traceEvent.put("eventType", eventType);
@@ -52,9 +55,25 @@ public class ConstraintService {
         constraints.clear();
     }
 
-    public void setupConstraint(ConstraintType type, String name, String activationEvent,
-                                ConditionRequest activationCondition, String targetEvent,
-                                ConditionRequest targetCondition, CorrelationCondition correlationCondition, ConstraintStatus status) {
+    public void setupConstraint(ConstraintType type, String name, String activationEventName,
+                                ConditionRequest activationCondition, String targetEventName,
+                                ConditionRequest targetCondition, CorrelationCondition correlationCondition,
+                                ConstraintStatus status, String activationEventType, String targetEventType) {
+        // Create activation event
+        Event activationEvent = null;
+        if (activationEventName != null && !activationEventName.isBlank()) {
+            Event.EventType eventType = "task".equalsIgnoreCase(activationEventType) ?
+                    Event.EventType.TASK : Event.EventType.SIGNAL;
+            activationEvent = new Event(activationEventName, eventType);
+        }
+
+        // Create target event
+        Event targetEvent = null;
+        if (targetEventName != null && !targetEventName.isBlank()) {
+            Event.EventType eventType = "task".equalsIgnoreCase(targetEventType) ?
+                    Event.EventType.TASK : Event.EventType.SIGNAL;
+            targetEvent = new Event(targetEventName, eventType);
+        }
         // Create default empty conditions if null
         ConditionRequest safeActivationCondition = activationCondition != null ? activationCondition : new ConditionRequest("", "", "");
         ConditionRequest safeTargetCondition = targetCondition != null ? targetCondition : new ConditionRequest("", "", "");
@@ -62,36 +81,18 @@ public class ConstraintService {
         Set<String> relevantKeys = getRelevantKeys(correlationCondition, safeActivationCondition, safeTargetCondition);
 
         // Create and add the constraint to the map first
-        Constraint constraint = new Constraint(
-                name,
-                new ArrayList<>(),
-                activationEvent,
-                safeActivationCondition.isValid() ? new ConstraintCondition(
-                        safeActivationCondition.param(),
-                        safeActivationCondition.operator(),
-                        safeActivationCondition.value()
-                ) : null,
-                targetEvent,
-                safeTargetCondition.isValid() ? new ConstraintCondition(
-                        safeTargetCondition.param(),
-                        safeTargetCondition.operator(),
-                        safeTargetCondition.value()
-                ) : null,
-                correlationCondition,
-                type,
-                status
-        );
+        Constraint constraint = new Constraint(name, new ArrayList<>(), activationEvent, safeActivationCondition.isValid() ? new ConstraintCondition(safeActivationCondition.param(), safeActivationCondition.operator(), safeActivationCondition.value()) : null, targetEvent, safeTargetCondition.isValid() ? new ConstraintCondition(safeTargetCondition.param(), safeTargetCondition.operator(), safeTargetCondition.value()) : null, correlationCondition, type, status);
         constraints.put(name, constraint);
 
         var handler = constraintHandlerFactory.getHandler(type);
 
         // Only create activation detection query if activationEvent is provided
-        if (activationEvent != null && !activationEvent.isBlank()) {
+        if (activationEvent != null) {
             handler.createDetectionQuery(StatementType.ACTIVATION, name, activationEvent, safeActivationCondition, correlationCondition, relevantKeys);
         }
 
         // Only create target detection query if targetEvent is provided
-        if (targetEvent != null && !targetEvent.isBlank()) {
+        if (targetEvent != null) {
             handler.createDetectionQuery(StatementType.TARGET, name, targetEvent, safeTargetCondition, correlationCondition, relevantKeys);
         }
 

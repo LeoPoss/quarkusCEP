@@ -12,21 +12,32 @@ export default function FormFields({
   setConstraintType,
   isMPDeclareEnabled,
 }: FormFieldsProps) {
+  const [activationEventType, setActivationEventType] = React.useState('signal');
+  const [targetEventType, setTargetEventType] = React.useState('task');
   return (
     <>
-      <Select
-        isRequired
-        disabledKeys={[
-          "alternateResponse",
-          "alternatePrecedence",
-          "chainPrecedence",
-          "notPrecedence",
-        ]}
-        label="Type"
-        name="type"
-        size="sm"
-        onChange={(e) => setConstraintType(e.target.value)}
-      >
+      <div className="grid grid-cols-2 gap-4 col-span-3">
+        <Input
+          isRequired
+          label="Constraint Name"
+          name="name"
+          size="sm"
+          className="w-full"
+        />
+        <Select
+          isRequired
+          disabledKeys={[
+            "alternateResponse",
+            "alternatePrecedence",
+            "chainPrecedence",
+            "notPrecedence",
+          ]}
+          label="Constraint Type"
+          name="type"
+          size="sm"
+          className="w-full"
+          onChange={(e) => setConstraintType(e.target.value)}
+        >
         <SelectSection title="Existence Constraints">
           <SelectItem key="existence">Existence</SelectItem>
           <SelectItem key="notexistence">NotExistence</SelectItem>
@@ -46,19 +57,102 @@ export default function FormFields({
           <SelectItem key="notResponse">Not Response</SelectItem>
           <SelectItem key="notPrecedence">Not Precedence</SelectItem>
         </SelectSection>
-      </Select>
-      <Input
-        isDisabled={
-          constraintType === "existence" || constraintType === "notexistence"
-        }
-        isRequired={
-          constraintType !== "existence" && constraintType !== "notexistence"
-        }
-        label="Activation Event"
-        name="activationEvent"
-        size="sm"
-      />
-      <Input isRequired label="Target Event" name="targetEvent" size="sm" />
+        </Select>
+      </div>
+      <div className="col-span-3 grid gap-y-4">
+        <div className="space-y-2">
+          <div className="flex items-end gap-2">
+            <Input
+              isDisabled={
+                constraintType === "existence" ||
+                constraintType === "notexistence"
+              }
+              isRequired={
+                constraintType !== "existence" &&
+                constraintType !== "notexistence"
+              }
+              label="Activation Event"
+              name="activationEvent"
+              size="sm"
+              className="flex-1"
+              classNames={{
+                inputWrapper: constraintType === "existence" || constraintType === "notexistence" ? "opacity-50" : ""
+              }}
+            />
+            <div className="flex flex-col gap-1">
+              <div className="flex bg-default-100 p-1.5 rounded-md h-12 items-center">
+                <button
+                  type="button"
+                  className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
+                    activationEventType === 'signal' 
+                      ? 'bg-white shadow-sm' 
+                      : 'text-foreground-500 hover:bg-default-200'
+                  } ${
+                    constraintType === "existence" || constraintType === "notexistence" ? 'opacity-50' : ''
+                  }`}
+                  onClick={() => setActivationEventType('signal')}
+                  disabled={constraintType === "existence" || constraintType === "notexistence"}
+                >
+                  Signal
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
+                    activationEventType === 'task' 
+                      ? 'bg-white shadow-sm' 
+                      : 'text-foreground-500 hover:bg-default-200'
+                  } ${
+                    constraintType === "existence" || constraintType === "notexistence" ? 'opacity-50' : ''
+                  }`}
+                  onClick={() => setActivationEventType('task')}
+                  disabled={constraintType === "existence" || constraintType === "notexistence"}
+                >
+                  Task
+                </button>
+                <input type="hidden" name="activationEventType" value={activationEventType} />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-end gap-2">
+            <Input
+              isRequired
+              label="Target Event"
+              name="targetEvent"
+              size="sm"
+              className="flex-1"
+            />
+            <div className="flex flex-col gap-1">
+              <div className="flex bg-default-100 p-1.5 rounded-md h-12 items-center">
+                <button
+                  type="button"
+                  className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
+                    targetEventType === 'signal' 
+                      ? 'bg-white shadow-sm' 
+                      : 'text-foreground-500 hover:bg-default-200'
+                  }`}
+                  onClick={() => setTargetEventType('signal')}
+                >
+                  Signal
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
+                    targetEventType === 'task' 
+                      ? 'bg-white shadow-sm' 
+                      : 'text-foreground-500 hover:bg-default-200'
+                  }`}
+                  onClick={() => setTargetEventType('task')}
+                >
+                  Task
+                </button>
+              </div>
+            </div>
+            <input type="hidden" name="targetEventType" value={targetEventType} />
+          </div>
+        </div>
+      </div>
       {isMPDeclareEnabled && (
         <div className="mt-4 bg-gradient-to-br from-primary-200 via-transparent p-2 relative col-span-3">
           <div className="absolute left-2 top-2 opacity-20 text-5xl font-bold text-primary">

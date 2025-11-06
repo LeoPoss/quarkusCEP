@@ -13,14 +13,19 @@ import { LinkBreakIcon } from "@phosphor-icons/react";
 import ShikiHighlighter from "react-shiki";
 import { useTheme } from "next-themes";
 
+type Event = {
+  name: string;
+  type: 'SIGNAL' | 'TASK';
+};
+
 type Constraint = {
   name: string;
   eplStatements: EplStatement[];
   type: string;
   status: string;
-  activationEvent: string;
+  activationEvent: Event;
   activationCondition: Condition;
-  targetEvent: string;
+  targetEvent: Event;
   targetCondition: Condition;
 };
 
@@ -151,12 +156,17 @@ function formatConstraintDisplay(c?: Constraint | null): string {
           .filter(Boolean)
           .join(" ");
 
-  const formatEvent = (event?: string | null, condition?: string): string => {
-    const name = event?.trim();
-
+  const formatEvent = (event?: Event | string | null, condition?: string): string => {
+    if (!event) return "";
+    
+    // Handle both string (legacy) and Event object
+    const name = typeof event === 'string' ? event.trim() : event.name?.trim();
+    const type = typeof event === 'object' && event.type ? `:${event.type.toLowerCase()}` : '';
+    
     if (!name) return "";
-
-    return condition ? `${name}[${condition}]` : name;
+    
+    const formattedName = condition ? `${name}[${condition}]` : name;
+    return type ? `${formattedName}${type}` : formattedName;
   };
 
   const type = c.type?.trim() || "";
