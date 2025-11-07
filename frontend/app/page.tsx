@@ -19,9 +19,6 @@ export default function Home() {
       <h2 className={title()}>Synergistic CEP for MP-Declare</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="md:col-span-2 space-y-4">
-          <AnalysisPanel />
-        </div>
         <div className="flex items-center col-span-2 gap-2 bg-gradient-to-br from-primary-200 via-transparent p-2 w-fit">
           <Chip color="primary">MP-Declare</Chip>
           <Switch
@@ -31,9 +28,12 @@ export default function Home() {
             onChange={toggleMPDeclare}
           />
         </div>
-        <CreateConstraint />
+        <AnalysisPanel />
         <SendEvent />
-        <div className="md:col-span-1 space-y-4"></div>
+
+        <div className="md:col-span-2 space-y-4">
+          <CreateConstraint />
+        </div>
       </div>
 
       <h2 className={subtitle()}>

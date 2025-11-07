@@ -191,7 +191,7 @@ export default function AnalysisPanel() {
               </span>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="rounded-xl p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/30 dark:to-gray-900/30">
                 <h3 className="font-medium mb-3 flex items-center gap-2 text-gray-800 dark:text-gray-200">
                   Available Tasks
@@ -224,7 +224,6 @@ export default function AnalysisPanel() {
                 </div>
               </div>
 
-              {/* Not Allowed Tasks Details */}
               <div className="rounded-xl p-4 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30">
                 <h3 className="font-medium mb-3 flex items-center gap-2 text-red-800 dark:text-red-300">
                   <XCircleIcon size={20} />

@@ -16,6 +16,7 @@ import { useTheme } from "next-themes";
 type Event = {
   name: string;
   type: 'SIGNAL' | 'TASK';
+  timer?: number;
 };
 
 type Constraint = {
@@ -150,113 +151,76 @@ export default function Constraints() {
 function formatConstraintDisplay(c?: Constraint | null): React.ReactNode {
   if (!c) return "";
 
-  const formatCondition = (cond?: Condition | null): { condition: string; timer?: number } => {
-    if (!cond) return { condition: "" };
-    
-    const condition = [cond.param, cond.operator, cond.value]
-      .map((p) => p?.trim())
-      .filter(Boolean)
-      .join(" ");
-      
-    return {
-      condition,
-      timer: cond.timer
-    };
-  };
+  const formatCondition = (cond?: Condition | null): string =>
+    !cond
+      ? ""
+      : [cond.param, cond.operator, cond.value]
+          .map((p) => p?.trim())
+          .filter(Boolean)
+          .join(" ");
 
-  const EventWithTimer: React.FC<{ 
-    name: string; 
-    condition?: { condition: string; timer?: number }; 
-    type: string; 
-    withTimer: boolean; 
-    timerValue?: number 
-  }> = ({ 
-    name, 
-    condition, 
-    type, 
-    withTimer, 
-    timerValue 
-  }) => {
-    const conditionText = condition?.condition || '';
-    const timer = condition?.timer ?? timerValue;
+  const formatEvent = (event?: Event | null, condition?: string, timer?: number): React.ReactNode => {
+    if (!event?.name) return "";
+    
+    const name = event.name.trim();
+    const type = event.type ? `:${event.type.toLowerCase()}` : '';
+    const conditionPart = condition ? `[${condition}]` : '';
     
     return (
       <>
-        {name}
-        {conditionText && (
-          <>
-            [{conditionText}]
-            {withTimer && timer !== undefined && (
-              <span className="text-xs align-sub">[0,{timer}]</span>
-            )}
-          </>
-        )}
-        {type && `:${type}`}
+        {name}{conditionPart}{type}
       </>
     );
   };
-
-  const formatEvent = (
-    event?: Event | null, 
-    conditionResult?: ReturnType<typeof formatCondition>,
-    withTimer = false, 
-    timerValue?: number
-  ): React.ReactNode => {
-    if (!event?.name) return null;
-    
-    return (
-      <EventWithTimer 
-        name={event.name.trim()} 
-        condition={conditionResult}
-        type={event.type?.toLowerCase() || ''}
-        withTimer={withTimer}
-        timerValue={timerValue}
-      />
-    );
-  };
+  
+  const formatTimer = (time: number) => (
+    <span className="text-xs align-sub">[0,{time}]</span>
+  );
 
   const type = c.type?.trim() || "";
   const withinPeriod = c.withinPeriod;
+  const targetTimer = c.targetCondition?.timer;
 
   const activation = formatEvent(
     c.activationEvent,
-    formatCondition(c.activationCondition),
-    true // Add timer to activation event
+    formatCondition(c.activationCondition)
   );
+  
   const target = formatEvent(
     c.targetEvent, 
     formatCondition(c.targetCondition)
   );
 
-  const events = [activation, target].filter((e): e is React.ReactElement => e !== null);
-  const hasEvents = events.length > 0;
-
-  if (!type) {
-    if (!hasEvents) return null;
-    return (
-      <>
-        {events.map((event, i) => (
-          <span key={i}>
-            {i > 0 && ', '}
-            {event}
-          </span>
-        ))}
-      </>
-    );
+  const events = [activation, target].filter(Boolean);
+  const formattedEvents = [];
+  
+  // Add activation event if exists
+  if (activation) {
+    formattedEvents.push(activation);
+  }
+  
+  // Add target event with its timer if exists
+  if (target) {
+    formattedEvents.push(target);
+    if (targetTimer !== undefined) {
+      formattedEvents.push(formatTimer(targetTimer));
+    }
   }
 
-  if (!hasEvents) return <>{type}</>;
+  if (!type) return <>{formattedEvents.length > 0 ? formattedEvents : ''}</>;
+  if (formattedEvents.length === 0) return <>{type || ''}</>;
+
+  const timerSuffix = withinPeriod !== undefined ? formatTimer(withinPeriod) : null;
 
   return (
     <span>
-      {type}(
-      {events.map((event, i) => (
-        <span key={i}>
-          {i > 0 && ', '}
-          {event}
-        </span>
-      ))}
-      )
+      {type}{timerSuffix}({formattedEvents.reduce((result: React.ReactNode[], event, index, array) => {
+        result.push(event);
+        if (index < array.length - 1 && !React.isValidElement(event)) {
+          result.push(", ");
+        }
+        return result;
+      }, [])})
     </span>
   );
 }

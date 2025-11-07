@@ -16,259 +16,260 @@ export default function FormFields({
     React.useState("signal");
   const [targetEventType, setTargetEventType] = React.useState("task");
   return (
-    <>
-      <div className="grid grid-cols-3 gap-4 col-span-3">
-        <Input
-          isRequired
-          label="Constraint Name"
-          name="name"
-          size="sm"
-          className="w-full"
-        />
-        <Select
-          isRequired
-          disabledKeys={[
-            "alternateResponse",
-            "alternatePrecedence",
-            "chainPrecedence",
-            "notPrecedence",
-          ]}
-          label="Constraint Type"
-          name="type"
-          size="sm"
-          className="w-full"
-          onChange={(e) => setConstraintType(e.target.value)}
-        >
-          <SelectSection title="Existence Constraints">
-            <SelectItem key="existence">Existence</SelectItem>
-            <SelectItem key="notexistence">NotExistence</SelectItem>
-          </SelectSection>
-          <SelectSection title="Relation Constraints">
-            <SelectItem key="respondedExistence">
-              Responded Existence
-            </SelectItem>
-            <SelectItem key="response">Response</SelectItem>
-            <SelectItem key="alternateResponse">Alternate Response</SelectItem>
-            <SelectItem key="chainResponse">Chain Response</SelectItem>
-            <SelectItem key="precedence">Precedence</SelectItem>
-            <SelectItem key="alternatePrecedence">
-              Alternate Precedence
-            </SelectItem>
-            <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>
-          </SelectSection>
-          <SelectSection title="Negative Relation Constraints">
-            <SelectItem key="notResponse">Not Response</SelectItem>
-            <SelectItem key="notPrecedence">Not Precedence</SelectItem>
-          </SelectSection>
-        </Select>
-        <Input
-          label="Constraint Timer"
-          name="timer"
-          size="sm"
-          className="w-full"
-        />
-      </div>
-      <div className="col-span-3 grid gap-y-4">
-        <div className="space-y-2">
-          <div className="flex items-end gap-2">
-            <Input
-              isDisabled={
-                constraintType === "existence" ||
-                constraintType === "notexistence"
-              }
-              isRequired={
-                constraintType !== "existence" &&
-                constraintType !== "notexistence"
-              }
-              label="Activation Event"
-              name="activationEvent"
-              size="sm"
-              className="flex-1"
-              classNames={{
-                inputWrapper:
+    <div className="grid grid-cols-2 gap-x-4">
+      <div className="flex flex-col gap-y-4">
+        <div className="grid grid-cols-3 gap-4 col-span-3">
+          <Input
+            isRequired
+            label="Constraint Name"
+            name="name"
+            size="sm"
+            className="w-full"
+          />
+          <Select
+            isRequired
+            disabledKeys={[
+              "alternateResponse",
+              "alternatePrecedence",
+              "chainPrecedence",
+              "notPrecedence",
+            ]}
+            label="Constraint Type"
+            name="type"
+            size="sm"
+            className="w-full"
+            onChange={(e) => setConstraintType(e.target.value)}
+          >
+            <SelectSection title="Existence Constraints">
+              <SelectItem key="existence">Existence</SelectItem>
+              <SelectItem key="notexistence">NotExistence</SelectItem>
+            </SelectSection>
+            <SelectSection title="Relation Constraints">
+              <SelectItem key="respondedExistence">
+                Responded Existence
+              </SelectItem>
+              <SelectItem key="response">Response</SelectItem>
+              <SelectItem key="alternateResponse">
+                Alternate Response
+              </SelectItem>
+              <SelectItem key="chainResponse">Chain Response</SelectItem>
+              <SelectItem key="precedence">Precedence</SelectItem>
+              <SelectItem key="alternatePrecedence">
+                Alternate Precedence
+              </SelectItem>
+              <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>
+            </SelectSection>
+            <SelectSection title="Negative Relation Constraints">
+              <SelectItem key="notResponse">Not Response</SelectItem>
+              <SelectItem key="notPrecedence">Not Precedence</SelectItem>
+            </SelectSection>
+          </Select>
+          <Input
+            label="Constraint Timer"
+            name="timer"
+            size="sm"
+            className="w-full"
+          />
+        </div>
+        <div className="col-span-3 grid gap-y-4">
+          <div className="space-y-2">
+            <div className="flex items-end gap-2">
+              <Input
+                isDisabled={
                   constraintType === "existence" ||
                   constraintType === "notexistence"
-                    ? "opacity-50"
-                    : "",
-              }}
-            />
-            <div className="flex flex-col gap-1">
-              <div className="flex bg-default-100 p-1.5 rounded-md h-12 items-center">
-                <button
-                  type="button"
-                  className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
-                    activationEventType === "signal"
-                      ? "bg-white shadow-sm"
-                      : "text-foreground-500 hover:bg-default-200"
-                  } ${
+                }
+                isRequired={
+                  constraintType !== "existence" &&
+                  constraintType !== "notexistence"
+                }
+                label="Activation Event"
+                name="activationEvent"
+                size="sm"
+                className="flex-1"
+                classNames={{
+                  inputWrapper:
                     constraintType === "existence" ||
                     constraintType === "notexistence"
                       ? "opacity-50"
-                      : ""
-                  }`}
-                  onClick={() => setActivationEventType("signal")}
-                  disabled={
-                    constraintType === "existence" ||
-                    constraintType === "notexistence"
-                  }
-                >
-                  Signal
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
-                    activationEventType === "task"
-                      ? "bg-white shadow-sm"
-                      : "text-foreground-500 hover:bg-default-200"
-                  } ${
-                    constraintType === "existence" ||
-                    constraintType === "notexistence"
-                      ? "opacity-50"
-                      : ""
-                  }`}
-                  onClick={() => setActivationEventType("task")}
-                  disabled={
-                    constraintType === "existence" ||
-                    constraintType === "notexistence"
-                  }
-                >
-                  Task
-                </button>
-                <input
-                  type="hidden"
-                  name="activationEventType"
-                  value={activationEventType}
-                />
+                      : "",
+                }}
+              />
+              <div className="flex flex-col gap-1">
+                <div className="flex bg-default-100 p-1.5 rounded-md h-12 items-center">
+                  <button
+                    type="button"
+                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
+                      activationEventType === "signal"
+                        ? "bg-white shadow-sm"
+                        : "text-foreground-500 hover:bg-default-200"
+                    } ${
+                      constraintType === "existence" ||
+                      constraintType === "notexistence"
+                        ? "opacity-50"
+                        : ""
+                    }`}
+                    onClick={() => setActivationEventType("signal")}
+                    disabled={
+                      constraintType === "existence" ||
+                      constraintType === "notexistence"
+                    }
+                  >
+                    Signal
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
+                      activationEventType === "task"
+                        ? "bg-white shadow-sm"
+                        : "text-foreground-500 hover:bg-default-200"
+                    } ${
+                      constraintType === "existence" ||
+                      constraintType === "notexistence"
+                        ? "opacity-50"
+                        : ""
+                    }`}
+                    onClick={() => setActivationEventType("task")}
+                    disabled={
+                      constraintType === "existence" ||
+                      constraintType === "notexistence"
+                    }
+                  >
+                    Task
+                  </button>
+                  <input
+                    type="hidden"
+                    name="activationEventType"
+                    value={activationEventType}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-end gap-2">
-            <Input
-              isRequired
-              label="Target Event"
-              name="targetEvent"
-              size="sm"
-              className="flex-1"
-            />
-            <div className="flex flex-col gap-1">
-              <div className="flex bg-default-100 p-1.5 rounded-md h-12 items-center">
-                <button
-                  type="button"
-                  className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
-                    targetEventType === "signal"
-                      ? "bg-white shadow-sm"
-                      : "text-foreground-500 hover:bg-default-200"
-                  }`}
-                  onClick={() => setTargetEventType("signal")}
-                >
-                  Signal
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
-                    targetEventType === "task"
-                      ? "bg-white shadow-sm"
-                      : "text-foreground-500 hover:bg-default-200"
-                  }`}
-                  onClick={() => setTargetEventType("task")}
-                >
-                  Task
-                </button>
+          <div className="space-y-2">
+            <div className="flex items-end gap-2">
+              <Input
+                isRequired
+                label="Target Event"
+                name="targetEvent"
+                size="sm"
+                className="flex-1"
+              />
+              <div className="flex flex-col gap-1">
+                <div className="flex bg-default-100 p-1.5 rounded-md h-12 items-center">
+                  <button
+                    type="button"
+                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
+                      targetEventType === "signal"
+                        ? "bg-white shadow-sm"
+                        : "text-foreground-500 hover:bg-default-200"
+                    }`}
+                    onClick={() => setTargetEventType("signal")}
+                  >
+                    Signal
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
+                      targetEventType === "task"
+                        ? "bg-white shadow-sm"
+                        : "text-foreground-500 hover:bg-default-200"
+                    }`}
+                    onClick={() => setTargetEventType("task")}
+                  >
+                    Task
+                  </button>
+                </div>
               </div>
+              <input
+                type="hidden"
+                name="targetEventType"
+                value={targetEventType}
+              />
             </div>
-            <input
-              type="hidden"
-              name="targetEventType"
-              value={targetEventType}
-            />
           </div>
         </div>
       </div>
       {isMPDeclareEnabled && (
-        <div className="mt-4 bg-gradient-to-br from-primary-200 via-transparent p-2 relative col-span-3">
+        <div className="bg-gradient-to-br from-primary-200 via-transparent p-2 relative">
           <div className="absolute left-2 top-2 opacity-20 text-5xl font-bold text-primary">
             MP-Declare
           </div>
           <div>
             <h3 className="text-sm font-medium mb-2">Conditions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h4 className="text-xs font-medium text-neutral-500 mb-1">
-                  Activation Condition
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <Input
-                    isDisabled={constraintType === "existence"}
-                    label="Parameter"
-                    name="activationParam"
-                    size="sm"
-                  />
-                  <Select
-                    isDisabled={constraintType === "existence"}
-                    label="Operator"
-                    name="activationOperator"
-                    size="sm"
-                  >
-                    <SelectItem key="<">{"<"}</SelectItem>
-                    <SelectItem key="=">{"=="}</SelectItem>
-                    <SelectItem key="!=">{"!="}</SelectItem>
-                    <SelectItem key=">">{">"}</SelectItem>
-                  </Select>
-                  <Input
-                    isDisabled={constraintType === "existence"}
-                    label="Value"
-                    name="activationValue"
-                    size="sm"
-                  />
-                  <Input label="Timer" name="activationTimer" size="sm" />
-                </div>
+            <div className="mt-2">
+              <h4 className="text-xs font-medium text-neutral-500 mb-1">
+                Activation Condition
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <Input
+                  isDisabled={constraintType === "existence"}
+                  label="Parameter"
+                  name="activationParam"
+                  size="sm"
+                />
+                <Select
+                  isDisabled={constraintType === "existence"}
+                  label="Operator"
+                  name="activationOperator"
+                  size="sm"
+                >
+                  <SelectItem key="<">{"<"}</SelectItem>
+                  <SelectItem key="=">{"=="}</SelectItem>
+                  <SelectItem key="!=">{"!="}</SelectItem>
+                  <SelectItem key=">">{">"}</SelectItem>
+                </Select>
+                <Input
+                  isDisabled={constraintType === "existence"}
+                  label="Value"
+                  name="activationValue"
+                  size="sm"
+                />
+                <Input label="Timer" name="activationTimer" size="sm" />
               </div>
-              <div>
-                <h4 className="text-xs font-medium text-neutral-500 mb-1">
-                  Target Condition
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <Input label="Parameter" name="targetParam" size="sm" />
-                  <Select label="Operator" name="targetOperator" size="sm">
-                    <SelectItem key="<">{"<"}</SelectItem>
-                    <SelectItem key="=">{"=="}</SelectItem>
-                    <SelectItem key="!=">{"!="}</SelectItem>
-                    <SelectItem key=">">{">"}</SelectItem>
-                  </Select>
-                  <Input label="Value" name="targetValue" size="sm" />
-                </div>
+            </div>
+            <div className="mt-2">
+              <h4 className="text-xs font-medium text-neutral-500 mb-1">
+                Target Condition
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <Input label="Parameter" name="targetParam" size="sm" />
+                <Select label="Operator" name="targetOperator" size="sm">
+                  <SelectItem key="<">{"<"}</SelectItem>
+                  <SelectItem key="=">{"=="}</SelectItem>
+                  <SelectItem key="!=">{"!="}</SelectItem>
+                  <SelectItem key=">">{">"}</SelectItem>
+                </Select>
+                <Input label="Value" name="targetValue" size="sm" />
+                <Input label="Timer" name="targetTimer" size="sm" />
               </div>
-              <div className="space-y-2">
-                <h4 className="text-xs font-medium text-neutral-500 mb-1">
-                  Correlation Condition
-                </h4>
-                <div className="grid grid-cols-3 gap-2">
-                  <Input
-                    label="Act. Param."
-                    name="correlationActivationParam"
-                    size="sm"
-                  />
-                  <Select label="Operator" name="correlationOperator" size="sm">
-                    <SelectItem key="<">{"<"}</SelectItem>
-                    <SelectItem key="=">{"=="}</SelectItem>
-                    <SelectItem key="!=">{"!="}</SelectItem>
-                    <SelectItem key=">">{">"}</SelectItem>
-                  </Select>
-                  <Input
-                    label="Tar. Param."
-                    name="correlationTargetParam"
-                    size="sm"
-                  />
-
-                  <Input label="Timer" name="targetTimer" size="sm" />
-                </div>
+            </div>
+            <div className="mt-2">
+              <h4 className="text-xs font-medium text-neutral-500 mb-1">
+                Correlation Condition
+              </h4>
+              <div className="grid grid-cols-3 gap-2">
+                <Input
+                  label="Act. Param."
+                  name="correlationActivationParam"
+                  size="sm"
+                />
+                <Select label="Operator" name="correlationOperator" size="sm">
+                  <SelectItem key="<">{"<"}</SelectItem>
+                  <SelectItem key="=">{"=="}</SelectItem>
+                  <SelectItem key="!=">{"!="}</SelectItem>
+                  <SelectItem key=">">{">"}</SelectItem>
+                </Select>
+                <Input
+                  label="Tar. Param."
+                  name="correlationTargetParam"
+                  size="sm"
+                />
               </div>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
