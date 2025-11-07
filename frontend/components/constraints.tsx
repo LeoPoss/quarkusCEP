@@ -1,13 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import ky from "ky";
-import {
-  Accordion,
-  AccordionItem,
-  Chip,
-  Divider,
-  Spinner,
-  Tooltip,
-} from "@heroui/react";
+import { Accordion, AccordionItem, Chip, Divider, Spinner, Tooltip } from "@heroui/react";
 import * as React from "react";
 import { LinkBreakIcon } from "@phosphor-icons/react";
 import ShikiHighlighter from "react-shiki";
@@ -15,7 +8,7 @@ import { useTheme } from "next-themes";
 
 type Event = {
   name: string;
-  type: 'SIGNAL' | 'TASK';
+  type: "SIGNAL" | "TASK";
   timer?: number;
 };
 
@@ -45,11 +38,12 @@ type EplStatement = {
 };
 
 function useConstraints() {
-  return useQuery({
+  return useQuery<Constraint[]>({
     refetchInterval: 1000,
     queryKey: ["constraints"],
     queryFn: async () => {
-      return await ky<Constraint[]>("http://localhost:8080/constraints").json();
+      const response = await ky.get("http://localhost:8080/constraints");
+      return await response.json<Constraint[]>();
     },
   });
 }
@@ -101,11 +95,6 @@ export default function Constraints() {
                   key={c.name}
                   startContent={
                     <>
-                      {/*<Circle
-                        className={statusCircle[c.status]}
-                        size={32}
-                        weight="duotone"
-                      />*/}
                       <Chip color={statusChip[c.status]}>{c.status}</Chip>
                     </>
                   }
@@ -155,24 +144,29 @@ function formatConstraintDisplay(c?: Constraint | null): React.ReactNode {
     !cond
       ? ""
       : [cond.param, cond.operator, cond.value]
-          .map((p) => p?.trim())
-          .filter(Boolean)
-          .join(" ");
+        .map((p) => p?.trim())
+        .filter(Boolean)
+        .join(" ");
 
-  const formatEvent = (event?: Event | null, condition?: string, timer?: number): React.ReactNode => {
+  const formatEvent = (
+    event?: Event | null,
+    condition?: string,
+  ): React.ReactNode => {
     if (!event?.name) return "";
-    
+
     const name = event.name.trim();
-    const type = event.type ? `:${event.type.toLowerCase()}` : '';
-    const conditionPart = condition ? `[${condition}]` : '';
-    
+    const type = event.type ? `:${event.type.toLowerCase()}` : "";
+    const conditionPart = condition ? `[${condition}]` : "";
+
     return (
-      <>
-        {name}{conditionPart}{type}
-      </>
+      <React.Fragment key={`${name}-${conditionPart}-${type}`}>
+        {name}
+        {conditionPart}
+        {type}
+      </React.Fragment>
     );
   };
-  
+
   const formatTimer = (time: number) => (
     <span className="text-xs align-sub">[0,{time}]</span>
   );
@@ -180,47 +174,52 @@ function formatConstraintDisplay(c?: Constraint | null): React.ReactNode {
   const type = c.type?.trim() || "";
   const withinPeriod = c.withinPeriod;
   const targetTimer = c.targetCondition?.timer;
+  const activationTimer = c.activationCondition?.timer;
 
   const activation = formatEvent(
     c.activationEvent,
-    formatCondition(c.activationCondition)
-  );
-  
-  const target = formatEvent(
-    c.targetEvent, 
-    formatCondition(c.targetCondition)
+    formatCondition(c.activationCondition),
   );
 
-  const events = [activation, target].filter(Boolean);
+  const target = formatEvent(c.targetEvent, formatCondition(c.targetCondition));
+
   const formattedEvents = [];
-  
-  // Add activation event if exists
+
   if (activation) {
     formattedEvents.push(activation);
+    console.log(c.activationCondition);
+    if (activationTimer !== null && activationTimer !== undefined) {
+      formattedEvents.push(formatTimer(activationTimer));
+    }
+    if (target) {
+      formattedEvents.push(", ");
+    }
   }
-  
-  // Add target event with its timer if exists
+
   if (target) {
     formattedEvents.push(target);
-    if (targetTimer !== undefined) {
+    if (targetTimer !== null && targetTimer !== undefined) {
       formattedEvents.push(formatTimer(targetTimer));
     }
   }
 
-  if (!type) return <>{formattedEvents.length > 0 ? formattedEvents : ''}</>;
-  if (formattedEvents.length === 0) return <>{type || ''}</>;
+  if (!type) return <>{formattedEvents.length > 0 ? formattedEvents : ""}</>;
+  if (formattedEvents.length === 0) return <>{type || ""}</>;
 
-  const timerSuffix = withinPeriod !== undefined ? formatTimer(withinPeriod) : null;
+  const timerSuffix = withinPeriod != null ? formatTimer(withinPeriod) : null;
 
   return (
     <span>
-      {type}{timerSuffix}({formattedEvents.reduce((result: React.ReactNode[], event, index, array) => {
-        result.push(event);
-        if (index < array.length - 1 && !React.isValidElement(event)) {
-          result.push(", ");
-        }
-        return result;
-      }, [])})
+      {type}
+      {timerSuffix}(
+      {formattedEvents.reduce(
+        (result: React.ReactNode[], event, index, array) => {
+          result.push(event);
+          return result;
+        },
+        [],
+      )}
+      )
     </span>
   );
 }

@@ -45,19 +45,21 @@ public class NotExistenceConstraintHandler extends BaseConstraintHandler {
 
     @Override
     public void createFulfillmentQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
-        String query = """
-                        INSERT INTO constraintStatus
-                        SELECT '%s' as name, 'FULFILLMENT' as type, a.timestamp as timestamp
-                        FROM PATTERN [
-                            a=constraintStatus(type='ACTIVATION', name='%s')
-                                                    -> (timer:interval(%d sec) and not b=constraintStatus(type='TARGET', name='%s'))
-                        ]
-                """.formatted(name, name, withinPeriod, name);
+        if (withinPeriod != null) {
+            String query = """
+                            INSERT INTO constraintStatus
+                            SELECT '%s' as name, 'FULFILLMENT' as type, a.timestamp as timestamp
+                            FROM PATTERN [
+                                a=constraintStatus(type='ACTIVATION', name='%s')
+                                                        -> (timer:interval(%d sec) and not b=constraintStatus(type='TARGET', name='%s'))
+                            ]
+                    """.formatted(name, name, withinPeriod, name);
 
 
-        var statement = esperService.deployStatements(name + "_FULFILLMENT", query);
+            var statement = esperService.deployStatements(name + "_FULFILLMENT", query);
 
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
+            statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
+            addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
+        }
     }
 }

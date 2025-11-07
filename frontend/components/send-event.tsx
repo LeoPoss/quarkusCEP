@@ -1,4 +1,3 @@
-import ky from "ky";
 import {
   addToast,
   Button,
@@ -12,20 +11,16 @@ import {
   ModalFooter,
   ModalHeader,
   Tooltip,
-  useDisclosure,
+  useDisclosure
 } from "@heroui/react";
 import { Input } from "@heroui/input";
 import * as React from "react";
 import { useState } from "react";
-import {
-  CodeIcon,
-  PaperPlaneTiltIcon,
-  TrashIcon,
-  WarningIcon,
-} from "@phosphor-icons/react";
+import { useMutation } from "@tanstack/react-query";
+import ky from "ky";
+import { CodeIcon, PaperPlaneTiltIcon, TrashIcon, WarningIcon } from "@phosphor-icons/react";
 
 import { cardHeader } from "./primitives";
-
 import { useMPDeclare } from "@/contexts/mpDeclareContext";
 
 export default function SendEvent() {
@@ -41,18 +36,31 @@ export default function SendEvent() {
     };
   };
 
-  async function sendEvent(event: Event) {
-    const response = await ky.post("http://localhost:8080/esper/event", {
-      json: event,
-    });
+  const sendEventMutation = useMutation({
+    mutationFn: async (event: Event) => {
+      const response = await ky.post("http://localhost:8080/esper/event", {
+        json: event,
+      });
+      return response;
+    },
+    onSuccess: () => {
+      addToast({
+        title: "Event sent successfully",
+        description: `Event type: ${sendEventMutation.variables?.eventType || "Unknown"}`,
+        color: "success",
+      });
+    },
+    onError: (error) => {
+      addToast({
+        title: "Error sending event",
+        description: error.message,
+        color: "danger",
+      });
+    },
+  });
 
-    addToast({
-      title: "Event sent successfully",
-      description: `Submitted event: ${JSON.stringify(event)}`,
-      color: "success",
-      timeout: 1000,
-      shouldShowTimeoutProgress: true,
-    });
+  function handleSendEvent(event: Event) {
+    sendEventMutation.mutate(event);
   }
 
   async function resetEsper() {
@@ -120,7 +128,7 @@ export default function SendEvent() {
           <div className="grid grid-cols-2 gap-2">
             <Button
               onPress={() =>
-                sendEvent({
+                handleSendEvent({
                   eventType: customEventType,
                   payload:
                     payloadName && payloadValue
@@ -135,7 +143,7 @@ export default function SendEvent() {
             </Button>
             <Button
               onPress={() =>
-                sendEvent({
+                handleSendEvent({
                   eventType: customEventType,
                   payload:
                     payloadName && payloadValue
@@ -159,7 +167,7 @@ export default function SendEvent() {
                 color="secondary"
                 size="md"
                 variant="flat"
-                onPress={() => sendEvent({ eventType: "A" })}
+                onPress={() => handleSendEvent({ eventType: "A" })}
               >
                 A
               </Button>
@@ -169,7 +177,7 @@ export default function SendEvent() {
                 color="secondary"
                 size="md"
                 variant="flat"
-                onPress={() => sendEvent({ eventType: "B" })}
+                onPress={() => handleSendEvent({ eventType: "B" })}
               >
                 B
               </Button>
