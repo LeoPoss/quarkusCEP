@@ -10,7 +10,7 @@ const MPDeclareContext = createContext<MPDeclareContextType | undefined>(
 );
 
 export function MPDeclareProvider({ children }: { children: ReactNode }) {
-  const [isMPDeclareEnabled, setIsMPDeclareEnabled] = useState(false);
+  const [isMPDeclareEnabled, setIsMPDeclareEnabled] = useState(true);
 
   const toggleMPDeclare = () => {
     setIsMPDeclareEnabled((prev) => !prev);
