@@ -1,6 +1,6 @@
 package de.ur.dto;
 
-public record ConditionRequest(String param, String operator, String value) {
+public record ConditionRequest(String param, String operator, String value, Long timer) {
     public boolean isValid() {
         return (param != null && operator != null && value != null && !param.isBlank() && !operator.isBlank() && !value.isBlank());
     }

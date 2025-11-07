@@ -15,7 +15,7 @@ public class AlternateResponseConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
+    public void createFulfillmentQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM pattern [
@@ -34,7 +34,7 @@ public class AlternateResponseConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
+    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM pattern [
@@ -55,7 +55,7 @@ public class AlternateResponseConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createPermanentViolationQuery(String name, CorrelationCondition correlation) {
+    public void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM pattern [

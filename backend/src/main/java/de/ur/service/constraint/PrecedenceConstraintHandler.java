@@ -15,7 +15,7 @@ public class PrecedenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
+    public void createFulfillmentQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM PATTERN [every a=constraintStatus(type='ACTIVATION', name='%s') -> b=constraintStatus(type='TARGET', name='%s')]
@@ -25,26 +25,26 @@ public class PrecedenceConstraintHandler extends BaseConstraintHandler {
             query = appendCondition(query, correlation.getCorrelationQueryPart());
         }
 
-        var statement = esperService.deployStatements(name, query);
+        var statement = esperService.deployStatements(name + "_FUL", query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }
 
     @Override
-    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
+    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT id, name, type, timestamp
                 FROM constraintStatus
                 WHERE name = '%s' AND type = 'TARGET'
                 """.formatted(name);
 
-        var statement = esperService.deployStatements(name, query);
+        var statement = esperService.deployStatements(name + "_TEMP_VIO", query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
     }
 
     @Override
-    public void createPermanentViolationQuery(String name, CorrelationCondition correlation) {
+    public void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM PATTERN [every a=constraintStatus(type='TARGET', name='%s') -> (timer:interval(1 sec) and not b=constraintStatus(type='ACTIVATION', name='%s'))]
@@ -54,7 +54,7 @@ public class PrecedenceConstraintHandler extends BaseConstraintHandler {
             query = appendCondition(query, correlation.getCorrelationQueryPart());
         }
 
-        var statement = esperService.deployStatements(name, query);
+        var statement = esperService.deployStatements(name + "_PERM_VIO", query);
         statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }

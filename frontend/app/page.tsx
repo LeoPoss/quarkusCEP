@@ -36,7 +36,12 @@ export default function Home() {
         <div className="md:col-span-1 space-y-4"></div>
       </div>
 
-      <h2 className={subtitle()}>Current constraints</h2>
+      <h2 className={subtitle()}>
+        Current constraints{" "}
+        <span className="text-sm text-gray-500">
+          (Timers start with first event)
+        </span>
+      </h2>
       <ConstraintsOverview />
     </section>
   );

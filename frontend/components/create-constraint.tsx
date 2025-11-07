@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Card, CardBody, CardHeader, Form, Input } from "@heroui/react";
+import { Button, Card, CardBody, CardHeader, Form } from "@heroui/react";
 import ky from "ky";
 import dynamic from "next/dynamic";
 
@@ -29,10 +29,11 @@ export default function CreateConstraint() {
     // Prepare the request payload
     const payload: any = {
       name: data.name,
+      timer: data.timer || null,
       activationEvent: data.activationEvent || null,
       targetEvent: data.targetEvent || null,
-      activationEventType: data.activationEventType || 'signal',
-      targetEventType: data.targetEventType || 'task',
+      activationEventType: data.activationEventType,
+      targetEventType: data.targetEventType,
     };
 
     // Add activation condition if MP-Declare is enabled
@@ -41,6 +42,7 @@ export default function CreateConstraint() {
         param: data.activationParam,
         operator: data.activationOperator,
         value: data.activationValue,
+        timer: data.activationTimer,
       };
 
       // Add target condition if fields are filled
@@ -49,6 +51,7 @@ export default function CreateConstraint() {
           param: data.targetParam,
           operator: data.targetOperator,
           value: data.targetValue,
+          timer: data.targetTimer,
         };
       }
 

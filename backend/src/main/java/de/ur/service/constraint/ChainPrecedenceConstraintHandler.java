@@ -15,7 +15,7 @@ public class ChainPrecedenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
+    public void createFulfillmentQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM PATTERN [every a=constraintStatus(type='ACTIVATION', name='%s') -> b=constraintStatus(type='TARGET', name='%s')]
@@ -31,7 +31,7 @@ public class ChainPrecedenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
+    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT id, name, type, timestamp
                 FROM constraintStatus
@@ -44,7 +44,7 @@ public class ChainPrecedenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createPermanentViolationQuery(String name, CorrelationCondition correlation) {
+    public void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM PATTERN [every a=constraintStatus(type='ACTIVATION', name='%s') -> b=constraintStatus(name!='%s')]

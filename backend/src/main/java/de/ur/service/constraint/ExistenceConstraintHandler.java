@@ -15,7 +15,7 @@ public class ExistenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
+    public void createFulfillmentQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT id, name, type, timestamp
                 FROM constraintStatus
@@ -32,7 +32,35 @@ public class ExistenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
-        // No temporary violation for existence constraint
+    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
+        String query = """
+                INSERT INTO constraintStatus
+                SELECT '%s' as name, 'ACTIVATION' as type
+                FROM PATTERN [
+                     every a=GenericEvent() -> (timer:interval(0 sec) and not GenericEvent())
+                 ];""".formatted(name);
+
+        var statement = esperService.deployStatements(name + "_TEMP_VIO", query);
+
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
+    }
+
+    @Override
+    public void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
+        String query = """
+                        INSERT INTO constraintStatus
+                        SELECT '%s' as name, 'PERMANENT_VIOLATION' as type, a.timestamp as timestamp
+                        FROM PATTERN [
+                            a=constraintStatus(type='ACTIVATION', name='%s')
+                                                    -> (timer:interval(%d sec) and not b=constraintStatus(type='TARGET', name='%s'))
+                        ]
+                """.formatted(name, name, withinPeriod, name);
+
+
+        var statement = esperService.deployStatements(name + "_PERM_VIO", query);
+
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }
 }

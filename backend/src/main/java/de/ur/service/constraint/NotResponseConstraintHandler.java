@@ -15,18 +15,38 @@ public class NotResponseConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
-        // NotResponse doesn't have a fulfillment query as it's about the absence of an
-        // event
+    public void createFulfillmentQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
+        String query = """
+                        INSERT INTO constraintStatus
+                        SELECT '%s' as name, 'PERMANENT_VIOLATION' as type, a.timestamp as timestamp
+                        FROM PATTERN [
+                            a=constraintStatus(type='ACTIVATION', name='%s')
+                                                    -> (timer:interval(%d sec) and not b=constraintStatus(type='TARGET', name='%s'))
+                        ]
+                """.formatted(name, name, withinPeriod, name);
+
+
+        var statement = esperService.deployStatements(name + "_FULFILLMENT", query);
+
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }
 
     @Override
-    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
+    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
+        String query = """
+                SELECT id, name, type, timestamp
+                FROM constraintStatus
+                WHERE name = '%s' AND type = 'ACTIVATION'
+                """.formatted(name);
 
+        var statement = esperService.deployStatements(name, query);
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));
+        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
     }
 
     @Override
-    public void createPermanentViolationQuery(String name, CorrelationCondition correlation) {
+    public void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
                 FROM PATTERN [

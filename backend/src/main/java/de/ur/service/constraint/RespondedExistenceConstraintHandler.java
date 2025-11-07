@@ -15,7 +15,7 @@ public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createFulfillmentQuery(String name, CorrelationCondition correlation) {
+    public void createFulfillmentQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT a.id, a.name, a.type, a.timestamp as timestamp
                 FROM pattern [
@@ -54,7 +54,7 @@ public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation) {
+    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
                 SELECT id, name, type, timestamp
                 FROM constraintStatus
@@ -67,7 +67,7 @@ public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
     }
 
     @Override
-    public void createPermanentViolationQuery(String name, CorrelationCondition correlation) {
+    public void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         // Responded existence doesn't have a permanent violation
     }
 }

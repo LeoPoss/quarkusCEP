@@ -12,11 +12,12 @@ export default function FormFields({
   setConstraintType,
   isMPDeclareEnabled,
 }: FormFieldsProps) {
-  const [activationEventType, setActivationEventType] = React.useState('signal');
-  const [targetEventType, setTargetEventType] = React.useState('task');
+  const [activationEventType, setActivationEventType] =
+    React.useState("signal");
+  const [targetEventType, setTargetEventType] = React.useState("task");
   return (
     <>
-      <div className="grid grid-cols-2 gap-4 col-span-3">
+      <div className="grid grid-cols-3 gap-4 col-span-3">
         <Input
           isRequired
           label="Constraint Name"
@@ -38,26 +39,34 @@ export default function FormFields({
           className="w-full"
           onChange={(e) => setConstraintType(e.target.value)}
         >
-        <SelectSection title="Existence Constraints">
-          <SelectItem key="existence">Existence</SelectItem>
-          <SelectItem key="notexistence">NotExistence</SelectItem>
-        </SelectSection>
-        <SelectSection title="Relation Constraints">
-          <SelectItem key="respondedExistence">Responded Existence</SelectItem>
-          <SelectItem key="response">Response</SelectItem>
-          <SelectItem key="alternateResponse">Alternate Response</SelectItem>
-          <SelectItem key="chainResponse">Chain Response</SelectItem>
-          <SelectItem key="precedence">Precedence</SelectItem>
-          <SelectItem key="alternatePrecedence">
-            Alternate Precedence
-          </SelectItem>
-          <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>
-        </SelectSection>
-        <SelectSection title="Negative Relation Constraints">
-          <SelectItem key="notResponse">Not Response</SelectItem>
-          <SelectItem key="notPrecedence">Not Precedence</SelectItem>
-        </SelectSection>
+          <SelectSection title="Existence Constraints">
+            <SelectItem key="existence">Existence</SelectItem>
+            <SelectItem key="notexistence">NotExistence</SelectItem>
+          </SelectSection>
+          <SelectSection title="Relation Constraints">
+            <SelectItem key="respondedExistence">
+              Responded Existence
+            </SelectItem>
+            <SelectItem key="response">Response</SelectItem>
+            <SelectItem key="alternateResponse">Alternate Response</SelectItem>
+            <SelectItem key="chainResponse">Chain Response</SelectItem>
+            <SelectItem key="precedence">Precedence</SelectItem>
+            <SelectItem key="alternatePrecedence">
+              Alternate Precedence
+            </SelectItem>
+            <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>
+          </SelectSection>
+          <SelectSection title="Negative Relation Constraints">
+            <SelectItem key="notResponse">Not Response</SelectItem>
+            <SelectItem key="notPrecedence">Not Precedence</SelectItem>
+          </SelectSection>
         </Select>
+        <Input
+          label="Constraint Timer"
+          name="timer"
+          size="sm"
+          className="w-full"
+        />
       </div>
       <div className="col-span-3 grid gap-y-4">
         <div className="space-y-2">
@@ -76,7 +85,11 @@ export default function FormFields({
               size="sm"
               className="flex-1"
               classNames={{
-                inputWrapper: constraintType === "existence" || constraintType === "notexistence" ? "opacity-50" : ""
+                inputWrapper:
+                  constraintType === "existence" ||
+                  constraintType === "notexistence"
+                    ? "opacity-50"
+                    : "",
               }}
             />
             <div className="flex flex-col gap-1">
@@ -84,32 +97,48 @@ export default function FormFields({
                 <button
                   type="button"
                   className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
-                    activationEventType === 'signal' 
-                      ? 'bg-white shadow-sm' 
-                      : 'text-foreground-500 hover:bg-default-200'
+                    activationEventType === "signal"
+                      ? "bg-white shadow-sm"
+                      : "text-foreground-500 hover:bg-default-200"
                   } ${
-                    constraintType === "existence" || constraintType === "notexistence" ? 'opacity-50' : ''
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                      ? "opacity-50"
+                      : ""
                   }`}
-                  onClick={() => setActivationEventType('signal')}
-                  disabled={constraintType === "existence" || constraintType === "notexistence"}
+                  onClick={() => setActivationEventType("signal")}
+                  disabled={
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                  }
                 >
                   Signal
                 </button>
                 <button
                   type="button"
                   className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
-                    activationEventType === 'task' 
-                      ? 'bg-white shadow-sm' 
-                      : 'text-foreground-500 hover:bg-default-200'
+                    activationEventType === "task"
+                      ? "bg-white shadow-sm"
+                      : "text-foreground-500 hover:bg-default-200"
                   } ${
-                    constraintType === "existence" || constraintType === "notexistence" ? 'opacity-50' : ''
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                      ? "opacity-50"
+                      : ""
                   }`}
-                  onClick={() => setActivationEventType('task')}
-                  disabled={constraintType === "existence" || constraintType === "notexistence"}
+                  onClick={() => setActivationEventType("task")}
+                  disabled={
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                  }
                 >
                   Task
                 </button>
-                <input type="hidden" name="activationEventType" value={activationEventType} />
+                <input
+                  type="hidden"
+                  name="activationEventType"
+                  value={activationEventType}
+                />
               </div>
             </div>
           </div>
@@ -128,28 +157,32 @@ export default function FormFields({
                 <button
                   type="button"
                   className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
-                    targetEventType === 'signal' 
-                      ? 'bg-white shadow-sm' 
-                      : 'text-foreground-500 hover:bg-default-200'
+                    targetEventType === "signal"
+                      ? "bg-white shadow-sm"
+                      : "text-foreground-500 hover:bg-default-200"
                   }`}
-                  onClick={() => setTargetEventType('signal')}
+                  onClick={() => setTargetEventType("signal")}
                 >
                   Signal
                 </button>
                 <button
                   type="button"
                   className={`px-3 h-9 flex items-center text-sm rounded transition-colors ${
-                    targetEventType === 'task' 
-                      ? 'bg-white shadow-sm' 
-                      : 'text-foreground-500 hover:bg-default-200'
+                    targetEventType === "task"
+                      ? "bg-white shadow-sm"
+                      : "text-foreground-500 hover:bg-default-200"
                   }`}
-                  onClick={() => setTargetEventType('task')}
+                  onClick={() => setTargetEventType("task")}
                 >
                   Task
                 </button>
               </div>
             </div>
-            <input type="hidden" name="targetEventType" value={targetEventType} />
+            <input
+              type="hidden"
+              name="targetEventType"
+              value={targetEventType}
+            />
           </div>
         </div>
       </div>
@@ -189,6 +222,7 @@ export default function FormFields({
                     name="activationValue"
                     size="sm"
                   />
+                  <Input label="Timer" name="activationTimer" size="sm" />
                 </div>
               </div>
               <div>
@@ -227,6 +261,8 @@ export default function FormFields({
                     name="correlationTargetParam"
                     size="sm"
                   />
+
+                  <Input label="Timer" name="targetTimer" size="sm" />
                 </div>
               </div>
             </div>

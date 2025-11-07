@@ -9,6 +9,7 @@ import java.util.ArrayList;
 @AllArgsConstructor
 public class Constraint {
     private String name;
+    private Long withinPeriod;
     private ArrayList<EplStatement> eplStatements;
     private Event activationEvent;
     private ConstraintCondition activationCondition;

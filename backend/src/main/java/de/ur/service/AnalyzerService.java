@@ -1,10 +1,6 @@
 package de.ur.service;
 
-import de.ur.dao.Constraint;
-import de.ur.dao.ConstraintStatus;
-import de.ur.dao.ConstraintType;
-import de.ur.dao.ConstraintCondition;
-import de.ur.dao.Event;
+import de.ur.dao.*;
 import de.ur.dto.AllowedTaskResponse;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.extern.slf4j.Slf4j;
@@ -18,17 +14,25 @@ import static de.ur.dao.ConstraintType.*;
 @ApplicationScoped
 @Slf4j
 public class AnalyzerService {
-    // In-memory storage for the most recent signal values
     private final Map<String, Map<String, String>> signalStates = new HashMap<>();
+
     public Map<String, Object> checkFinishability(List<Constraint> constraints) {
-        List<String> reasons = constraints.stream().filter(constraint -> {
-            ConstraintStatus status = constraint.getStatus();
-            return PERMANENT_VIOLATION.equals(status) || TEMPORARY_VIOLATION.equals(status);
-        }).map(constraint -> {
-            ConstraintStatus status = constraint.getStatus();
-            String state = PERMANENT_VIOLATION.equals(status) ? "permanently" : "temporarily";
-            return String.format("%s violated: %s (%s)", state, constraint.getName(), constraint.getType());
-        }).toList();
+        List<String> reasons = constraints.stream()
+                .filter(constraint -> {
+                    // For NOT_EXISTENCE and NOT_RESPONSE, only PERMANENT_VIOLATION blocks completion
+                    if (NOT_EXISTENCE.equals(constraint.getType()) || NOT_RESPONSE.equals(constraint.getType())) {
+                        return PERMANENT_VIOLATION.equals(constraint.getStatus());
+                    }
+                    // For all other constraints, both violations block completion
+                    ConstraintStatus status = constraint.getStatus();
+                    return PERMANENT_VIOLATION.equals(status) || TEMPORARY_VIOLATION.equals(status);
+                })
+                .map(constraint -> {
+                    ConstraintStatus status = constraint.getStatus();
+                    String state = PERMANENT_VIOLATION.equals(status) ? "permanently" : "temporarily";
+                    return String.format("%s violated: %s (%s)", state, constraint.getName(), constraint.getType());
+                })
+                .toList();
 
         boolean canFinish = reasons.isEmpty();
         log.debug("Finishability check: canFinish={}, reasons.size={}", canFinish, reasons.size());
@@ -88,23 +92,13 @@ public class AnalyzerService {
         }).collect(Collectors.toList());
     }
 
-    /**
-     * Updates the current state of a signal event.
-     * @param signalName The name of the signal
-     * @param payload The current payload/values of the signal
-     */
     public void updateSignalState(String signalName, Map<String, String> payload) {
         if (signalName != null && payload != null) {
             signalStates.put(signalName, new HashMap<>(payload));
             log.debug("Updated signal state for '{}': {}", signalName, payload);
         }
     }
-    
-    /**
-     * Gets the current state of a signal.
-     * @param signalName The name of the signal
-     * @return The current payload of the signal, or null if not found
-     */
+
     public Map<String, String> getSignalState(String signalName) {
         return signalStates.get(signalName);
     }
@@ -122,7 +116,7 @@ public class AnalyzerService {
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Gets event names from an Event object.
      */
@@ -133,14 +127,14 @@ public class AnalyzerService {
         return List.of(event.name());
     }
 
-    private boolean checkEventsWithConditions(List<Map<String, Object>> trace, 
-                                           List<String> eventsToFind,
-                                           ConstraintCondition condition,
-                                           Event eventInfo) {
+    private boolean checkEventsWithConditions(List<Map<String, Object>> trace,
+                                              List<String> eventsToFind,
+                                              ConstraintCondition condition,
+                                              Event eventInfo) {
         if (eventsToFind == null || eventsToFind.isEmpty()) {
             return false;
         }
-        
+
         // If it's a signal event, check current signal state
         if (eventInfo != null && eventInfo.type() == Event.EventType.SIGNAL) {
             for (String eventName : eventsToFind) {
@@ -153,7 +147,7 @@ public class AnalyzerService {
             }
             return false;
         }
-        
+
         // For task events, check the trace
         if (trace.isEmpty()) {
             return false;
@@ -234,12 +228,12 @@ public class AnalyzerService {
 
         List<String> actEvents = getEventsFromField(constraint.getActivationEvent().name());
         List<String> trgEvents = getEventsFromField(constraint.getTargetEvent().name());
-        
+
         // Determine if events are signals or tasks
-        boolean actIsSignal = constraint.getActivationEvent() != null && 
-                             constraint.getActivationEvent().type() == Event.EventType.SIGNAL;
-        boolean trgIsSignal = constraint.getTargetEvent() != null && 
-                             constraint.getTargetEvent().type() == Event.EventType.SIGNAL;
+        boolean actIsSignal = constraint.getActivationEvent() != null &&
+                constraint.getActivationEvent().type() == Event.EventType.SIGNAL;
+        boolean trgIsSignal = constraint.getTargetEvent() != null &&
+                constraint.getTargetEvent().type() == Event.EventType.SIGNAL;
 
         // Check if the event matches the activation or target event type and conditions
         boolean isAct = actEvents.contains(event);
@@ -377,7 +371,7 @@ public class AnalyzerService {
                 if (isTrg) {
                     // Check if there's a matching activation event with conditions
                     boolean hasMatchingActivation = false;
-                    
+
                     // For signal-based activation events, check current signal state
                     if (actIsSignal) {
                         if (constraint.getActivationCondition() != null) {
@@ -408,7 +402,7 @@ public class AnalyzerService {
                             }
                         }
                     }
-                    
+
                     // If we found a matching activation, the constraint is fulfilled
                     // Otherwise, it's a violation
                     yield hasMatchingActivation ? FULFILLED : PERMANENT_VIOLATION;

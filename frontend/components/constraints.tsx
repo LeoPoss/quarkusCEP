@@ -23,16 +23,18 @@ type Constraint = {
   eplStatements: EplStatement[];
   type: string;
   status: string;
-  activationEvent: Event;
-  activationCondition: Condition;
-  targetEvent: Event;
-  targetCondition: Condition;
+  withinPeriod?: number;
+  activationEvent: Event | null;
+  activationCondition: Condition | null;
+  targetEvent: Event | null;
+  targetCondition: Condition | null;
 };
 
 type Condition = {
   param: string;
   operator: string;
   value: string;
+  timer?: number;
 };
 
 type EplStatement = {
@@ -145,42 +147,116 @@ export default function Constraints() {
   );
 }
 
-function formatConstraintDisplay(c?: Constraint | null): string {
+function formatConstraintDisplay(c?: Constraint | null): React.ReactNode {
   if (!c) return "";
 
-  const formatCondition = (cond?: Condition | null): string =>
-    !cond
-      ? ""
-      : [cond.param, cond.operator, cond.value]
-          .map((p) => p?.trim())
-          .filter(Boolean)
-          .join(" ");
+  const formatCondition = (cond?: Condition | null): { condition: string; timer?: number } => {
+    if (!cond) return { condition: "" };
+    
+    const condition = [cond.param, cond.operator, cond.value]
+      .map((p) => p?.trim())
+      .filter(Boolean)
+      .join(" ");
+      
+    return {
+      condition,
+      timer: cond.timer
+    };
+  };
 
-  const formatEvent = (event?: Event | string | null, condition?: string): string => {
-    if (!event) return "";
+  const EventWithTimer: React.FC<{ 
+    name: string; 
+    condition?: { condition: string; timer?: number }; 
+    type: string; 
+    withTimer: boolean; 
+    timerValue?: number 
+  }> = ({ 
+    name, 
+    condition, 
+    type, 
+    withTimer, 
+    timerValue 
+  }) => {
+    const conditionText = condition?.condition || '';
+    const timer = condition?.timer ?? timerValue;
     
-    // Handle both string (legacy) and Event object
-    const name = typeof event === 'string' ? event.trim() : event.name?.trim();
-    const type = typeof event === 'object' && event.type ? `:${event.type.toLowerCase()}` : '';
+    return (
+      <>
+        {name}
+        {conditionText && (
+          <>
+            [{conditionText}]
+            {withTimer && timer !== undefined && (
+              <span className="text-xs align-sub">[0,{timer}]</span>
+            )}
+          </>
+        )}
+        {type && `:${type}`}
+      </>
+    );
+  };
+
+  const formatEvent = (
+    event?: Event | null, 
+    conditionResult?: ReturnType<typeof formatCondition>,
+    withTimer = false, 
+    timerValue?: number
+  ): React.ReactNode => {
+    if (!event?.name) return null;
     
-    if (!name) return "";
-    
-    const formattedName = condition ? `${name}[${condition}]` : name;
-    return type ? `${formattedName}${type}` : formattedName;
+    return (
+      <EventWithTimer 
+        name={event.name.trim()} 
+        condition={conditionResult}
+        type={event.type?.toLowerCase() || ''}
+        withTimer={withTimer}
+        timerValue={timerValue}
+      />
+    );
   };
 
   const type = c.type?.trim() || "";
+  const withinPeriod = c.withinPeriod;
 
   const activation = formatEvent(
     c.activationEvent,
     formatCondition(c.activationCondition),
+    true // Add timer to activation event
   );
-  const target = formatEvent(c.targetEvent, formatCondition(c.targetCondition));
+  const target = formatEvent(
+    c.targetEvent, 
+    formatCondition(c.targetCondition)
+  );
 
-  const events = [activation, target].filter(Boolean).join(", ");
+  const events = [activation, target].filter((e): e is React.ReactElement => e !== null);
+  const hasEvents = events.length > 0;
 
-  if (!type) return events;
-  if (!events) return type;
+  if (!type) {
+    if (!hasEvents) return null;
+    return (
+      <>
+        {events.map((event, i) => (
+          <span key={i}>
+            {i > 0 && ', '}
+            {event}
+          </span>
+        ))}
+      </>
+    );
+  }
 
-  return `${type}(${events})`;
+  if (!hasEvents) return <>{type}</>;
+
+  return (
+    <span>
+      {type}(
+      {events.map((event, i) => (
+        <span key={i}>
+          {i > 0 && ', '}
+          {event}
+        </span>
+      ))}
+      )
+    </span>
+  );
 }

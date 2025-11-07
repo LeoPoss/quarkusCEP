@@ -4,7 +4,6 @@ import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
 import de.ur.dto.ConstraintRequest;
 import de.ur.service.ConstraintService;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -30,9 +29,11 @@ public class ConstraintResource {
     @POST
     @Path("/existence")
     public Response createExistenceConstraint(ConstraintRequest request) {
+        log.info(request.toString());
         constraintService.setupConstraint(
                 ConstraintType.EXISTENCE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),
@@ -51,6 +52,7 @@ public class ConstraintResource {
         constraintService.setupConstraint(
                 ConstraintType.NOT_EXISTENCE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),
@@ -69,6 +71,7 @@ public class ConstraintResource {
         constraintService.setupConstraint(
                 ConstraintType.RESPONSE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),
@@ -87,6 +90,7 @@ public class ConstraintResource {
         constraintService.setupConstraint(
                 ConstraintType.RESPONDED_EXISTENCE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),
@@ -105,6 +109,7 @@ public class ConstraintResource {
         constraintService.setupConstraint(
                 ConstraintType.ALTERNATE_RESPONSE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),
@@ -123,6 +128,7 @@ public class ConstraintResource {
         constraintService.setupConstraint(
                 ConstraintType.CHAIN_RESPONSE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),
@@ -141,6 +147,7 @@ public class ConstraintResource {
         constraintService.setupConstraint(
                 ConstraintType.PRECEDENCE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),
@@ -159,6 +166,7 @@ public class ConstraintResource {
         constraintService.setupConstraint(
                 ConstraintType.ALTERNATE_PRECEDENCE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),
@@ -177,6 +185,7 @@ public class ConstraintResource {
         constraintService.setupConstraint(
                 ConstraintType.CHAIN_PRECEDENCE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),
@@ -195,6 +204,7 @@ public class ConstraintResource {
         constraintService.setupConstraint(
                 ConstraintType.NOT_RESPONSE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),
@@ -213,6 +223,7 @@ public class ConstraintResource {
         constraintService.setupConstraint(
                 ConstraintType.NOT_PRECEDENCE,
                 request.name(),
+                request.timer(),
                 request.activationEvent(),
                 request.activationCondition(),
                 request.targetEvent(),

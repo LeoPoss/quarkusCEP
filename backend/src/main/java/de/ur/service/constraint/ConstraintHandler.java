@@ -10,12 +10,14 @@ import java.util.Set;
 public interface ConstraintHandler {
     ConstraintType getType();
 
-    void createDetectionQuery(StatementType type, String name, de.ur.dao.Event event, ConditionRequest condition, CorrelationCondition correlationCondition, Set<String> relevantKeys);
+    void createDetectionQuery(StatementType type, String name, de.ur.dao.Event event, ConditionRequest condition, CorrelationCondition correlationCondition, Set<String> relevantKeys, ConditionRequest activationCondition, ConditionRequest targetCondition);
 
-    void createFulfillmentQuery(String name, CorrelationCondition correlation);
+    default void createFulfillmentQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
+    }
 
-    void createTemporaryViolationQuery(String name, CorrelationCondition correlation);
+    default void createTemporaryViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
+    }
 
-    default void createPermanentViolationQuery(String name, CorrelationCondition correlation) {
+    default void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
     }
 }
