@@ -93,8 +93,8 @@ export default function SendEvent() {
                 value={customEventType}
                 onChange={(v) => setCustomEventType(v.target.value)}
               />
-              <div className="gap-2 bg-gradient-to-br from-primary-200 via-transparent p-2 relative">
-                <div className="absolute left-2 top-2 opacity-20 text-5xl font-bold text-primary">
+              <div className="bg-blue-50 dark:bg-blue-900/30 rounded-2xl border border-blue-100 dark:border-blue-800/50 p-4 relative">
+                <div className="absolute right-3 top-3 opacity-20 dark:opacity-10 text-5xl font-bold text-blue-400 dark:text-blue-300">
                   MP-Declare
                 </div>
                 <div className="col-span-2 grid grid-cols-2 gap-2">

@@ -1,33 +1,44 @@
 "use client";
 
-import * as React from "react";
-import { Switch } from "@heroui/switch";
-import { Chip } from "@heroui/chip";
-
+import { useQuery } from "@tanstack/react-query";
+import ky from "ky";
 import ConstraintsOverview from "@/components/constraints";
 import CreateConstraint from "@/components/create-constraint";
 import SendEvent from "@/components/send-event";
 import AnalysisPanel from "@/components/analysis-panel";
-import { useMPDeclare } from "@/contexts/mpDeclareContext";
+import FinishabilityStatus from "@/components/finishability-status";
 import { subtitle, title } from "@/components/primitives";
 
+interface FinishabilityResponse {
+  canFinish: boolean;
+  reasons: string[];
+}
+
+const fetchFinishability = async (): Promise<FinishabilityResponse> => {
+  return await ky.get("http://localhost:8080/analysis/finishability").json();
+};
+
 export default function Home() {
-  const { isMPDeclareEnabled, toggleMPDeclare } = useMPDeclare();
+  const {
+    data: finishability,
+    isLoading,
+    error,
+  } = useQuery<FinishabilityResponse>({
+    queryKey: ["analysis", "finishability"],
+    queryFn: fetchFinishability,
+    refetchInterval: 1000,
+  });
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className={title()}>Synergistic CEP for MP-Declare</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex items-center col-span-2 gap-2 bg-gradient-to-br from-primary-200 via-transparent p-2 w-fit">
-          <Chip color="primary">MP-Declare</Chip>
-          <Switch
-            checked={isMPDeclareEnabled}
-            color="primary"
-            size="sm"
-            onChange={toggleMPDeclare}
-          />
-        </div>
+      <FinishabilityStatus
+        finishability={finishability!}
+        isLoading={isLoading}
+        error={error}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 ">
         <AnalysisPanel />
         <SendEvent />
 

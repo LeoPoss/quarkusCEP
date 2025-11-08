@@ -1,9 +1,5 @@
 import { Card, CardBody, CardHeader, Chip, Spinner } from "@heroui/react";
-import {
-  CheckCircleIcon,
-  CompassRoseIcon,
-  XCircleIcon,
-} from "@phosphor-icons/react";
+import { CompassRoseIcon, XCircleIcon } from "@phosphor-icons/react";
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import ky from "ky";
@@ -106,60 +102,7 @@ export default function AnalysisPanel() {
         </CardHeader>
         <CardBody>
           <div className="flex flex-col gap-4">
-            {finishability && (
-              <div
-                className={`flex items-start gap-3 p-4 rounded-lg ${
-                  finishability.canFinish
-                    ? "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
-                    : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
-                }`}
-              >
-                {finishability.canFinish ? (
-                  <CheckCircleIcon
-                    size={24}
-                    weight="fill"
-                    className="flex-shrink-0 mt-0.5"
-                  />
-                ) : (
-                  <XCircleIcon
-                    size={24}
-                    weight="fill"
-                    className="flex-shrink-0 mt-0.5"
-                  />
-                )}
-                <div>
-                  <h3 className="font-medium text-lg">
-                    {finishability.canFinish
-                      ? "Process can be finished"
-                      : "Process cannot be finished"}
-                  </h3>
-                  {finishability.reasons.length > 0 && (
-                    <div className="mt-2 space-y-2">
-                      {finishability.reasons.map((reason, index) => {
-                        const match = reason.match(/(.*?):\s*(.*)/);
-                        const [constraintType, constraintDetail] = match
-                          ? [match[1], match[2]]
-                          : [null, reason];
-
-                        return (
-                          <div
-                            key={index}
-                            className="text-sm p-2 rounded bg-white/50 dark:bg-gray-800/50"
-                          >
-                            {constraintType && (
-                              <span className="font-medium">{constraintType}: </span>
-                            )}
-                            {constraintDetail}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 gap-4">
+<div className="grid grid-cols-1 gap-4">
               <div className="rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
                 <h3 className="font-medium mb-3 text-gray-800 dark:text-gray-200">
                   Available Tasks
@@ -182,7 +125,7 @@ export default function AnalysisPanel() {
                             <div className="flex items-center justify-between">
                               <span className="font-medium">{taskName}</span>
                               {hasRestrictions && (
-                                <Chip size="sm" color="warning" variant="flat">
+                                <Chip size="sm" color="danger" variant="flat">
                                   Restrictions
                                 </Chip>
                               )}

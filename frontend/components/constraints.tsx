@@ -1,10 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import ky from "ky";
-import { Accordion, AccordionItem, Chip, Divider, Spinner, Tooltip } from "@heroui/react";
+import {
+  Accordion,
+  AccordionItem,
+  Chip,
+  Divider,
+  Spinner,
+  Tooltip,
+} from "@heroui/react";
 import * as React from "react";
 import { LinkBreakIcon } from "@phosphor-icons/react";
 import ShikiHighlighter from "react-shiki";
 import { useTheme } from "next-themes";
+
+import eql from "../langs/eql.tmLanguage.json";
 
 type Event = {
   name: string;
@@ -115,7 +124,7 @@ export default function Constraints() {
                         </Tooltip>
                         <ShikiHighlighter
                           className="col-span-3 text-sm border"
-                          language="sql"
+                          language={eql}
                           theme={
                             resolvedTheme === "dark"
                               ? "material-theme-darker"
@@ -144,9 +153,9 @@ function formatConstraintDisplay(c?: Constraint | null): React.ReactNode {
     !cond
       ? ""
       : [cond.param, cond.operator, cond.value]
-        .map((p) => p?.trim())
-        .filter(Boolean)
-        .join(" ");
+          .map((p) => p?.trim())
+          .filter(Boolean)
+          .join(" ");
 
   const formatEvent = (
     event?: Event | null,
