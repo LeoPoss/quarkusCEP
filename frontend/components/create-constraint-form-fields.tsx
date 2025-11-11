@@ -49,19 +49,19 @@ export default function FormFields({
                 Responded Existence
               </SelectItem>
               <SelectItem key="response">Response</SelectItem>
-              <SelectItem key="alternateResponse">
+              {/*<SelectItem key="alternateResponse">
                 Alternate Response
               </SelectItem>
-              <SelectItem key="chainResponse">Chain Response</SelectItem>
+              <SelectItem key="chainResponse">Chain Response</SelectItem>*/}
               <SelectItem key="precedence">Precedence</SelectItem>
-              <SelectItem key="alternatePrecedence">
+              {/*              <SelectItem key="alternatePrecedence">
                 Alternate Precedence
               </SelectItem>
-              <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>
+              <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>*/}
             </SelectSection>
             <SelectSection title="Negative Relation Constraints">
               <SelectItem key="notResponse">Not Response</SelectItem>
-              <SelectItem key="notPrecedence">Not Precedence</SelectItem>
+              {/*<SelectItem key="notPrecedence">Not Precedence</SelectItem>*/}
             </SelectSection>
           </Select>
           <Input
@@ -203,13 +203,19 @@ export default function FormFields({
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                 <Input
-                  isDisabled={constraintType === "existence" || constraintType === "notexistence"}
+                  isDisabled={
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                  }
                   label="Parameter"
                   name="activationParam"
                   size="sm"
                 />
                 <Select
-                  isDisabled={constraintType === "existence" || constraintType === "notexistence"}
+                  isDisabled={
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                  }
                   label="Operator"
                   name="activationOperator"
                   size="sm"
@@ -220,13 +226,19 @@ export default function FormFields({
                   <SelectItem key=">">{">"}</SelectItem>
                 </Select>
                 <Input
-                  isDisabled={constraintType === "existence" || constraintType === "notexistence"}
+                  isDisabled={
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                  }
                   label="Value"
                   name="activationValue"
                   size="sm"
                 />
                 <Input
-                  isDisabled={constraintType === "existence" || constraintType === "notexistence"}
+                  isDisabled={
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                  }
                   label="Cond. Timer"
                   name="activationTimer"
                   size="sm"
@@ -258,12 +270,18 @@ export default function FormFields({
                   label="Act. Param."
                   name="correlationActivationParam"
                   size="sm"
-                  isDisabled={constraintType === "existence" || constraintType === "notexistence"}
+                  isDisabled={
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                  }
                 />
                 <Select
                   label="Operator"
                   name="correlationOperator"
-                  isDisabled={constraintType === "existence" || constraintType === "notexistence"}
+                  isDisabled={
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                  }
                   size="sm"
                 >
                   <SelectItem key="<">{"<"}</SelectItem>
@@ -272,7 +290,10 @@ export default function FormFields({
                   <SelectItem key=">">{">"}</SelectItem>
                 </Select>
                 <Input
-                  isDisabled={constraintType === "existence" || constraintType === "notexistence"}
+                  isDisabled={
+                    constraintType === "existence" ||
+                    constraintType === "notexistence"
+                  }
                   label="Tar. Param."
                   name="correlationTargetParam"
                   size="sm"

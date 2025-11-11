@@ -48,19 +48,21 @@ public class ExistenceConstraintHandler extends BaseConstraintHandler {
 
     @Override
     public void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
-        String query = """
-                        INSERT INTO constraintStatus
-                        SELECT '%s' as name, 'PERMANENT_VIOLATION' as type, a.timestamp as timestamp
-                        FROM PATTERN [
-                            a=constraintStatus(type='ACTIVATION', name='%s')
-                                                    -> (timer:interval(%d sec) and not b=constraintStatus(type='TARGET', name='%s'))
-                        ]
-                """.formatted(name, name, withinPeriod, name);
+        if (withinPeriod != null) {
+            String query = """
+                            INSERT INTO constraintStatus
+                            SELECT '%s' as name, 'PERMANENT_VIOLATION' as type, a.timestamp as timestamp
+                            FROM PATTERN [
+                                a=constraintStatus(type='ACTIVATION', name='%s')
+                                                        -> (timer:interval(%d sec) and not b=constraintStatus(type='TARGET', name='%s'))
+                            ]
+                    """.formatted(name, name, withinPeriod, name);
 
 
-        var statement = esperService.deployStatements(name + "_PERM_VIO", query);
+            var statement = esperService.deployStatements(name + "_PERM_VIO", query);
 
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
+            statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
+            addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
+        }
     }
 }

@@ -31,6 +31,12 @@ public class GenericStatusUpdateListener implements UpdateListener {
 
         EventBean event = newEvents[0];
 
+        if (event.get("timestamp") != null) {
+            long startTime = (long) event.get("timestamp");
+            long latencyNanos = System.nanoTime() - startTime;
+            log.info("LATENCY,{},{}", this.constraintName, latencyNanos);
+        }
+
         log.info("Reacting to '{}' for constraint '{}'", statusToSet, constraintName);
         constraintService.getConstraints().get(constraintName).updateStatus(statusToSet);
 
