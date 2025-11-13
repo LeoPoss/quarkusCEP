@@ -1,92 +1,84 @@
+import asyncio
 import random
 import re
-import asyncio
 import time
-import pandas as pd
-import numpy as np
+
 import docker
 import httpx
+import numpy as np
+import pandas as pd
 from tqdm.asyncio import tqdm
 
 BACKEND_IMAGE = "quarkuscep-backend:latest"
 API_BASE_URL = "http://localhost:8080"
 CPU_CORES = 2
-MEMORY_LIMIT = "4G"
+MEMORY_LIMIT = "2G"
 
 ACTIVE_CONSTRAINTS_SHARE = 1
-NOISE_EVENT_PERCENT = 0.99
+NOISE_EVENT_PERCENT = 0.9
+
+
+def create_constraint(constraint_type, i, **kwargs):
+    base = {
+        "name": f"{constraint_type.capitalize()}{i}",
+        "type": constraint_type.lower(),
+        "activationEvent": f"{constraint_type[0].upper()}A{i}",
+        "targetEvent": f"{constraint_type[0].upper()}T{i}",
+        "activationCondition": {
+            "param": "priority",
+            "operator": ">",
+            "value": "3"
+        },
+        "targetCondition": {
+            "param": "priority",
+            "operator": ">",
+            "value": "2"
+        }
+    }
+    base.update(kwargs)
+    return base
+
 
 SCALABILITY_CONSTRAINTS = [
-                              {"name": f"Response{i}", "type": "response", "activationEvent": f"AR{i}",
-                               "targetEvent": f"TR{i}"} for i in range(5)
+                              create_constraint("response", i) for i in range(5)
                           ] + [
-                              {"name": f"Precedence{i}", "type": "precedence", "activationEvent": f"AP{i}",
-                               "targetEvent": f"TP{i}"} for i in range(5)
+                              create_constraint("precedence", i) for i in range(5)
                           ]
 
-COMPLEXITY_SCENARIOS = {
-    "400_mixed_complex": {
-        "constraints": (
-            # 5 standard Response constraints
-                [{"name": f"MixResp{i}", "type": "response", "activationEvent": f"MAR{i}", "targetEvent": f"MTR{i}"} for
-                 i in range(10)] +
-                # 5 Precedence constraints
-                [{"name": f"MixPrec{i}", "type": "precedence", "activationEvent": f"MAP{i}", "targetEvent": f"MTP{i}"}
-                 for i in range(10)] +
-                # 5 Alternate Response (stricter sequence) constraints
-                [{"name": f"MixAltR{i}", "type": "alternateresponse", "activationEvent": f"MAAR{i}",
-                  "targetEvent": f"MATR{i}"} for i in range(10)] +
-                # 5 Not Response (negative) constraints
-                [{"name": f"MixNotR{i}", "type": "notresponse", "activationEvent": f"MANR{i}",
-                  "targetEvent": f"MTNR{i}"} for i in range(10)]
-        )
-    },
-    "10_response": {
-        "constraints": [{"name": f"Response{i}", "type": "response", "activationEvent": f"A{i}", "targetEvent": f"T{i}"}
-                        for i in range(10)]
-    },
-    "10_precedence": {
-        "constraints": [
-            {"name": f"Precedence{i}", "type": "precedence", "activationEvent": f"A{i}", "targetEvent": f"T{i}"} for i
-            in range(10)]
-    },
-    "50_response": {
-        "constraints": [{"name": f"Response{i}", "type": "response", "activationEvent": f"A{i}", "targetEvent": f"T{i}"}
-                        for i in range(50)]
-    },
-    "40_mixed_complex": {
-        "constraints": (
-            # 5 standard Response constraints
-                [{"name": f"MixResp{i}", "type": "response", "activationEvent": f"MAR{i}", "targetEvent": f"MTR{i}"} for
-                 i in range(10)] +
-                # 5 Precedence constraints
-                [{"name": f"MixPrec{i}", "type": "precedence", "activationEvent": f"MAP{i}", "targetEvent": f"MTP{i}"}
-                 for i in range(10)] +
-                # 5 Alternate Response (stricter sequence) constraints
-                [{"name": f"MixAltR{i}", "type": "alternateresponse", "activationEvent": f"MAAR{i}",
-                  "targetEvent": f"MATR{i}"} for i in range(10)] +
-                # 5 Not Response (negative) constraints
-                [{"name": f"MixNotR{i}", "type": "notresponse", "activationEvent": f"MANR{i}",
-                  "targetEvent": f"MTNR{i}"} for i in range(10)]
-        )
-    },
-    "100_mixed_complex": {
-        "constraints": (
-            # 5 standard Response constraints
-                [{"name": f"MixResp{i}", "type": "response", "activationEvent": f"MAR{i}", "targetEvent": f"MTR{i}"} for
-                 i in range(25)] +
-                # 5 Precedence constraints
-                [{"name": f"MixPrec{i}", "type": "precedence", "activationEvent": f"MAP{i}", "targetEvent": f"MTP{i}"}
-                 for i in range(25)] +
-                # 5 Alternate Response (stricter sequence) constraints
-                [{"name": f"MixAltR{i}", "type": "alternateresponse", "activationEvent": f"MAAR{i}",
-                  "targetEvent": f"MATR{i}"} for i in range(25)] +
-                # 5 Not Response (negative) constraints
-                [{"name": f"MixNotR{i}", "type": "notresponse", "activationEvent": f"MANR{i}",
-                  "targetEvent": f"MTNR{i}"} for i in range(25)]
-        )
-    }
-}
+
+def generate_constraint_variations(base_name, count, constraint_type, **overrides):
+    """Generate a list of constraints with variations in conditions and time windows."""
+    variations = []
+    for i in range(count):
+        # Ensure withinPeriod is always a positive number
+        within_period = max(1000, random.choice([1000, 2000, 3000, 5000, 10000]))
+
+        # Base constraint with safe defaults
+        constraint = {
+            "name": f"{base_name}{i}",
+            "type": constraint_type,
+            "activationEvent": f"{constraint_type[0].upper()}{base_name[0]}A{i}",
+            "targetEvent": f"{constraint_type[0].upper()}{base_name[0]}T{i}",
+            "withinPeriod": within_period,
+            "activationCondition": {
+                "param": "priority",
+                "operator": random.choice([">", ">=", "<", "<=", "="]),
+                "value": str(random.randint(1, 5))
+            },
+            "targetCondition": {
+                "param": "priority",
+                "operator": random.choice([">", ">=", "<", "<=", "="]),
+                "value": str(random.randint(1, 5))
+            }
+        }
+
+        # Apply any overrides, ensuring withinPeriod remains valid
+        if 'withinPeriod' in overrides:
+            overrides['withinPeriod'] = max(1000, int(overrides['withinPeriod']))
+        constraint.update(overrides)
+
+        variations.append(constraint)
+    return variations
 
 
 def start_backend_container():
@@ -159,7 +151,8 @@ def monitor_resources_sync(container, duration_sec):
 
             cpu_percent = _calculate_cpu_percent(stat)
             memory_usage_mb = stat.get('memory_stats', {}).get('usage', 0) / (1024 * 1024)
-            stats.append({'elapsed_time_s': elapsed_time, 'cpu_percent': cpu_percent, 'memory_mb': memory_usage_mb})
+            stats.append({'elapsed_time_s': round(elapsed_time, 0), 'cpu_percent': round(cpu_percent, 2),
+                          'memory_mb': round(memory_usage_mb, 2)})
 
     except Exception as e:
         print(f"   - Warning: Resource monitoring stopped unexpectedly: {e}")
@@ -168,10 +161,24 @@ def monitor_resources_sync(container, duration_sec):
     return pd.DataFrame(stats)
 
 
-def analyze_results_sync(logs, resources_df, actual_eps, run_name):
+def analyze_results_sync(logs, resources_df, actual_eps, run_name, analyzer_metrics=None):
     print("Analyzing results...")
+    
+    # Process logs in chunks to avoid memory issues with large logs
+    chunk_size = 100000  # Process 100k lines at a time
     latency_pattern = re.compile(r"LATENCY,([^,]+),(\d+)")
-    latencies = latency_pattern.findall(logs)
+    
+    # Process logs in chunks
+    latencies = []
+    lines = logs.split('\n')
+    total_lines = len(lines)
+    
+    print(f"Processing {total_lines} log lines in chunks...")
+    
+    for i in range(0, total_lines, chunk_size):
+        chunk = '\n'.join(lines[i:i+chunk_size])
+        latencies.extend(latency_pattern.findall(chunk))
+        print(f"Processed {min(i + chunk_size, total_lines)}/{total_lines} lines, found {len(latencies)} latency markers")
 
     if not latencies:
         print("   - Warning: No latency markers found in logs.")
@@ -180,34 +187,74 @@ def analyze_results_sync(logs, resources_df, actual_eps, run_name):
             "p95_latency_ms": np.nan, "p99_latency_ms": np.nan,
             "avg_cpu_percent": np.nan, "max_cpu_percent": np.nan,
             "avg_mem_mb": np.nan, "max_mem_mb": np.nan,
+            "total_events_processed": 0,
+            "error": "No latency markers found"
         }
 
-    latency_df = pd.DataFrame(latencies, columns=['constraint', 'latency_ns'])
-    latency_df['latency_ms'] = pd.to_numeric(latency_df['latency_ns']) / 1E6
+    try:
+        print(f"Processing {len(latencies)} latency measurements...")
+        latency_df = pd.DataFrame(latencies, columns=['constraint', 'latency_ns'])
+        
+        # Convert to numeric with error handling
+        latency_df['latency_ms'] = pd.to_numeric(latency_df['latency_ns'], errors='coerce') / 1E6
+        
+        # Drop any rows with invalid latency values
+        valid_latencies = latency_df['latency_ms'].dropna()
+        
+        if len(valid_latencies) == 0:
+            print("   - Warning: No valid latency measurements found after filtering.")
+            return {
+                "mean_latency_ms": np.nan, "median_latency_ms": np.nan,
+                "p95_latency_ms": np.nan, "p99_latency_ms": np.nan,
+                "avg_cpu_percent": np.nan, "max_cpu_percent": np.nan,
+                "avg_mem_mb": np.nan, "max_mem_mb": np.nan,
+                "total_events_processed": 0,
+                "error": "No valid latency measurements after filtering"
+            }
+        
+        # Save a sample of the latencies instead of all to reduce I/O
+        sample_size = min(10000, len(valid_latencies))
+        valid_latencies.sample(sample_size).to_csv(f"{run_name}_latency_sample.csv", index=False)
+        print(f"Saved sample of {sample_size} latency measurements to {run_name}_latency_sample.csv")
 
-    latency_df['latency_ms'].to_csv(f"{run_name}_latency.csv", index=False)
+        if resources_df.empty:
+            print("   - Warning: Resource data is empty. CPU/Mem stats will be NaN.")
+            avg_cpu, max_cpu, avg_mem, max_mem = np.nan, np.nan, np.nan, np.nan
+        else:
+            avg_cpu = resources_df['cpu_percent'].mean()
+            max_cpu = resources_df['cpu_percent'].max()
+            avg_mem = resources_df['memory_mb'].mean()
+            max_mem = resources_df['memory_mb'].max()
 
-    if resources_df.empty:
-        print("   - Warning: Resource data is empty. CPU/Mem stats will be NaN.")
-        avg_cpu, max_cpu, avg_mem, max_mem = np.nan, np.nan, np.nan, np.nan
-    else:
-        avg_cpu = resources_df['cpu_percent'].mean()
-        max_cpu = resources_df['cpu_percent'].max()
-        avg_mem = resources_df['memory_mb'].mean()
-        max_mem = resources_df['memory_mb'].max()
+        # Calculate percentiles more efficiently for large datasets
+        p95 = np.percentile(valid_latencies, 95) if len(valid_latencies) > 0 else np.nan
+        p99 = np.percentile(valid_latencies, 99) if len(valid_latencies) > 0 else np.nan
 
-    results = {
-        "mean_latency_ms": latency_df['latency_ms'].mean(),
-        "median_latency_ms": latency_df['latency_ms'].median(),
-        "p95_latency_ms": latency_df['latency_ms'].quantile(0.95),
-        "p99_latency_ms": latency_df['latency_ms'].quantile(0.99),
-        "max_latency_ms": latency_df['latency_ms'].max(),
-        "avg_cpu_percent": avg_cpu,
-        "max_cpu_percent": max_cpu,
-        "avg_mem_mb": avg_mem,
-        "max_mem_mb": max_mem,
-        "actual_eps": actual_eps
-    }
+        results = {
+            "mean_latency_ms": valid_latencies.mean(),
+            "median_latency_ms": valid_latencies.median(),
+            "p95_latency_ms": p95,
+            "p99_latency_ms": p99,
+            "max_latency_ms": valid_latencies.max(),
+            "min_latency_ms": valid_latencies.min(),
+            "avg_cpu_percent": avg_cpu,
+            "max_cpu_percent": max_cpu,
+            "avg_mem_mb": avg_mem,
+            "max_mem_mb": max_mem,
+            "actual_eps": actual_eps,
+            "total_events_processed": len(valid_latencies),
+            "error": None
+        }
+    except Exception as e:
+        print(f"Error during analysis: {str(e)}")
+        return {
+            "mean_latency_ms": np.nan, "median_latency_ms": np.nan,
+            "p95_latency_ms": np.nan, "p99_latency_ms": np.nan,
+            "avg_cpu_percent": np.nan, "max_cpu_percent": np.nan,
+            "avg_mem_mb": np.nan, "max_mem_mb": np.nan,
+            "total_events_processed": 0,
+            "error": f"Analysis error: {str(e)}"
+        }
     print("Analysis complete.")
     return results
 
@@ -286,7 +333,18 @@ async def run_load_test(constraints, rate_eps, duration_sec, num_instances):
                         'targetEvent']
 
                 instance_id = event_counter % num_instances
-                payload = {"eventType": event_type, "payload": {"instanceId": instance_id}}
+                # Differentiate between signals and events in the payload
+                event_kind = "signal" if event_type.startswith(
+                    ("AR", "TR", "AP", "TP", "MAR", "MTR", "MAP", "MTP", "MAAR", "MATR", "MANR", "MTNR")) else "event"
+                priority = random.randint(1, 5)
+                payload = {
+                    "eventType": event_type,
+                    "kind": event_kind,
+                    "payload": {
+                        "instanceId": instance_id,
+                        "priority": priority,
+                    }
+                }
                 event_batch.append(payload)
 
                 if len(event_batch) >= batch_size:
@@ -303,7 +361,11 @@ async def run_load_test(constraints, rate_eps, duration_sec, num_instances):
                     await asyncio.sleep(sleep_duration)
 
         if event_batch:
-            tasks.append(asyncio.create_task(client.post(event_endpoint, json=event_batch)))
+            task = asyncio.create_task(client.post(event_endpoint, json=event_batch))
+            tasks.append(task)
+
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     actual_duration = time.monotonic() - start_time
     actual_eps = event_counter / actual_duration if actual_duration > 0 else 0
@@ -341,52 +403,76 @@ async def run_single_benchmark(constraints, rate_eps, duration_sec, run_name, nu
     return await asyncio.to_thread(analyze_results_sync, logs, resources_df, actual_eps, run_name)
 
 
-async def run_scenario_scalability():
-    print("\n" + "=" * 50)
-    print(" SCENARIO 1: SCALABILITY TEST")
-    print("=" * 50)
+async def run_scenario_scalability(num_runs=10):
+    print("\n=== Running Scalability Scenario ===")
+    print(f"Testing how the system scales with increasing event rates (averaging over {num_runs} runs per rate)...")
 
-    rates_to_test = [100000]
-    duration = 300
-    all_results = {}
+    all_results = []
 
-    for rate in rates_to_test:
-        run_name = f"scalability_{rate}eps"
-        print(f"\n--- Testing rate: {rate} EPS ---")
-        result = await run_single_benchmark(SCALABILITY_CONSTRAINTS, rate, duration, run_name)
-        if result:
-            all_results[f"{rate}_eps"] = result
+    # Test different event rates
+    for rate_eps in [250000]:
+        print(f"\n--- Testing at {rate_eps} events/second ---")
 
-    print("\n--- SCALABILITY RESULTS (Summary) ---")
-    results_df = pd.DataFrame(all_results).T
-    print(results_df[['avg_cpu_percent', 'max_mem_mb', 'median_latency_ms', 'p99_latency_ms']].round(2))
-    results_df.to_csv("scalability_results.csv")
-    print("\n Summary results saved")
+        # Run multiple times and collect results
+        run_results = []
+        for run_num in range(1, num_runs + 1):
+            print(f"\nRun {run_num}/{num_runs}:")
 
+            result = await run_single_benchmark(
+                constraints=SCALABILITY_CONSTRAINTS,
+                rate_eps=rate_eps,
+                duration_sec=60,
+                run_name=f"scalability_{rate_eps}eps_run{run_num}"
+            )
 
-async def run_scenario_complexity():
-    print("\n" + "=" * 50)
-    print(" SCENARIO 2: PROCESS COMPLEXITY TEST")
-    print("=" * 50)
+            if result:
+                run_results.append(result)
 
-    fixed_rate = 10000
-    duration = 60
-    all_results = {}
+        # Calculate averages for this rate
+        if run_results:
+            # Convert to DataFrame for easier calculations
+            df_runs = pd.DataFrame(run_results)
 
-    for name, scenario in COMPLEXITY_SCENARIOS.items():
-        run_name = f"complexity_{name}"
-        print(f"\n--- Testing case: {name} ---")
-        result = await run_single_benchmark(scenario['constraints'], fixed_rate, duration, run_name)
-        if result:
-            all_results[name] = result
+            # Calculate mean for numeric columns, take first for non-numeric
+            avg_result = {}
+            for col in df_runs.columns:
+                if pd.api.types.is_numeric_dtype(df_runs[col]):
+                    avg_result[col] = df_runs[col].mean()
+                else:
+                    avg_result[col] = df_runs[col].iloc[0]
 
-    print("\n--- COMPLEXITY RESULTS (Summary) ---")
-    results_df = pd.DataFrame(all_results).T
-    print(results_df[['avg_cpu_percent', 'max_mem_mb', 'median_latency_ms', 'p99_latency_ms']].round(2))
-    results_df.to_csv("complexity_results.csv")
-    print("\nSummary results saved")
+            # Add run count and rate info
+            avg_result['rate_eps'] = rate_eps
+            avg_result['num_runs'] = len(run_results)
+
+            all_results.append(avg_result)
+
+            # Print stats for this rate
+            print(f"\n--- Results for {rate_eps} eps (avg of {len(run_results)} runs) ---")
+            print(f"CPU: {avg_result['avg_cpu_percent']:.1f}% avg, {avg_result['max_cpu_percent']:.1f}% max")
+            print(f"Memory: {avg_result['avg_mem_mb']:.1f}MB avg, {avg_result['max_mem_mb']:.1f}MB max")
+            print(f"Throughput: {avg_result['actual_eps']:.1f} events/sec")
+
+    # Save results to CSV
+    if all_results:
+        df = pd.DataFrame(all_results)
+        output_file = 'results/scalability_results_avg.csv'
+
+        # Reorder columns to have rate_eps first
+        cols = ['rate_eps', 'num_runs'] + [col for col in df.columns if col not in ['rate_eps', 'num_runs']]
+        df = df[cols]
+
+        # Save to CSV
+        df.to_csv(output_file, index=False)
+        print(f"\nAveraged results saved to {output_file}")
+
+        # Print final summary
+        print("\n=== Final Scalability Test Summary ===")
+        print(df[['rate_eps', 'num_runs', 'avg_cpu_percent', 'max_cpu_percent', 'avg_mem_mb', 'max_mem_mb',
+                  'actual_eps']])
+    else:
+        print("No results to save.")
 
 
 if __name__ == "__main__":
     asyncio.run(run_scenario_scalability())
-    # asyncio.run(run_scenario_complexity())

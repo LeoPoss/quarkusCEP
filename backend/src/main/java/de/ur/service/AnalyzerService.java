@@ -17,7 +17,7 @@ public class AnalyzerService {
     private final Map<String, Map<String, String>> signalStates = new HashMap<>();
 
     public Map<String, Object> checkFinishability(List<Constraint> constraints) {
-        List<String> reasons = constraints.stream()
+        List<String> reasons = constraints.parallelStream()
                 .filter(constraint -> {
                     // For NOT_EXISTENCE and NOT_RESPONSE, only PERMANENT_VIOLATION blocks completion
                     if (NOT_EXISTENCE.equals(constraint.getType()) || NOT_RESPONSE.equals(constraint.getType())) {
@@ -43,9 +43,9 @@ public class AnalyzerService {
         if (constraints == null || possibleEvents == null || trace == null) {
             throw new IllegalArgumentException("Parameters cannot be null");
         }
-        return possibleEvents.stream().map(event -> {
+        return possibleEvents.parallelStream().map(event -> {
             // Find all constraints that this event could potentially violate
-            var relevantConstraints = constraints.stream().filter(constraint -> {
+            var relevantConstraints = constraints.parallelStream().filter(constraint -> {
                 ConstraintStatus currentStatus = getStatusOrInit(constraint);
                 return !FULFILLED.equals(currentStatus) && !PERMANENT_VIOLATION.equals(currentStatus);
             }).filter(constraint -> {
