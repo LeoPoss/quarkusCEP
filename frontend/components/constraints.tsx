@@ -177,7 +177,9 @@ function formatConstraintDisplay(c?: Constraint | null): React.ReactNode {
   };
 
   const formatTimer = (time: number) => (
-    <span className="text-xs align-sub">[0,{time}]</span>
+    <span className="text-xs align-sub" key={time}>
+      [0,{time}]
+    </span>
   );
 
   const type = c.type?.trim() || "";
