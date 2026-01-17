@@ -44,6 +44,9 @@ public class EsperService {
         runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
         log.info("Esper runtime initialized");
 
+        // Deploy the constraintStatus schema so it exists before any constraints are
+        // created
+        deployConstraintStatusSchema();
 
         CompilerArguments compilerArgs = new CompilerArguments();
         compilerArgs.getPath().add(runtime.getRuntimePath());
@@ -60,6 +63,31 @@ public class EsperService {
         configuration.getCommon().addEventType(GenericEvent.class);
     }
 
+    /**
+     * Deploy the constraintStatus schema so that SELECT queries can reference it.
+     * This creates the stream type before any constraints try to use it.
+     */
+    private void deployConstraintStatusSchema() {
+        try {
+            String schemaQuery = """
+                        @public @buseventtype
+                        create schema constraintStatus(
+                            id string,
+                            name string,
+                            type string,
+                            timestamp long
+                        )
+                    """;
+            CompilerArguments args = new CompilerArguments();
+            args.getPath().add(runtime.getRuntimePath());
+            args.getOptions().setAccessModifierEventType(env -> NameAccessModifier.PUBLIC);
+            EPCompiled compiled = compiler.compile(schemaQuery, args);
+            runtime.getDeploymentService().deploy(compiled);
+            log.info("Deployed constraintStatus schema");
+        } catch (Exception e) {
+            log.error("Failed to deploy constraintStatus schema", e);
+        }
+    }
 
     public EPStatement deployStatements(String name, String query) {
         try {
@@ -77,7 +105,6 @@ public class EsperService {
             throw new RuntimeException(ex);
         }
     }
-
 
     public boolean addListener(String deploymentId, String statementName, UpdateListener listener) {
         EPDeployment deployment = deployments.get(deploymentId);
@@ -136,7 +163,12 @@ public class EsperService {
                 try {
                     deploymentService.undeploy(s.deploymentId());
                 } catch (EPUndeployException e) {
-                    throw new RuntimeException(e);
+                    // Ignore if deployment not found, it might have been removed already
+                    if (e instanceof EPUndeployNotFoundException) {
+                        log.debug("Deployment {} not found during removal, ignoring.", s.deploymentId());
+                    } else {
+                        log.warn("Failed to undeploy statement {}: {}", s.deploymentId(), e.getMessage());
+                    }
                 }
             }
         });
@@ -150,6 +182,10 @@ public class EsperService {
         Configuration configuration = new Configuration();
         configureEventTypes(configuration);
         runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
+
+        // Re-deploy the constraintStatus schema after reset
+        deployConstraintStatusSchema();
+
         log.info("Esper runtime has been reset and reinitialized");
     }
 }

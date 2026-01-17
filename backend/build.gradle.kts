@@ -25,6 +25,8 @@ dependencies {
     implementation("io.quarkus:quarkus-arc")
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.rest-assured:rest-assured")
+    testImplementation("io.quarkiverse.cucumber:quarkus-cucumber:1.3.0")
+    testImplementation("org.awaitility:awaitility:4.2.0")
 
 
     implementation("com.espertech:esper-common:$esperVersion")
@@ -37,8 +39,6 @@ dependencies {
 
     testCompileOnly("org.projectlombok:lombok:$lombokVersion")
     testAnnotationProcessor("org.projectlombok:lombok:$lombokVersion")
-
-    implementation("org.jspecify:jspecify:1.0.0")
 }
 
 group = "de.ur"

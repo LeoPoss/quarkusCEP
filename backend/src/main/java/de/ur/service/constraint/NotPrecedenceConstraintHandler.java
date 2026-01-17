@@ -23,7 +23,8 @@ public class NotPrecedenceConstraintHandler extends BaseConstraintHandler {
                 """.formatted(name);
 
         var statement = esperService.deployStatements(name, query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, false, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, false,
+                constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
 
     }
@@ -34,16 +35,30 @@ public class NotPrecedenceConstraintHandler extends BaseConstraintHandler {
 
     @Override
     public void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
+        // Not Precedence: "B must not be preceded by A".
+        // Violation: Sequence A -> B matches.
         String query = """
                 SELECT b.id, b.name, b.type, b.timestamp as timestamp
-                FROM PATTERN [every a=constraintStatus(type='TARGET', name='%s') -> (timer:interval(1 sec) and not b=constraintStatus(type='ACTIVATION', name='%s'))]
-                """.formatted(name, name);
+                FROM PATTERN [every a=constraintStatus(type='ACTIVATION', name='%s') -> b=constraintStatus(type='TARGET', name='%s')]
+                """
+                .formatted(name, name);
+
+        if (withinPeriod != null) {
+            // If timer provided: "B must not be preceded by A within X time"
+            // Pattern: every a=Activation -> (b=Target and timer:within(X sec))
+            query = """
+                    SELECT b.id, b.name, b.type, b.timestamp as timestamp
+                    FROM PATTERN [every a=constraintStatus(type='ACTIVATION', name='%s') -> (b=constraintStatus(type='TARGET', name='%s') where timer:within(%d sec))]
+                    """
+                    .formatted(name, name, withinPeriod);
+        }
 
         if (correlation != null && correlation.isValid()) {
             query = appendCondition(query, correlation.getCorrelationQueryPart());
         }
         var statement = esperService.deployStatements(name, query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true,
+                constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }
 }

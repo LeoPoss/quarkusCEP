@@ -28,12 +28,6 @@ export default function FormFields({
           />
           <Select
             isRequired
-            disabledKeys={[
-              "alternateResponse",
-              "alternatePrecedence",
-              "chainPrecedence",
-              "notPrecedence",
-            ]}
             label="Constraint Type"
             name="type"
             size="sm"
@@ -49,19 +43,19 @@ export default function FormFields({
                 Responded Existence
               </SelectItem>
               <SelectItem key="response">Response</SelectItem>
-              {/*<SelectItem key="alternateResponse">
+              <SelectItem key="alternateResponse">
                 Alternate Response
               </SelectItem>
-              <SelectItem key="chainResponse">Chain Response</SelectItem>*/}
+              <SelectItem key="chainResponse">Chain Response</SelectItem>
               <SelectItem key="precedence">Precedence</SelectItem>
-              {/*              <SelectItem key="alternatePrecedence">
+              <SelectItem key="alternatePrecedence">
                 Alternate Precedence
               </SelectItem>
-              <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>*/}
+              <SelectItem key="chainPrecedence">Chain Precedence</SelectItem>
             </SelectSection>
             <SelectSection title="Negative Relation Constraints">
               <SelectItem key="notResponse">Not Response</SelectItem>
-              {/*<SelectItem key="notPrecedence">Not Precedence</SelectItem>*/}
+              <SelectItem key="notPrecedence">Not Precedence</SelectItem>
             </SelectSection>
           </Select>
           <Input
@@ -90,7 +84,7 @@ export default function FormFields({
                 classNames={{
                   inputWrapper:
                     constraintType === "existence" ||
-                    constraintType === "notexistence"
+                      constraintType === "notexistence"
                       ? "opacity-50"
                       : "",
                 }}
@@ -99,16 +93,14 @@ export default function FormFields({
                 <div className="flex bg-default-100 dark:bg-default-50 p-1.5 rounded-md h-12 items-center">
                   <button
                     type="button"
-                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors cursor-pointer ${
-                      activationEventType === "signal"
-                        ? "bg-white dark:bg-default-100 shadow-sm text-foreground dark:text-foreground"
-                        : "text-foreground-500 dark:text-foreground-400 hover:bg-default-200 dark:hover:bg-default-100"
-                    } ${
-                      constraintType === "existence" ||
-                      constraintType === "notexistence"
+                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors cursor-pointer ${activationEventType === "signal"
+                      ? "bg-white dark:bg-default-100 shadow-sm text-foreground dark:text-foreground"
+                      : "text-foreground-500 dark:text-foreground-400 hover:bg-default-200 dark:hover:bg-default-100"
+                      } ${constraintType === "existence" ||
+                        constraintType === "notexistence"
                         ? "opacity-50"
                         : ""
-                    }`}
+                      }`}
                     onClick={() => setActivationEventType("signal")}
                     disabled={
                       constraintType === "existence" ||
@@ -119,16 +111,14 @@ export default function FormFields({
                   </button>
                   <button
                     type="button"
-                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors cursor-pointer ${
-                      activationEventType === "task"
-                        ? "bg-white dark:bg-default-100 shadow-sm text-foreground dark:text-foreground"
-                        : "text-foreground-500 dark:text-foreground-400 hover:bg-default-200 dark:hover:bg-default-100"
-                    } ${
-                      constraintType === "existence" ||
-                      constraintType === "notexistence"
+                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors cursor-pointer ${activationEventType === "task"
+                      ? "bg-white dark:bg-default-100 shadow-sm text-foreground dark:text-foreground"
+                      : "text-foreground-500 dark:text-foreground-400 hover:bg-default-200 dark:hover:bg-default-100"
+                      } ${constraintType === "existence" ||
+                        constraintType === "notexistence"
                         ? "opacity-50"
                         : ""
-                    }`}
+                      }`}
                     onClick={() => setActivationEventType("task")}
                     disabled={
                       constraintType === "existence" ||
@@ -159,22 +149,20 @@ export default function FormFields({
                 <div className="flex bg-default-100 dark:bg-default-50 p-1.5 rounded-md h-12 items-center">
                   <button
                     type="button"
-                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors cursor-pointer ${
-                      targetEventType === "signal"
-                        ? "bg-white dark:bg-default-100 shadow-sm text-foreground dark:text-foreground"
-                        : "text-foreground-500 dark:text-foreground-400 hover:bg-default-200 dark:hover:bg-default-100"
-                    }`}
+                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors cursor-pointer ${targetEventType === "signal"
+                      ? "bg-white dark:bg-default-100 shadow-sm text-foreground dark:text-foreground"
+                      : "text-foreground-500 dark:text-foreground-400 hover:bg-default-200 dark:hover:bg-default-100"
+                      }`}
                     onClick={() => setTargetEventType("signal")}
                   >
                     Signal
                   </button>
                   <button
                     type="button"
-                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors cursor-pointer ${
-                      targetEventType === "task"
-                        ? "bg-white dark:bg-default-100 shadow-sm text-foreground dark:text-foreground"
-                        : "text-foreground-500 dark:text-foreground-400 hover:bg-default-200 dark:hover:bg-default-100"
-                    }`}
+                    className={`px-3 h-9 flex items-center text-sm rounded transition-colors cursor-pointer ${targetEventType === "task"
+                      ? "bg-white dark:bg-default-100 shadow-sm text-foreground dark:text-foreground"
+                      : "text-foreground-500 dark:text-foreground-400 hover:bg-default-200 dark:hover:bg-default-100"
+                      }`}
                     onClick={() => setTargetEventType("task")}
                   >
                     Task

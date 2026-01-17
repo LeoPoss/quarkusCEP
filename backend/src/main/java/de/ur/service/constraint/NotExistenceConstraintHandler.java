@@ -23,25 +23,12 @@ public class NotExistenceConstraintHandler extends BaseConstraintHandler {
                 """.formatted(name);
 
         var statement = esperService.deployStatements(name, query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, false, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, false,
+                constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }
 
 
-    @Override
-    public void createTemporaryViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
-        String query = """
-                INSERT INTO constraintStatus
-                SELECT '%s' as name, 'ACTIVATION' as type
-                FROM PATTERN [
-                     every a=GenericEvent() -> (timer:interval(0 sec) and not GenericEvent())
-                 ];""".formatted(name);
-
-        var statement = esperService.deployStatements(name + "_TEMP_VIO", query);
-
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
-    }
 
     @Override
     public void createFulfillmentQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
@@ -53,12 +40,13 @@ public class NotExistenceConstraintHandler extends BaseConstraintHandler {
                                 a=constraintStatus(type='ACTIVATION', name='%s')
                                                         -> (timer:interval(%d sec) and not b=constraintStatus(type='TARGET', name='%s'))
                             ]
-                    """.formatted(name, name, withinPeriod, name);
-
+                    """
+                    .formatted(name, name, withinPeriod, name);
 
             var statement = esperService.deployStatements(name + "_FULFILLMENT", query);
 
-            statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
+            statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true,
+                    constraintService, esperService));
             addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
         }
     }

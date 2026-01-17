@@ -29,7 +29,8 @@ public class AlternateResponseConstraintHandler extends BaseConstraintHandler {
         }
 
         var statement = esperService.deployStatements(name + "_fulfill", query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService,
+                esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }
 
@@ -50,21 +51,20 @@ public class AlternateResponseConstraintHandler extends BaseConstraintHandler {
         }
 
         var statement = esperService.deployStatements(name + "_temp_vio", query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false,
+                constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
     }
 
     @Override
     public void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
-                SELECT b.id, b.name, b.type, b.timestamp as timestamp
+                SELECT nxt.id, nxt.name, nxt.type, nxt.timestamp as timestamp
                 FROM pattern [
-                    every (
-                        a=constraintStatus(type='ACTIVATION', name='%1$s')
-                        -> c=constraintStatus(type='ACTIVATION', name='%1$s')
-                        -> b=constraintStatus(type='TARGET', name='%1$s')
-                    )
+                    every a=constraintStatus(type='ACTIVATION', name='%1$s')
+                    -> nxt=constraintStatus(type in ('ACTIVATION', 'TARGET'), name='%1$s')
                 ]
+                WHERE nxt.type = 'ACTIVATION'
                 """.formatted(name);
 
         if (correlation != null && correlation.isValid()) {
@@ -72,7 +72,8 @@ public class AlternateResponseConstraintHandler extends BaseConstraintHandler {
         }
 
         var statement = esperService.deployStatements(name + "_perm_vio", query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true,
+                constraintService, esperService));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }
 }
