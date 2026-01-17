@@ -13,7 +13,7 @@ export default function FormFields({
   isMPDeclareEnabled,
 }: FormFieldsProps) {
   const [activationEventType, setActivationEventType] =
-    React.useState("signal");
+    React.useState("task");
   const [targetEventType, setTargetEventType] = React.useState("task");
   return (
     <div className="grid grid-cols-2 gap-x-4">

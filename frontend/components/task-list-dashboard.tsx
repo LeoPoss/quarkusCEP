@@ -50,12 +50,22 @@ interface FinishabilityResponse {
     reasons: string[];
 }
 
+interface TraceEvent {
+    eventType: string;
+    payload?: Record<string, string>;
+    timestamp?: string;
+}
+
 const fetchTasks = async (): Promise<TaskAnalysis[]> => {
     return await ky.get("http://localhost:8080/analysis/allowed-tasks").json();
 };
 
 const fetchFinishability = async (): Promise<FinishabilityResponse> => {
     return await ky.get("http://localhost:8080/analysis/finishability").json();
+};
+
+const fetchTrace = async (): Promise<TraceEvent[]> => {
+    return await ky.get("http://localhost:8080/analysis/trace").json();
 };
 
 type FilterType = "all" | "available" | "restricted";
@@ -83,6 +93,15 @@ export default function TaskListDashboard() {
     } = useQuery<FinishabilityResponse>({
         queryKey: ["analysis", "finishability"],
         queryFn: fetchFinishability,
+        refetchInterval: 1000,
+    });
+
+    const {
+        data: trace = [],
+        isLoading: isLoadingTrace,
+    } = useQuery<TraceEvent[]>({
+        queryKey: ["analysis", "trace"],
+        queryFn: fetchTrace,
         refetchInterval: 1000,
     });
 
@@ -207,7 +226,7 @@ export default function TaskListDashboard() {
             </div>
 
             {/* Process State Summary */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 {/* Finishability Status */}
                 <Card className={`col-span-1 lg:col-span-2 border ${finishability?.canFinish
                     ? "border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-950/20"
@@ -255,7 +274,7 @@ export default function TaskListDashboard() {
                                     <div className="mt-2">
                                         {finishability?.reasons && finishability.reasons.length > 0 ? (
                                             <div className="space-y-1.5">
-                                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400  tracking-wide">
                                                     Outstanding Requirements
                                                 </p>
                                                 <ul className="space-y-1">
@@ -287,7 +306,7 @@ export default function TaskListDashboard() {
                 {/* Task Statistics */}
                 <Card className="border border-slate-200 dark:border-slate-700">
                     <CardBody className="py-4 px-5">
-                        <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+                        <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400  tracking-wide mb-3">
                             Task Distribution
                         </h3>
                         <div className="space-y-3">
@@ -322,7 +341,54 @@ export default function TaskListDashboard() {
                         </div>
                     </CardBody>
                 </Card>
+
+                {/* Execution Trace (Compact Debug Style) */}
+                <Card className="border border-slate-200 dark:border-slate-700">
+                    <CardBody className="py-3 px-4 overflow-hidden">
+                        <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wider mb-2 flex items-center gap-2">
+                            <ListChecksIcon size={14} className="text-slate-400" />
+                            Trace
+                        </h3>
+                        {isLoadingTrace ? (
+                            <div className="flex justify-center py-4">
+                                <Spinner size="sm" color="default" />
+                            </div>
+                        ) : trace.length === 0 ? (
+                            <div className="text-center py-4">
+                                <p className="text-xs text-slate-400 font-mono">-- No events logged --</p>
+                            </div>
+                        ) : (
+                            <div className="max-h-[160px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 font-mono text-[10px]">
+                                {[...trace].reverse().map((event, idx) => (
+                                    <div key={idx} className="group border-b border-dashed border-slate-200 dark:border-slate-800 last:border-0 py-2 first:pt-0">
+                                        <div className="flex justify-between items-baseline">
+                                            <span className="font-bold text-slate-700 dark:text-slate-200">
+                                                {event.eventType}
+                                            </span>
+                                            {event.timestamp && (
+                                                <span className="text-slate-400 text-[9px]">
+                                                    {event.timestamp.split('.')[0]}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {event.payload && Object.keys(event.payload).length > 0 && (
+                                            <div className="mt-1 flex flex-col gap-0.5 pl-2 border-l-2 border-slate-100 dark:border-slate-800">
+                                                {Object.entries(event.payload).map(([key, value]) => (
+                                                    <div key={key} className="text-slate-500 dark:text-slate-400">
+                                                        <span className="opacity-70">{key}:</span> <span className="text-slate-600 dark:text-slate-300">{String(value)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardBody>
+                </Card>
             </div>
+
+
 
             {/* Task List Section */}
             <div className="space-y-4">
@@ -407,7 +473,7 @@ export default function TaskListDashboard() {
                             removeWrapper
                             classNames={{
                                 base: "min-h-[200px]",
-                                th: "bg-slate-50 dark:bg-slate-800/80 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 py-3 px-4 first:pl-6 last:pr-6",
+                                th: "bg-slate-50 dark:bg-slate-800/80 text-xs font-semibold  tracking-wider text-slate-500 dark:text-slate-400 py-3 px-4 first:pl-6 last:pr-6",
                                 td: "py-3.5 px-4 first:pl-6 last:pr-6 border-b border-slate-100 dark:border-slate-800",
                                 tr: "hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors",
                             }}
@@ -496,6 +562,6 @@ export default function TaskListDashboard() {
                     )}
                 </Card>
             </div>
-        </div>
+        </div >
     );
 }

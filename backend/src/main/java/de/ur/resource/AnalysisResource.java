@@ -1,8 +1,6 @@
 package de.ur.resource;
 
-import de.ur.dto.FinishabilityResponse;
-import de.ur.service.AnalyzerService;
-import de.ur.service.ConstraintService;
+import de.ur.service.ContextAnalysisService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -12,37 +10,31 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-
 @Path("/analysis")
 @ApplicationScoped
 @Slf4j
 @RequiredArgsConstructor
 @Produces(MediaType.APPLICATION_JSON)
 public class AnalysisResource {
-    private final ConstraintService constraintService;
-    private final AnalyzerService analyzer;
+    private final ContextAnalysisService analysisService;
 
     @GET
     @Path("/allowed-tasks")
     public Response getAllowedTasks() {
-        var constraints = constraintService.getConstraints().values().stream().toList();
-        var taskAnalysis = analyzer.analyzeAllowedTasks(
-                constraints,
-                constraintService.getKnownEvents(),
-                constraintService.getTrace());
-
+        var taskAnalysis = analysisService.analyzeAllowedTasks();
         return Response.ok(taskAnalysis).build();
     }
 
     @GET
     @Path("/finishability")
     public Response getFinishability() {
-        var constraints = constraintService.getConstraints().values().stream().toList();
-        var analysisResult = analyzer.checkFinishability(constraints);
-
-        var response = new FinishabilityResponse((Boolean) analysisResult.get("canFinish"),
-                (List<String>) analysisResult.get("reasons"));
+        var response = analysisService.checkFinishability();
         return Response.ok(response).build();
+    }
+
+    @GET
+    @Path("/trace")
+    public Response getTrace() {
+        return Response.ok(analysisService.getTrace()).build();
     }
 }

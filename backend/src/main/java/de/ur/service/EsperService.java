@@ -7,6 +7,7 @@ import com.espertech.esper.compiler.client.CompilerArguments;
 import com.espertech.esper.compiler.client.EPCompiler;
 import com.espertech.esper.compiler.client.EPCompilerProvider;
 import com.espertech.esper.runtime.client.*;
+import de.ur.dao.ConstraintType;
 import de.ur.dao.GenericEvent;
 import de.ur.dao.StatementType;
 import io.quarkus.runtime.ShutdownEvent;
@@ -61,6 +62,9 @@ public class EsperService {
 
     private void configureEventTypes(Configuration configuration) {
         configuration.getCommon().addEventType(GenericEvent.class);
+        configuration.getCommon().addEventType(de.ur.dao.TestStartEvent.class);
+        configuration.getCommon().addEventType(de.ur.dao.TestEndEvent.class);
+        configuration.getCommon().addEventType(de.ur.dao.TestViolationEvent.class);
     }
 
     /**
@@ -75,7 +79,8 @@ public class EsperService {
                             id string,
                             name string,
                             type string,
-                            timestamp long
+                            timestamp long,
+                            payload java.util.Map
                         )
                     """;
             CompilerArguments args = new CompilerArguments();
@@ -87,6 +92,177 @@ public class EsperService {
         } catch (Exception e) {
             log.error("Failed to deploy constraintStatus schema", e);
         }
+    }
+
+    /**
+     * Deploy the test session context for hypothetical event analysis.
+     * This context is initiated by TestStartEvent and terminated by TestEndEvent.
+     */
+    public void deployTestContext() {
+        try {
+            // Create the test session context
+            String contextQuery = """
+                    @public
+                    create context TestSessionContext
+                        initiated by TestStartEvent as startEvent
+                        terminated by TestEndEvent(testId = startEvent.testId)
+                    """;
+
+            CompilerArguments args = new CompilerArguments();
+            args.getPath().add(runtime.getRuntimePath());
+            args.getOptions().setAccessModifierContext(env -> NameAccessModifier.PUBLIC);
+            EPCompiled compiled = compiler.compile(contextQuery, args);
+            runtime.getDeploymentService().deploy(compiled);
+            log.info("Deployed TestSessionContext");
+        } catch (Exception e) {
+            log.error("Failed to deploy TestSessionContext", e);
+        }
+    }
+
+    /**
+     * Deploy an analysis pattern for a specific constraint type within the test
+     * context.
+     * These patterns fire when a violation would occur.
+     * 
+     * @param constraintName  Name of the constraint
+     * @param constraintType  Type of the constraint
+     * @param activationEvent Activation event name
+     * @param targetEvent     Target event name
+     * @param onViolation     Callback when violation is detected (receives testId,
+     *                        constraintName)
+     */
+    public void deployAnalysisPattern(String constraintName, ConstraintType constraintType,
+            String activationEvent, String targetEvent,
+            java.util.function.BiConsumer<String, String> onViolation) {
+        try {
+            String patternQuery = buildAnalysisPatternQuery(constraintName, constraintType, activationEvent,
+                    targetEvent);
+            if (patternQuery == null) {
+                log.debug("No analysis pattern needed for constraint type: {}", constraintType);
+                return;
+            }
+
+            CompilerArguments args = new CompilerArguments();
+            args.getPath().add(runtime.getRuntimePath());
+            args.getOptions().setAccessModifierEventType(env -> NameAccessModifier.PUBLIC);
+            EPCompiled compiled = compiler.compile(patternQuery, args);
+            var deployment = runtime.getDeploymentService().deploy(compiled);
+
+            // Add listener to track violations
+            if (deployment.getStatements().length > 0 && onViolation != null) {
+                deployment.getStatements()[0].addListener((newEvents, oldEvents, statement, rt) -> {
+                    if (newEvents != null) {
+                        for (var event : newEvents) {
+                            String testId = (String) event.get("testId");
+                            String cName = (String) event.get("constraintName");
+                            log.debug("Analysis pattern fired: testId={}, constraint={}", testId, cName);
+                            onViolation.accept(testId, cName);
+                        }
+                    }
+                });
+            }
+
+            log.info("Deployed analysis pattern for constraint: {}", constraintName);
+        } catch (Exception e) {
+            log.error("Failed to deploy analysis pattern for {}: {}", constraintName, e.getMessage());
+        }
+    }
+
+    private String buildAnalysisPatternQuery(String constraintName, ConstraintType constraintType,
+            String activationEvent, String targetEvent) {
+        // Build EPL pattern that checks within TestSessionContext if violation would
+        // occur
+        return switch (constraintType) {
+            case NOT_EXISTENCE ->
+                """
+                        @name('%s_analysis')
+                        context TestSessionContext
+                        select startEvent.testId as testId, '%s' as constraintName, '%s' as constraintType, startEvent.hypotheticalEvent as hypotheticalEvent
+                        from TestStartEvent as startEvent
+                        where startEvent.constraintName = '%s'
+                          and startEvent.hypotheticalEvent = '%s'
+                        """
+                        .formatted(constraintName, constraintName, constraintType, constraintName, targetEvent);
+
+            case PRECEDENCE, ALTERNATE_PRECEDENCE ->
+                """
+                        @name('%s_analysis')
+                        context TestSessionContext
+                        select startEvent.testId as testId, '%s' as constraintName, '%s' as constraintType, startEvent.hypotheticalEvent as hypotheticalEvent
+                        from TestStartEvent as startEvent
+                        where startEvent.constraintName = '%s'
+                          and startEvent.hypotheticalEvent = '%s'
+                          and startEvent.hasActivation = false
+                        """
+                        .formatted(constraintName, constraintName, constraintType, constraintName, targetEvent);
+
+            case CHAIN_PRECEDENCE ->
+                """
+                        @name('%s_analysis')
+                        context TestSessionContext
+                        select startEvent.testId as testId, '%s' as constraintName, '%s' as constraintType, startEvent.hypotheticalEvent as hypotheticalEvent
+                        from TestStartEvent as startEvent
+                        where startEvent.constraintName = '%s'
+                          and startEvent.hypotheticalEvent = '%s'
+                          and startEvent.lastEventType != '%s'
+                        """
+                        .formatted(constraintName, constraintName, constraintType, constraintName, targetEvent,
+                                activationEvent);
+
+            case CHAIN_RESPONSE ->
+                """
+                        @name('%s_analysis')
+                        context TestSessionContext
+                        select startEvent.testId as testId, '%s' as constraintName, '%s' as constraintType, startEvent.hypotheticalEvent as hypotheticalEvent
+                        from TestStartEvent as startEvent
+                        where startEvent.constraintName = '%s'
+                          and startEvent.currentStatus = 'TEMPORARY_VIOLATION'
+                          and startEvent.hypotheticalEvent != '%s'
+                        """
+                        .formatted(constraintName, constraintName, constraintType, constraintName, targetEvent);
+
+            case ALTERNATE_RESPONSE ->
+                """
+                        @name('%s_analysis')
+                        context TestSessionContext
+                        select startEvent.testId as testId, '%s' as constraintName, '%s' as constraintType, startEvent.hypotheticalEvent as hypotheticalEvent
+                        from TestStartEvent as startEvent
+                        where startEvent.constraintName = '%s'
+                          and startEvent.currentStatus = 'TEMPORARY_VIOLATION'
+                          and startEvent.hypotheticalEvent = '%s'
+                        """
+                        .formatted(constraintName, constraintName, constraintType, constraintName, activationEvent);
+
+            case NOT_RESPONSE ->
+                """
+                        @name('%s_analysis')
+                        context TestSessionContext
+                        select startEvent.testId as testId, '%s' as constraintName, '%s' as constraintType, startEvent.hypotheticalEvent as hypotheticalEvent
+                        from TestStartEvent as startEvent
+                        where startEvent.constraintName = '%s'
+                          and (
+                            (startEvent.currentStatus = 'TEMPORARY_VIOLATION' and startEvent.hypotheticalEvent = '%s')
+                            or (startEvent.currentStatus = 'INIT' and startEvent.hypotheticalEvent = '%s' and startEvent.hasActivation = true)
+                          )
+                        """
+                        .formatted(constraintName, constraintName, constraintType, constraintName, targetEvent,
+                                targetEvent);
+
+            case NOT_PRECEDENCE ->
+                """
+                        @name('%s_analysis')
+                        context TestSessionContext
+                        select startEvent.testId as testId, '%s' as constraintName, '%s' as constraintType, startEvent.hypotheticalEvent as hypotheticalEvent
+                        from TestStartEvent as startEvent
+                        where startEvent.constraintName = '%s'
+                          and startEvent.hypotheticalEvent = '%s'
+                          and (startEvent.hasActivation = true or startEvent.currentStatus = 'TEMPORARY_VIOLATION')
+                        """
+                        .formatted(constraintName, constraintName, constraintType, constraintName, targetEvent);
+
+            // RESPONSE, RESPONDED_EXISTENCE, EXISTENCE: no immediate violations
+            default -> null;
+        };
     }
 
     public EPStatement deployStatements(String name, String query) {

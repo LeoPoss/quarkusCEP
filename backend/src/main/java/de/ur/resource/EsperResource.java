@@ -3,8 +3,8 @@ package de.ur.resource;
 import com.espertech.esper.common.client.EventBean;
 import com.espertech.esper.runtime.client.EPStatement;
 import de.ur.dao.GenericEvent;
-import de.ur.service.AnalyzerService;
 import de.ur.service.ConstraintService;
+import de.ur.service.ContextAnalysisService;
 import de.ur.service.EsperService;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class EsperResource {
     private final EsperService esperService;
     private final ConstraintService constraintService;
-    private final AnalyzerService analyzerService;
+    private final ContextAnalysisService analysisService;
 
     @GET
     public Response getDeployments() {
@@ -85,7 +85,6 @@ public class EsperResource {
         }
     }
 
-
     @POST
     @Path("/events/batch")
     public Response receiveEventBatch(List<Map<String, Object>> events) {
@@ -115,8 +114,7 @@ public class EsperResource {
             payload = map.entrySet().stream()
                     .collect(Collectors.toMap(
                             e -> e.getKey().toString(),
-                            e -> e.getValue() != null ? e.getValue().toString() : null
-                    ));
+                            e -> e.getValue() != null ? e.getValue().toString() : null));
         }
 
         String eventType = String.valueOf(event.get("eventType"));
@@ -124,17 +122,16 @@ public class EsperResource {
                 UUID.randomUUID().toString(),
                 eventType,
                 System.nanoTime(),
-                payload
-        );
+                payload);
 
         // Add to trace if this is a known task event
         if (constraintService.getKnownEvents().contains(eventType)) {
             constraintService.addToTrace(eventType, payload);
         }
-        
+
         // Update signal state if this is a known signal event
         if (constraintService.getKnownSignals().contains(eventType)) {
-            analyzerService.updateSignalState(eventType, payload);
+            constraintService.updateSignalState(eventType, payload);
         }
 
         esperService.sendEvent(genericEvent);
@@ -147,17 +144,16 @@ public class EsperResource {
             esperService.reset();
             constraintService.resetConstraints();
             constraintService.getTrace().clear();
+            analysisService.resetTestContext();
             return Response.ok(Map.of(
                     "status", "Esper engine has been reset and reinitialized",
-                    "timestamp", java.time.Instant.now()
-            )).build();
+                    "timestamp", java.time.Instant.now())).build();
         } catch (Exception e) {
             log.error("Failed to reset Esper engine", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(Map.of(
                             "error", "Failed to reset Esper engine: " + e.getMessage(),
-                            "timestamp", java.time.Instant.now()
-                    ))
+                            "timestamp", java.time.Instant.now()))
                     .build();
         }
     }
