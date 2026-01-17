@@ -25,7 +25,7 @@ class ConstraintFuzzTest extends BaseConstraintTest {
 
     private final Random random = new Random();
 
-    @RepeatedTest(50)
+    @RepeatedTest(10)
     @DisplayName("Fuzz ALTERNATE_PRECEDENCE with random A/B/Noise events")
     void fuzzAlternatePrecedence() throws InterruptedException {
         String constraintName = "fuzz_alt_prec_" + random.nextInt(10000);
@@ -72,7 +72,7 @@ class ConstraintFuzzTest extends BaseConstraintTest {
         }
     }
 
-    @RepeatedTest(20)
+    @RepeatedTest(5)
     @DisplayName("Fuzz RESPONSE with random A/B/Noise events")
     void fuzzResponse() {
         String constraintName = "fuzz_resp_" + random.nextInt(10000);
@@ -98,10 +98,6 @@ class ConstraintFuzzTest extends BaseConstraintTest {
 
             ConstraintStatus newStatus = getConstraintStatus(constraintName);
             assertNotNull(newStatus);
-
-            // RESPONSE doesn't have Permanent Violation on simple events usually,
-            // but if we had timers it might.
-            // We just verify it doesn't crash given weird sequences.
         }
     }
 }

@@ -22,13 +22,9 @@ public class PayloadConstraintTest {
 
     @Test
     public void testConstraintWithPayloadCondition() {
-        // Reproduce the user's scenario:
-        // Constraint with a payload condition (e.g., cast(payload('user'), double) = 3)
-
         String constraintName = "payload_test_constraint";
         ConditionRequest activationCondition = new ConditionRequest("user", "=", "3", null);
 
-        // This should not throw EPCompileException
         assertDoesNotThrow(() -> {
             constraintService.setupConstraint(
                     ConstraintType.RESPONSE,
@@ -44,7 +40,6 @@ public class PayloadConstraintTest {
                     "task");
         });
 
-        // Cleanup
         esperService.removeConstraint(constraintName);
     }
 
@@ -68,7 +63,6 @@ public class PayloadConstraintTest {
                     "task");
         });
 
-        // Cleanup
         esperService.removeConstraint(constraintName);
     }
 }

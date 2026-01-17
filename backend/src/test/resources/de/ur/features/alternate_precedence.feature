@@ -1,23 +1,38 @@
 Feature: Alternate Precedence Constraint Behavior
-  "B must be alternately preceded by A" (A-B-A-B is OK, A-B-B is Violation)
+  "CloseTicket must be alternately preceded by OpenTicket"
 
-  Scenario: A then B is Fulfilled
-    Given a "Alternate Precedence" constraint named "ap1" defining "B" must be alternately preceded by "A"
-    When event "A" occurs
-    Then the status of "ap1" should be "INIT"
-    When event "B" occurs
-    Then the status of "ap1" should be "FULFILLED"
+  Scenario: Fulfills if OpenTicket occurs before CloseTicket, and pairs are alternate
+    Given a "Alternate Precedence" constraint named "altPrec1" defining "CloseTicket" must be alternately preceded by "OpenTicket"
+    When event "OpenTicket" occurs
+    # Status remains INIT
+    When event "CloseTicket" occurs
+    Then the status of "altPrec1" should be "FULFILLED"
 
-  Scenario: B without A violates
-    Given a "Alternate Precedence" constraint named "ap2" defining "B" must be alternately preceded by "A"
-    When event "B" occurs
-    Then the status of "ap2" should be "PERMANENT_VIOLATION"
+  Scenario: Violates if CloseTicket occurs without OpenTicket
+    Given a "Alternate Precedence" constraint named "altPrec2" defining "CloseTicket" must be alternately preceded by "OpenTicket"
+    When event "CloseTicket" occurs
+    Then the status of "altPrec2" should be "PERMANENT_VIOLATION"
 
-  Scenario: A then B then B violates
-    Given a "Alternate Precedence" constraint named "ap3" defining "B" must be alternately preceded by "A"
-    When event "A" occurs
-    Then the status of "ap3" should be "INIT"
-    When event "B" occurs
-    Then the status of "ap3" should be "FULFILLED"
-    When event "B" occurs
-    Then the status of "ap3" should be "PERMANENT_VIOLATION"
+  Scenario: Violates if two CloseTickets occur with only one OpenTicket
+    Given a "Alternate Precedence" constraint named "altPrec3" defining "CloseTicket" must be alternately preceded by "OpenTicket"
+    When event "OpenTicket" occurs
+    # Status remains INIT
+    When event "CloseTicket" occurs
+    Then the status of "altPrec3" should be "FULFILLED"
+    When event "CloseTicket" occurs
+    Then the status of "altPrec3" should be "PERMANENT_VIOLATION"
+
+  Scenario: Interleaved irrelevant events don't break alternate precedence
+    Given a "Alternate Precedence" constraint named "altPrec_irrelevant" defining "CloseTicket" must be alternately preceded by "OpenTicket"
+    When event "OpenTicket" occurs
+    When event "IrrelevantEvent" occurs
+    When event "CloseTicket" occurs
+    Then the status of "altPrec_irrelevant" should be "FULFILLED"
+
+  Scenario: Duplicate activation (Open, Open, Close) is valid/invalid depending on logic
+    Given a "Alternate Precedence" constraint named "altPrec_dupAct" defining "CloseTicket" must be alternately preceded by "OpenTicket"
+    When event "OpenTicket" occurs
+    When event "OpenTicket" occurs
+    When event "CloseTicket" occurs
+    Then the status of "altPrec_dupAct" should be "FULFILLED"
+

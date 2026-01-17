@@ -1,8 +1,25 @@
 Feature: Not Response Constraint Behavior
-  "A must not be followed by B"
+  "OrderCancelled must not be followed by ShipmentShipped"
 
-  Scenario: Violates if A then B
-    Given a "Not Response" constraint named "nresp1" defining "A" must not be followed by "B"
-    When event "A" occurs
-    When event "B" occurs
-    Then the status of "nresp1" should be "PERMANENT_VIOLATION"
+  Scenario: Fulfills if OrderCancelled occurs and NO ShipmentShipped follows (within time window)
+    Given a "Not Response" constraint named "notResp1" defining "OrderCancelled" must not be followed by "ShipmentShipped"
+    When event "OrderCancelled" occurs
+    Then the status of "notResp1" should be "TEMPORARY_VIOLATION"
+    When 6 seconds pass
+    Then the status of "notResp1" should be "FULFILLED"
+
+  Scenario: Violates if OrderCancelled is followed by ShipmentShipped
+    Given a "Not Response" constraint named "notResp2" defining "OrderCancelled" must not be followed by "ShipmentShipped"
+    When event "OrderCancelled" occurs
+    Then the status of "notResp2" should be "TEMPORARY_VIOLATION"
+    When event "ShipmentShipped" occurs
+    Then the status of "notResp2" should be "PERMANENT_VIOLATION"
+
+  Scenario: Interleaved irrelevant events don't break Not Response check
+    Given a "Not Response" constraint named "notResp_irrelevant" defining "OrderCancelled" must not be followed by "ShipmentShipped"
+    When event "OrderCancelled" occurs
+    Then the status of "notResp_irrelevant" should be "TEMPORARY_VIOLATION"
+    When event "IrrelevantEvent" occurs
+    When 6 seconds pass
+    Then the status of "notResp_irrelevant" should be "FULFILLED"
+

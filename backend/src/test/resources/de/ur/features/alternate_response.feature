@@ -1,18 +1,34 @@
 Feature: Alternate Response Constraint Behavior
-  "A must be alternately followed by B" (A-B-A-B is OK, A-A-B is Violation)
+  "Login must be alternately followed by Logout"
 
-  Scenario: A then B is Fulfilled
-    Given a "Alternate Response" constraint named "ar1" defining "A" must be alternately followed by "B"
-    When event "A" occurs
-    When 2 seconds pass
-    Then the status of "ar1" should be "TEMPORARY_VIOLATION"
-    When event "B" occurs
-    Then the status of "ar1" should be "FULFILLED"
+  Scenario: Fulfills if Login then Logout without intervening Login
+    Given a "Alternate Response" constraint named "altResp1" defining "Login" must be alternately followed by "Logout"
+    When event "Login" occurs
+    Then the status of "altResp1" should be "TEMPORARY_VIOLATION"
+    When event "Logout" occurs
+    Then the status of "altResp1" should be "FULFILLED"
 
-  Scenario: A then A violates Permanently
-    Given a "Alternate Response" constraint named "ar2" defining "A" must be alternately followed by "B"
-    When event "A" occurs
-    When 2 seconds pass
-    Then the status of "ar2" should be "TEMPORARY_VIOLATION"
-    When event "A" occurs
-    Then the status of "ar2" should be "PERMANENT_VIOLATION"
+  Scenario: Start violation if Login occurs again before Logout
+    Given a "Alternate Response" constraint named "altResp2" defining "Login" must be alternately followed by "Logout"
+    When event "Login" occurs
+    Then the status of "altResp2" should be "TEMPORARY_VIOLATION"
+    When event "Login" occurs
+    Then the status of "altResp2" should be "PERMANENT_VIOLATION"
+
+  Scenario: Violation by duplicate target
+    Given a "Alternate Response" constraint named "altResp_dupTarget" defining "Login" must be alternately followed by "Logout"
+    When event "Login" occurs
+    And event "Logout" occurs
+    Then the status of "altResp_dupTarget" should be "FULFILLED"
+    When event "Logout" occurs
+    Then the status of "altResp_dupTarget" should be "FULFILLED"
+
+  Scenario: Interleaved irrelevant events don't affect status
+    Given a "Alternate Response" constraint named "altResp_irrelevant" defining "Login" must be alternately followed by "Logout"
+    When event "Login" occurs
+    Then the status of "altResp_irrelevant" should be "TEMPORARY_VIOLATION"
+    When event "IrrelevantEvent" occurs
+    Then the status of "altResp_irrelevant" should be "TEMPORARY_VIOLATION"
+    When event "Logout" occurs
+    Then the status of "altResp_irrelevant" should be "FULFILLED"
+
