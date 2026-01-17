@@ -52,6 +52,7 @@
     "@typescript-eslint/eslint-plugin": "8.31.1",
     "@typescript-eslint/parser": "8.31.1",
     "autoprefixer": "10.4.21",
+    "baseline-browser-mapping": "^2.9.15",
     "eslint": "9.25.1",
     "eslint-config-next": "16.0.5",
     "eslint-config-prettier": "10.1.2",

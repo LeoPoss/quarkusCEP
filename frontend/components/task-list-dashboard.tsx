@@ -202,13 +202,6 @@ export default function TaskListDashboard() {
                         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
                             Process Task Analysis
                         </h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
-                            Declarative Process Mining — Available Task Enumeration
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
-                        <ClockIcon size={14} />
-                        <span>Auto-refresh: 1s</span>
                     </div>
                 </div>
             </div>
@@ -217,14 +210,14 @@ export default function TaskListDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Finishability Status */}
                 <Card className={`col-span-1 lg:col-span-2 border ${finishability?.canFinish
-                        ? "border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-950/20"
-                        : "border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30"
+                    ? "border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-950/20"
+                    : "border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30"
                     }`}>
                     <CardBody className="py-5 px-6">
                         <div className="flex items-start gap-4">
                             <div className={`p-2.5 rounded-lg ${finishability?.canFinish
-                                    ? "bg-emerald-100 dark:bg-emerald-900/40"
-                                    : "bg-slate-100 dark:bg-slate-700"
+                                ? "bg-emerald-100 dark:bg-emerald-900/40"
+                                : "bg-slate-100 dark:bg-slate-700"
                                 }`}>
                                 {finishability?.canFinish ? (
                                     <CheckCircleIcon
@@ -347,10 +340,8 @@ export default function TaskListDashboard() {
                     <CardBody className="py-3 px-4">
                         <div className="flex flex-wrap items-center gap-3">
                             <Input
-                                className="max-w-xs"
+                                className="max-w-sm"
                                 placeholder="Search by task name..."
-                                size="sm"
-                                variant="bordered"
                                 startContent={<MagnifyingGlassIcon className="text-slate-400" size={16} />}
                                 value={searchQuery}
                                 onValueChange={setSearchQuery}
@@ -363,8 +354,6 @@ export default function TaskListDashboard() {
                                 <span className="text-xs text-slate-500 dark:text-slate-400">Filter:</span>
                                 <Select
                                     className="w-32"
-                                    size="sm"
-                                    variant="bordered"
                                     selectedKeys={[filter]}
                                     onSelectionChange={(keys) => setFilter(Array.from(keys)[0] as FilterType)}
                                     aria-label="Filter tasks"
@@ -381,8 +370,6 @@ export default function TaskListDashboard() {
                                 <span className="text-xs text-slate-500 dark:text-slate-400">Sort:</span>
                                 <Select
                                     className="w-32"
-                                    size="sm"
-                                    variant="bordered"
                                     selectedKeys={[sortBy]}
                                     onSelectionChange={(keys) => setSortBy(Array.from(keys)[0] as SortType)}
                                     aria-label="Sort tasks"
@@ -495,8 +482,8 @@ export default function TaskListDashboard() {
                                                 startContent={!completeTaskMutation.isPending && <PlayIcon size={14} weight="fill" />}
                                                 onPress={() => completeTaskMutation.mutate(task.task)}
                                                 className={`h-7 text-xs font-medium ${task.isUnsafe
-                                                        ? "bg-slate-100 dark:bg-slate-700 text-slate-400"
-                                                        : ""
+                                                    ? "bg-slate-100 dark:bg-slate-700 text-slate-400"
+                                                    : ""
                                                     }`}
                                             >
                                                 Execute
@@ -508,15 +495,6 @@ export default function TaskListDashboard() {
                         </Table>
                     )}
                 </Card>
-
-                {/* Footer Note */}
-                <div className="flex items-start gap-2 text-xs text-slate-400 dark:text-slate-500 px-1">
-                    <InfoIcon size={14} className="mt-0.5 shrink-0" />
-                    <p>
-                        Tasks are derived from the declarative process model. Blocked tasks violate one or more
-                        constraints and cannot be executed until the constraint conditions are satisfied.
-                    </p>
-                </div>
             </div>
         </div>
     );
