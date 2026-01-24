@@ -6,7 +6,6 @@ import {
     Card,
     CardBody,
     CardHeader,
-    Chip,
     Input,
     Spinner,
     Table,
@@ -17,18 +16,9 @@ import {
     TableRow,
     Tooltip,
 } from "@heroui/react";
-import {
-    CheckCircleIcon,
-    PlayIcon,
-    ProhibitIcon,
-    WarningIcon,
-    ListChecksIcon,
-} from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ky from "ky";
 import { useState } from "react";
-
-import { cardHeader } from "./primitives";
 
 interface TaskAnalysis {
     task: string;
@@ -81,8 +71,8 @@ export default function TaskList() {
         },
         onSuccess: (_, { taskName }) => {
             addToast({
-                title: "Task Executed",
-                description: `Task "${taskName}" completed`,
+                title: "Executed",
+                description: taskName,
                 color: "success",
             });
             queryClient.invalidateQueries({ queryKey: ["esper", "trace"] });
@@ -92,8 +82,8 @@ export default function TaskList() {
         },
         onError: (error) => {
             addToast({
-                title: "Execution Failed",
-                description: `Failed: ${error.message}`,
+                title: "Failed",
+                description: error.message,
                 color: "danger",
             });
         },
@@ -110,9 +100,9 @@ export default function TaskList() {
 
     if (isLoading) {
         return (
-            <Card>
+            <Card className="border-none shadow-sm h-full">
                 <CardBody className="flex justify-center py-8">
-                    <Spinner />
+                    <Spinner size="sm" />
                 </CardBody>
             </Card>
         );
@@ -120,9 +110,9 @@ export default function TaskList() {
 
     if (tasksError) {
         return (
-            <Card>
-                <CardBody className="text-red-500">
-                    Error loading tasks: {tasksError.message}
+            <Card className="border-none shadow-sm h-full">
+                <CardBody className="text-red-600">
+                    Error: {tasksError.message}
                 </CardBody>
             </Card>
         );
@@ -154,90 +144,98 @@ export default function TaskList() {
         return conditions.length > 0 ? conditions : ["Constraint violation"];
     };
 
-    const stateConfig: Record<string, { color: "success" | "warning" | "danger"; icon: React.ReactNode; label: string }> = {
-        READY: { color: "success", icon: <CheckCircleIcon size={16} weight="fill" />, label: "Ready" },
-        BLOCKED: { color: "danger", icon: <ProhibitIcon size={16} weight="fill" />, label: "Blocked" },
-        CONDITIONAL: { color: "warning", icon: <WarningIcon size={16} weight="fill" />, label: "Conditional" },
-    };
-
     return (
-        <Card>
-            <CardHeader className={cardHeader()}>
-                <ListChecksIcon className="mr-4" size={32} />
-                Tasklist
-                {uniqueTasks.length > 0 && (
-                    <Chip size="sm" variant="flat" className="ml-2">{uniqueTasks.length}</Chip>
-                )}
+        <Card className="border-none shadow-sm h-full">
+            <CardHeader className="text-sm font-medium px-4 py-3 bg-gradient-to-b from-gray-50/80 to-gray-100/50 dark:from-gray-800/80 dark:to-gray-800/50 text-gray-700 dark:text-gray-200 flex justify-between items-center">
+                <span>Task Overview</span>
+                <span className="text-xs text-gray-500 font-mono">Total: {uniqueTasks.length}</span>
             </CardHeader>
-            <CardBody className="p-0">
-                <Table aria-label="Task list" removeWrapper classNames={{ th: "bg-slate-100 dark:bg-slate-800 text-xs" }}>
+            <CardBody className="p-0 overflow-auto">
+                <Table
+                    aria-label="Task list"
+                    removeWrapper
+                    classNames={{
+                        th: "bg-transparent border-b border-gray-100 dark:border-gray-800 text-xs font-semibold text-gray-500 dark:text-gray-400 font-mono py-3 px-4",
+                        td: "py-3 border-b border-gray-50 dark:border-gray-800/50 text-sm px-4",
+                        base: "min-h-[300px]"
+                    }}
+                >
                     <TableHeader>
                         <TableColumn>Task</TableColumn>
-                        <TableColumn>State</TableColumn>
-                        <TableColumn>Action</TableColumn>
-                        <TableColumn>Restrictions</TableColumn>
+                        <TableColumn>Status</TableColumn>
+                        <TableColumn>Payload & Action</TableColumn>
+                        <TableColumn>Requirements</TableColumn>
                     </TableHeader>
-                    <TableBody emptyContent="No tasks. Create constraints to define tasks.">
+                    <TableBody emptyContent="No tasks defined. Create constraints to populate tasks.">
                         {uniqueTasks.map((taskName) => {
                             const state = getTaskState(taskName);
-                            const config = stateConfig[state];
                             const restrictions = getRestrictions(taskName);
                             const isEnabled = state === "READY" || state === "CONDITIONAL";
-                            const executionCount = getExecutionCount(taskName);
 
                             return (
-                                <TableRow key={taskName}>
+                                <TableRow key={taskName} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                                     <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium">{taskName}</span>
+                                        <span className="font-mono font-medium text-gray-800 dark:text-gray-200">{taskName}</span>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className={`
+                                            inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-medium rounded
+                                            ${state === "READY" ? "bg-green-100/50 text-green-700 dark:bg-green-900/20 dark:text-green-300" : ""}
+                                            ${state === "CONDITIONAL" ? "bg-amber-100/50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300" : ""}
+                                            ${state === "BLOCKED" ? "bg-red-100/50 text-red-700 dark:bg-red-900/20 dark:text-red-300" : ""}
+                                        `}>
+                                            {state}
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Chip color={config.color} variant="flat" size="sm" startContent={config.icon}>
-                                            {config.label}
-                                        </Chip>
-                                    </TableCell>
-                                    <TableCell>
                                         {isEnabled ? (
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-2">
                                                 <Input
                                                     size="sm"
                                                     placeholder="key"
                                                     value={payloadKey}
                                                     onChange={(e) => setPayloadKey(e.target.value)}
-                                                    className="w-16"
+                                                    className="w-20"
+                                                    classNames={{
+                                                        input: "font-mono text-xs bg-default-100 dark:bg-default-50",
+                                                        inputWrapper: "h-8 min-h-8 bg-default-100 dark:bg-default-50 shadow-none border-none"
+                                                    }}
                                                 />
+                                                <span className="text-gray-300">=</span>
                                                 <Input
                                                     size="sm"
                                                     placeholder="value"
                                                     value={payloadValue}
                                                     onChange={(e) => setPayloadValue(e.target.value)}
                                                     className="w-20"
+                                                    classNames={{
+                                                        input: "font-mono text-xs bg-default-100 dark:bg-default-50",
+                                                        inputWrapper: "h-8 min-h-8 bg-default-100 dark:bg-default-50 shadow-none border-none"
+                                                    }}
                                                 />
                                                 <Button
                                                     size="sm"
-                                                    color="primary"
                                                     variant="flat"
-                                                    isIconOnly
+                                                    className="min-w-0 px-4 h-8 bg-gray-900 dark:bg-gray-100 text-white dark:text-black font-medium text-xs rounded shadow-none hover:opacity-90"
                                                     isLoading={executeTaskMutation.isPending && executeTaskMutation.variables?.taskName === taskName}
                                                     onPress={() => handleExecute(taskName)}
                                                 >
-                                                    <PlayIcon size={16} weight="fill" />
+                                                    Finish
                                                 </Button>
                                             </div>
                                         ) : (
-                                            <span className="text-gray-400">—</span>
+                                            <span className="text-gray-300 dark:text-gray-700 italic text-xs pl-2">Unavailable</span>
                                         )}
                                     </TableCell>
                                     <TableCell>
                                         {restrictions ? (
                                             <Tooltip content={restrictions.join(", ")} placement="left">
-                                                <span className="text-sm text-red-600 dark:text-red-400 cursor-help">
-                                                    {restrictions.slice(0, 2).join(", ")}{restrictions.length > 2 && "..."}
+                                                <span className="text-xs font-mono text-red-600 dark:text-red-400 cursor-help border-b border-dotted border-red-300 dark:border-red-700 hover:border-solid">
+                                                    {restrictions.length} condition{restrictions.length > 1 ? 's' : ''}
                                                 </span>
                                             </Tooltip>
                                         ) : (
-                                            <span className="text-green-600 dark:text-green-400 text-sm">None</span>
+                                            <span className="text-gray-300 text-xs pl-2">-</span>
                                         )}
                                     </TableCell>
                                 </TableRow>

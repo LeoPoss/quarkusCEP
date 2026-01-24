@@ -12,12 +12,9 @@ import {
     SelectItem,
     SelectSection,
 } from "@heroui/react";
-import { FilePlusIcon } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import ky from "ky";
 import { useState } from "react";
-
-import { cardHeader } from "./primitives";
 
 // Constraints that only need one event (target = activation)
 const singleEventConstraints = ["existence", "notexistence"];
@@ -40,6 +37,8 @@ export default function ConstraintQuickCreate() {
     const [tgtParam, setTgtParam] = useState("");
     const [tgtOperator, setTgtOperator] = useState("");
     const [tgtValue, setTgtValue] = useState("");
+    const [actTimer, setActTimer] = useState("");
+    const [tgtTimer, setTgtTimer] = useState("");
 
     const createConstraintMutation = useMutation({
         mutationFn: async (payload: Record<string, unknown>) => {
@@ -71,7 +70,7 @@ export default function ConstraintQuickCreate() {
         if (!constraintType || !name.trim() || !activationEvent.trim()) {
             addToast({
                 title: "Validation Error",
-                description: "Please fill in all required fields",
+                description: "All fields required",
                 color: "warning",
             });
             return;
@@ -81,7 +80,7 @@ export default function ConstraintQuickCreate() {
         if (needsTarget && !targetEvent.trim()) {
             addToast({
                 title: "Validation Error",
-                description: "Target event is required for this constraint type",
+                description: "Target event required",
                 color: "warning",
             });
             return;
@@ -104,6 +103,7 @@ export default function ConstraintQuickCreate() {
                 param: actParam.trim(),
                 operator: actOperator,
                 value: actValue.trim(),
+                timer: actTimer ? parseInt(actTimer, 10) : undefined,
             };
         }
         if (tgtParam.trim() && tgtOperator && tgtValue.trim()) {
@@ -111,6 +111,7 @@ export default function ConstraintQuickCreate() {
                 param: tgtParam.trim(),
                 operator: tgtOperator,
                 value: tgtValue.trim(),
+                timer: tgtTimer ? parseInt(tgtTimer, 10) : undefined,
             };
         }
 
@@ -128,13 +129,13 @@ export default function ConstraintQuickCreate() {
         onChange: (v: "task" | "signal") => void;
         disabled?: boolean;
     }) => (
-        <div className={`flex bg-default-100 dark:bg-default-50 p-0.5 rounded text-xs ${disabled ? "opacity-50" : ""}`}>
+        <div className={`flex bg-default-100 h-[36px] dark:bg-default-50 rounded-md text-[10px] p-1 ${disabled ? "opacity-50" : ""}`}>
             <button
                 type="button"
                 disabled={disabled}
-                className={`px-2 py-1 rounded transition-colors ${value === "signal"
-                    ? "bg-white dark:bg-default-200 shadow-sm"
-                    : "text-foreground-500 hover:bg-default-200"
+                className={`px-2 py-0.5 rounded transition-colors ${value === "signal"
+                    ? "bg-white dark:bg-black font-medium text-foreground shadow-sm"
+                    : "text-foreground-500 hover:text-foreground"
                     }`}
                 onClick={() => onChange("signal")}
             >
@@ -143,30 +144,39 @@ export default function ConstraintQuickCreate() {
             <button
                 type="button"
                 disabled={disabled}
-                className={`px-2 py-1 rounded transition-colors ${value === "task"
-                    ? "bg-white dark:bg-default-200 shadow-sm"
-                    : "text-foreground-500 hover:bg-default-200"
+                className={`px-2 py-0.5 rounded transition-colors ${value === "task"
+                    ? "bg-white dark:bg-black font-medium text-foreground shadow-sm"
+                    : "text-foreground-500 hover:text-foreground"
                     }`}
                 onClick={() => onChange("task")}
             >
-                Task
+                Tsk
             </button>
         </div>
     );
 
+    const inputClasses = {
+        input: "font-mono text-xs bg-default-100 dark:bg-default-50",
+        inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200 h-9 min-h-9"
+    };
+
     return (
-        <Card>
-            <CardHeader className={cardHeader()}>
-                <FilePlusIcon className="mr-4" size={32} />
-                Quick Create Constraint
+        <Card className="border-none shadow-sm">
+            <CardHeader className="text-sm font-medium px-4 py-3 bg-gradient-to-b from-gray-50/80 to-gray-100/50 dark:from-gray-800/80 dark:to-gray-800/50 text-gray-700 dark:text-gray-200">
+                Create Constraint
             </CardHeader>
-            <CardBody>
+            <CardBody className="p-4">
                 <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="flex gap-2">
                         <Select
                             aria-label="Constraint Type"
                             placeholder="Type"
                             size="sm"
+                            className="w-1/2"
+                            classNames={{
+                                trigger: "bg-default-100 dark:bg-default-50 shadow-none border-none h-9 min-h-9",
+                                value: "text-xs font-mono"
+                            }}
                             selectedKeys={constraintType ? [constraintType] : []}
                             onChange={(e) => setConstraintType(e.target.value)}
                         >
@@ -188,70 +198,85 @@ export default function ConstraintQuickCreate() {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             size="sm"
+                            className="w-1/2"
+                            classNames={inputClasses}
                             isRequired
                         />
                     </div>
 
                     {/* Events row */}
                     <div className="flex gap-2 items-center">
-                        <Input
-                            placeholder={needsTarget ? "Activation (A)" : "Event"}
-                            value={activationEvent}
-                            onChange={(e) => setActivationEvent(e.target.value)}
-                            size="sm"
-                            className="flex-1"
-                            isRequired
-                        />
-                        <EventTypeToggle value={activationEventType} onChange={setActivationEventType} />
+                        <div className="flex-1 flex gap-2 items-center">
+                            <Input
+                                placeholder={needsTarget ? "Activation (A)" : "Event"}
+                                value={activationEvent}
+                                onChange={(e) => setActivationEvent(e.target.value)}
+                                size="sm"
+                                className="flex-1"
+                                classNames={inputClasses}
+                                isRequired
+                            />
+                            <EventTypeToggle value={activationEventType} onChange={setActivationEventType} />
+                        </div>
 
                         {needsTarget && (
                             <>
-                                <span className="text-gray-400">→</span>
-                                <Input
-                                    placeholder="Target (B)"
-                                    value={targetEvent}
-                                    onChange={(e) => setTargetEvent(e.target.value)}
-                                    size="sm"
-                                    className="flex-1"
-                                    isRequired
-                                />
-                                <EventTypeToggle value={targetEventType} onChange={setTargetEventType} />
+                                <span className="text-gray-300">→</span>
+                                <div className="flex-1 flex gap-2 items-center">
+                                    <Input
+                                        placeholder="Target (B)"
+                                        value={targetEvent}
+                                        onChange={(e) => setTargetEvent(e.target.value)}
+                                        size="sm"
+                                        className="flex-1"
+                                        classNames={inputClasses}
+                                        isRequired
+                                    />
+                                    <EventTypeToggle value={targetEventType} onChange={setTargetEventType} />
+                                </div>
                             </>
                         )}
                     </div>
 
-                    {/* Timer */}
-                    <Input
-                        placeholder="Timer (sec) - optional"
-                        value={timer}
-                        onChange={(e) => setTimer(e.target.value)}
-                        size="sm"
-                        type="number"
-                        min={1}
-                    />
-
-                    {/* Conditions toggle */}
-                    <Checkbox size="sm" isSelected={showConditions} onValueChange={setShowConditions}>
-                        <span className="text-xs">Add payload conditions</span>
-                    </Checkbox>
+                    {/* Timer + Conditions */}
+                    <div className="flex items-center gap-4">
+                        <Input
+                            placeholder="Constraint Timer (s)"
+                            value={timer}
+                            onChange={(e) => setTimer(e.target.value)}
+                            size="sm"
+                            type="number"
+                            min={1}
+                            className="w-24"
+                            classNames={inputClasses}
+                        />
+                        <Checkbox size="sm" isSelected={showConditions} onValueChange={setShowConditions}>
+                            <span className="text-xs text-gray-500">Conditions</span>
+                        </Checkbox>
+                    </div>
 
                     {showConditions && (
-                        <div className="space-y-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded border border-slate-200 dark:border-slate-700">
+                        <div className="space-y-2 p-3 bg-default-50 rounded-lg">
                             {/* Activation condition */}
-                            <div className="flex gap-1 items-center text-xs">
-                                <span className="w-8 text-gray-500">A:</span>
+                            <div className="flex gap-2 items-center text-xs">
+                                <span className="w-18 text-gray-400 font-mono">Activation</span>
                                 <Input
                                     placeholder="param"
                                     value={actParam}
                                     onChange={(e) => setActParam(e.target.value)}
                                     size="sm"
                                     className="flex-1"
+                                    classNames={inputClasses}
                                 />
                                 <Select
                                     aria-label="Operator"
                                     placeholder="op"
                                     size="sm"
-                                    className="w-16"
+                                    className="w-20"
+                                    classNames={{
+                                        trigger: "bg-white dark:bg-black shadow-none border-none h-9 min-h-9",
+                                        value: "text-[10px] font-mono"
+                                    }}
                                     selectedKeys={actOperator ? [actOperator] : []}
                                     onChange={(e) => setActOperator(e.target.value)}
                                 >
@@ -261,29 +286,44 @@ export default function ConstraintQuickCreate() {
                                     <SelectItem key="<">{"<"}</SelectItem>
                                 </Select>
                                 <Input
-                                    placeholder="value"
+                                    placeholder="val"
                                     value={actValue}
                                     onChange={(e) => setActValue(e.target.value)}
                                     size="sm"
                                     className="flex-1"
+                                    classNames={inputClasses}
+                                />
+                                <Input
+                                    placeholder="time (s)"
+                                    value={actTimer}
+                                    onChange={(e) => setActTimer(e.target.value)}
+                                    size="sm"
+                                    type="number"
+                                    className="w-20"
+                                    classNames={inputClasses}
                                 />
                             </div>
                             {/* Target condition */}
                             {needsTarget && (
-                                <div className="flex gap-1 items-center text-xs">
-                                    <span className="w-8 text-gray-500">B:</span>
+                                <div className="flex gap-2 items-center text-xs">
+                                    <span className="w-18 text-gray-400 font-mono">Target</span>
                                     <Input
                                         placeholder="param"
                                         value={tgtParam}
                                         onChange={(e) => setTgtParam(e.target.value)}
                                         size="sm"
                                         className="flex-1"
+                                        classNames={inputClasses}
                                     />
                                     <Select
                                         aria-label="Operator"
                                         placeholder="op"
                                         size="sm"
-                                        className="w-16"
+                                        className="w-20"
+                                        classNames={{
+                                            trigger: "bg-white dark:bg-black shadow-none border-none h-9 min-h-9",
+                                            value: "text-[10px] font-mono"
+                                        }}
                                         selectedKeys={tgtOperator ? [tgtOperator] : []}
                                         onChange={(e) => setTgtOperator(e.target.value)}
                                     >
@@ -293,11 +333,21 @@ export default function ConstraintQuickCreate() {
                                         <SelectItem key="<">{"<"}</SelectItem>
                                     </Select>
                                     <Input
-                                        placeholder="value"
+                                        placeholder="val"
                                         value={tgtValue}
                                         onChange={(e) => setTgtValue(e.target.value)}
                                         size="sm"
                                         className="flex-1"
+                                        classNames={inputClasses}
+                                    />
+                                    <Input
+                                        placeholder="time (s)"
+                                        value={tgtTimer}
+                                        onChange={(e) => setTgtTimer(e.target.value)}
+                                        size="sm"
+                                        type="number"
+                                        className="w-20"
+                                        classNames={inputClasses}
                                     />
                                 </div>
                             )}
@@ -306,8 +356,9 @@ export default function ConstraintQuickCreate() {
 
                     <Button
                         color="primary"
-                        className="w-full"
-                        startContent={<FilePlusIcon size={20} weight="fill" />}
+                        variant="flat"
+                        size="sm"
+                        className="w-full font-medium"
                         isLoading={createConstraintMutation.isPending}
                         onPress={handleCreate}
                     >
