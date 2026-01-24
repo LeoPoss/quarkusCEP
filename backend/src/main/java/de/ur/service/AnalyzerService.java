@@ -19,7 +19,8 @@ public class AnalyzerService {
     public Map<String, Object> checkFinishability(List<Constraint> constraints) {
         List<String> reasons = constraints.parallelStream()
                 .filter(constraint -> {
-                    // For NOT_EXISTENCE and NOT_RESPONSE, only PERMANENT_VIOLATION blocks completion
+                    // For NOT_EXISTENCE and NOT_RESPONSE, only PERMANENT_VIOLATION blocks
+                    // completion
                     if (NOT_EXISTENCE.equals(constraint.getType()) || NOT_RESPONSE.equals(constraint.getType())) {
                         return PERMANENT_VIOLATION.equals(constraint.getStatus());
                     }
@@ -39,7 +40,8 @@ public class AnalyzerService {
         return Map.of("canFinish", canFinish, "reasons", reasons);
     }
 
-    public List<AllowedTaskResponse> analyzeAllowedTasks(List<Constraint> constraints, Set<String> possibleEvents, List<Map<String, Object>> trace) {
+    public List<AllowedTaskResponse> analyzeAllowedTasks(List<Constraint> constraints, Set<String> possibleEvents,
+            List<Map<String, Object>> trace) {
         if (constraints == null || possibleEvents == null || trace == null) {
             throw new IllegalArgumentException("Parameters cannot be null");
         }
@@ -50,8 +52,8 @@ public class AnalyzerService {
                 return !FULFILLED.equals(currentStatus) && !PERMANENT_VIOLATION.equals(currentStatus);
             }).filter(constraint -> {
                 // Check if this event is relevant to the constraint
-                List<String> actEvents = getEventsFromField(constraint.getActivationEvent() != null ? constraint.getActivationEvent().name() : null);
-                List<String> trgEvents = getEventsFromField(constraint.getTargetEvent().name() != null ? constraint.getTargetEvent().name() : null);
+                List<String> actEvents = getEventNames(constraint.getActivationEvent());
+                List<String> trgEvents = getEventNames(constraint.getTargetEvent());
                 return actEvents.contains(event) || trgEvents.contains(event);
             }).toList();
 
@@ -68,20 +70,24 @@ public class AnalyzerService {
                     // This event would violate the constraint - collect condition details
                     Map<String, String> conditions = new HashMap<>();
 
-                    // Check if it's an activation or target event and get the corresponding condition
-                    List<String> actEvents = getEventsFromField(constraint.getActivationEvent().name());
+                    // Check if it's an activation or target event and get the corresponding
+                    // condition
+                    Event activationEvent = constraint.getActivationEvent();
+                    List<String> actEvents = getEventNames(activationEvent);
                     if (actEvents.contains(event) && constraint.getActivationCondition() != null) {
                         var cond = constraint.getActivationCondition();
                         conditions.put(cond.param(), cond.operator() + " " + cond.value());
                     }
 
-                    List<String> trgEvents = getEventsFromField(constraint.getTargetEvent().name());
+                    Event targetEvent = constraint.getTargetEvent();
+                    List<String> trgEvents = getEventNames(targetEvent);
                     if (trgEvents.contains(event) && constraint.getTargetCondition() != null) {
                         var cond = constraint.getTargetCondition();
                         conditions.put(cond.param(), cond.operator() + " " + cond.value());
                     }
 
-                    log.debug("  [!] Event '{}' is unsafe: violates {} ({}). Conditions: {}", event, constraint.getName(), constraint.getType(), conditions);
+                    log.debug("  [!] Event '{}' is unsafe: violates {} ({}). Conditions: {}", event,
+                            constraint.getName(), constraint.getType(), conditions);
                     return AllowedTaskResponse.unsafe(event, conditions);
                 }
             }
@@ -128,9 +134,9 @@ public class AnalyzerService {
     }
 
     private boolean checkEventsWithConditions(List<Map<String, Object>> trace,
-                                              List<String> eventsToFind,
-                                              ConstraintCondition condition,
-                                              Event eventInfo) {
+            List<String> eventsToFind,
+            ConstraintCondition condition,
+            Event eventInfo) {
         if (eventsToFind == null || eventsToFind.isEmpty()) {
             return false;
         }
@@ -222,12 +228,13 @@ public class AnalyzerService {
         };
     }
 
-    private ConstraintStatus getHypotheticalStatus(Constraint constraint, String event, List<Map<String, Object>> trace) {
+    private ConstraintStatus getHypotheticalStatus(Constraint constraint, String event,
+            List<Map<String, Object>> trace) {
         ConstraintType cType = constraint.getType();
         ConstraintStatus currentStatus = getStatusOrInit(constraint);
 
-        List<String> actEvents = getEventsFromField(constraint.getActivationEvent().name());
-        List<String> trgEvents = getEventsFromField(constraint.getTargetEvent().name());
+        List<String> actEvents = getEventNames(constraint.getActivationEvent());
+        List<String> trgEvents = getEventNames(constraint.getTargetEvent());
 
         // Determine if events are signals or tasks
         boolean actIsSignal = constraint.getActivationEvent() != null &&
@@ -276,9 +283,12 @@ public class AnalyzerService {
 
         // Handle irrelevant events first
         if (!isDirectlyRelevant) {
-            // For strict chain constraints in temporary state, irrelevant events cause violation
-            if (TEMPORARY_VIOLATION.equals(currentStatus) && (CHAIN_RESPONSE.equals(cType) || CHAIN_PRECEDENCE.equals(cType))) {
-                log.debug("Irrelevant event '{}' causes violation in chain constraint {} ({})", event, constraint.getName(), cType);
+            // For strict chain constraints in temporary state, irrelevant events cause
+            // violation
+            if (TEMPORARY_VIOLATION.equals(currentStatus)
+                    && (CHAIN_RESPONSE.equals(cType) || CHAIN_PRECEDENCE.equals(cType))) {
+                log.debug("Irrelevant event '{}' causes violation in chain constraint {} ({})", event,
+                        constraint.getName(), cType);
                 return PERMANENT_VIOLATION;
             }
             // For other constraints, status unchanged
@@ -308,7 +318,8 @@ public class AnalyzerService {
                                 if (actEvents.contains(eventType)) {
                                     if (constraint.getActivationCondition() != null) {
                                         Map<String, String> payload = (Map<String, String>) traceEvent.get("payload");
-                                        if (payload == null || !matchesCondition(constraint.getActivationCondition(), payload)) {
+                                        if (payload == null
+                                                || !matchesCondition(constraint.getActivationCondition(), payload)) {
                                             continue;
                                         }
                                     }
@@ -336,8 +347,10 @@ public class AnalyzerService {
 
             case RESPONDED_EXISTENCE -> {
                 // Compute based on events seen in trace + hypothetical event
-                boolean seenAct = checkEventsWithConditions(trace, actEvents, constraint.getActivationCondition(), constraint.getActivationEvent()) || isAct;
-                boolean seenTrg = checkEventsWithConditions(trace, trgEvents, constraint.getTargetCondition(), constraint.getTargetEvent()) || isTrg;
+                boolean seenAct = checkEventsWithConditions(trace, actEvents, constraint.getActivationCondition(),
+                        constraint.getActivationEvent()) || isAct;
+                boolean seenTrg = checkEventsWithConditions(trace, trgEvents, constraint.getTargetCondition(),
+                        constraint.getTargetEvent()) || isTrg;
                 if (FULFILLED.equals(currentStatus) || PERMANENT_VIOLATION.equals(currentStatus)) {
                     yield currentStatus;
                 }
@@ -376,7 +389,8 @@ public class AnalyzerService {
                     if (actIsSignal) {
                         if (constraint.getActivationCondition() != null) {
                             Map<String, String> signalState = getSignalState(constraint.getActivationEvent().name());
-                            hasMatchingActivation = signalState != null && matchesCondition(constraint.getActivationCondition(), signalState);
+                            hasMatchingActivation = signalState != null
+                                    && matchesCondition(constraint.getActivationCondition(), signalState);
                         } else {
                             // No condition, check if signal exists
                             hasMatchingActivation = getSignalState(constraint.getActivationEvent().name()) != null;
@@ -390,7 +404,8 @@ public class AnalyzerService {
                                 if (constraint.getActivationCondition() != null) {
                                     @SuppressWarnings("unchecked")
                                     Map<String, String> payload = (Map<String, String>) traceEvent.get("payload");
-                                    if (payload != null && matchesCondition(constraint.getActivationCondition(), payload)) {
+                                    if (payload != null
+                                            && matchesCondition(constraint.getActivationCondition(), payload)) {
                                         hasMatchingActivation = true;
                                         break;
                                     }
@@ -431,7 +446,8 @@ public class AnalyzerService {
                     }
                     yield PERMANENT_VIOLATION;
                 }
-                // Act event (A) is preparatory, no state change; handled via irrelevant for chains
+                // Act event (A) is preparatory, no state change; handled via irrelevant for
+                // chains
                 yield currentStatus;
             }
 
@@ -441,7 +457,8 @@ public class AnalyzerService {
                         yield TEMPORARY_VIOLATION;
                     }
                     if (isTrg) {
-                        boolean priorAct = checkEventsWithConditions(trace, actEvents, constraint.getActivationCondition(), constraint.getActivationEvent());
+                        boolean priorAct = checkEventsWithConditions(trace, actEvents,
+                                constraint.getActivationCondition(), constraint.getActivationEvent());
                         yield priorAct ? PERMANENT_VIOLATION : currentStatus;
                     }
                 }
@@ -454,7 +471,8 @@ public class AnalyzerService {
             case NOT_PRECEDENCE -> {
                 if (INIT.equals(currentStatus)) {
                     if (isTrg) {
-                        boolean priorAct = checkEventsWithConditions(trace, actEvents, constraint.getActivationCondition(), constraint.getActivationEvent());
+                        boolean priorAct = checkEventsWithConditions(trace, actEvents,
+                                constraint.getActivationCondition(), constraint.getActivationEvent());
                         // Violation if B is preceded by A (forbids precedence)
                         yield priorAct ? PERMANENT_VIOLATION : FULFILLED;
                     }

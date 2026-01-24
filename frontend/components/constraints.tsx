@@ -103,12 +103,10 @@ export default function Constraints() {
                 <AccordionItem
                   key={c.name}
                   startContent={
-                    <>
-                      <Chip color={statusChip[c.status]}>{c.status}</Chip>
-                    </>
+                    (<Chip color={statusChip[c.status]}>{c.status}</Chip>) as any
                   }
-                  subtitle={formatConstraintDisplay(c)}
-                  title={<span className="font-medium">{c.name}</span>}
+                  subtitle={formatConstraintDisplay(c) as any}
+                  title={(<span className="font-medium">{c.name}</span>) as any}
                 >
                   {c.eplStatements.map((s) => (
                     <div
@@ -117,14 +115,14 @@ export default function Constraints() {
                     >
                       <Divider />
                       <div className="p-2 grid grid-cols-4 gap-4 pl-8 ">
-                        <Tooltip content={s.deploymentId}>
+                        <Tooltip content={s.deploymentId as any}>
                           <Chip color="default" variant="dot">
                             {s.type}
                           </Chip>
                         </Tooltip>
                         <ShikiHighlighter
                           className="col-span-3 text-sm border"
-                          language={eql}
+                          language={eql as any}
                           theme={
                             resolvedTheme === "dark"
                               ? "material-theme-darker"
@@ -153,9 +151,9 @@ function formatConstraintDisplay(c?: Constraint | null): React.ReactNode {
     !cond
       ? ""
       : [cond.param, cond.operator, cond.value]
-          .map((p) => p?.trim())
-          .filter(Boolean)
-          .join(" ");
+        .map((p) => p?.trim())
+        .filter(Boolean)
+        .join(" ");
 
   const formatEvent = (
     event?: Event | null,

@@ -16,7 +16,8 @@ public class NotResponseConstraintHandler extends BaseConstraintHandler {
 
     @Override
     public void createFulfillmentQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
-        String query = """
+       if (withinPeriod != null) {
+           String query = """
                         INSERT INTO constraintStatus
                         SELECT '%s' as name, 'PERMANENT_VIOLATION' as type, a.timestamp as timestamp
                         FROM PATTERN [
@@ -26,10 +27,11 @@ public class NotResponseConstraintHandler extends BaseConstraintHandler {
                 """.formatted(name, name, withinPeriod, name);
 
 
-        var statement = esperService.deployStatements(name + "_FULFILLMENT", query);
+           var statement = esperService.deployStatements(name + "_FULFILLMENT", query);
 
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
-        addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
+           statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
+           addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
+       }
     }
 
     @Override
