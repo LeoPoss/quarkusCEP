@@ -123,13 +123,13 @@ public class EsperResource {
         GenericEvent genericEvent = new GenericEvent(
                 UUID.randomUUID().toString(),
                 eventType,
-                System.nanoTime(),
+                System.currentTimeMillis(),
                 payload
         );
 
         // Add to trace if this is a known task event
         if (constraintService.getKnownEvents().contains(eventType)) {
-            constraintService.addToTrace(eventType, payload);
+            constraintService.addToTrace(eventType, payload, genericEvent.getTimestamp());
         }
         
         // Update signal state if this is a known signal event
@@ -147,6 +147,7 @@ public class EsperResource {
             esperService.reset();
             constraintService.resetConstraints();
             constraintService.getTrace().clear();
+            analyzerService.resetSignalTracking();
             return Response.ok(Map.of(
                     "status", "Esper engine has been reset and reinitialized",
                     "timestamp", java.time.Instant.now()

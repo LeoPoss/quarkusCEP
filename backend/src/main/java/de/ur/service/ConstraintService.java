@@ -38,10 +38,11 @@ public class ConstraintService {
         return getConstraints().values().stream().flatMap(constraint -> Stream.of(constraint.getActivationEvent(), constraint.getTargetEvent())).filter(Objects::nonNull).filter(event -> event.type() == Event.EventType.SIGNAL).map(Event::name).collect(Collectors.toSet());
     }
 
-    public void addToTrace(String eventType, Map<String, String> payload) {
+    public void addToTrace(String eventType, Map<String, String> payload, long timestamp) {
         Map<String, Object> traceEvent = new HashMap<>();
         traceEvent.put("eventType", eventType);
         traceEvent.put("payload", payload != null ? new HashMap<>(payload) : null);
+        traceEvent.put("timestamp", timestamp);
         trace.add(traceEvent);
     }
 
