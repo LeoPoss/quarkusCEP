@@ -18,16 +18,17 @@ public record CorrelationCondition(
     public String getCorrelationQueryPart() {
         String safeActivationParam = activationParam.replace("'", "''");
         String safeTargetParam = targetParam.replace("'", "''");
+        String validOperator = "==".equals(this.operator) ? "=" : this.operator;
 
         // Check if the operator requires a numeric cast
         if (NUMERIC_OPERATORS.contains(operator)) {
             // Generate EPL with explicit casting for numeric types
-            return "cast(a.%s, double) %s cast(b.%s, double)"
-                    .formatted(safeActivationParam, operator, safeTargetParam);
+            return "cast(a.payload('%s'), double) %s cast(b.payload('%s'), double)"
+                    .formatted(safeActivationParam, validOperator, safeTargetParam);
         } else {
             // Generate standard EPL for non-numeric types (e.g., '=', '!=')
-            return "a.%s %s b.%s"
-                    .formatted(safeActivationParam, operator, safeTargetParam);
+            return "a.payload('%s') %s b.payload('%s')"
+                    .formatted(safeActivationParam, validOperator, safeTargetParam);
         }
     }
 }

@@ -27,10 +27,7 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
             selectClause.add("'" + name + "' as name");
             selectClause.add("'" + type + "' as type");
             selectClause.add("timestamp as timestamp");
-            for (String key : relevantKeys) {
-                String castExpression = getCastExpression(key, activationCondition, targetCondition);
-                selectClause.add(castExpression + " as " + key);
-            }
+            selectClause.add("payload as payload");
 
             String query = "INSERT INTO constraintStatus SELECT " + selectClause + " FROM GenericEvent";
 
@@ -68,10 +65,7 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
             selectClause.add("'" + name + "' AS name");
             selectClause.add("'" + type + "' AS type");
             selectClause.add("t1.timestamp AS timestamp");
-            for (String key : relevantKeys) {
-                String castExpression = getCastExpression(key, activationCondition, targetCondition).replace("payload('", "t1.payload('");
-                selectClause.add(castExpression + " AS " + key);
-            }
+            selectClause.add("t1.payload AS payload");
 
             String query = "INSERT INTO constraintStatus SELECT " + selectClause + " FROM pattern [";
 
@@ -160,38 +154,5 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
 
     protected void addConstraintStatement(String name, String eplId, StatementType eplType, String eplStatement) {
         constraintService.addConstraintStatement(name, eplId, eplType, eplStatement);
-    }
-    
-    private String getCastExpression(String key, ConditionRequest activationCondition, ConditionRequest targetCondition) {
-        // Check activation condition first
-        if (activationCondition != null && activationCondition.isValid() && key.equals(activationCondition.param())) {
-            return getCastExpressionForCondition(key, activationCondition);
-        }
-        
-        // Check target condition
-        if (targetCondition != null && targetCondition.isValid() && key.equals(targetCondition.param())) {
-            return getCastExpressionForCondition(key, targetCondition);
-        }
-        
-        // Default: no cast for keys not in any condition
-        return "payload('" + key.replace("'", "''") + "')";
-    }
-    
-    private String getCastExpressionForCondition(String key, ConditionRequest condition) {
-        String safeKey = key.replace("'", "''");
-        
-        // Check for boolean type
-        if ("true".equalsIgnoreCase(condition.value()) || "false".equalsIgnoreCase(condition.value())) {
-            return "cast(payload('" + safeKey + "'), boolean)";
-        }
-        
-        // Check for numeric type
-        try {
-            new java.math.BigDecimal(condition.value());
-            return "cast(payload('" + safeKey + "'), double)";
-        } catch (NumberFormatException e) {
-            // String type - no cast needed
-            return "payload('" + safeKey + "')";
-        }
     }
 }
