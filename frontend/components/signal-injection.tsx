@@ -14,7 +14,7 @@ interface PayloadField {
 export default function SignalInjection() {
     const queryClient = useQueryClient();
     const [signalName, setSignalName] = useState("");
-    const [payloadFields, setPayloadFields] = useState<PayloadField[]>([]);
+    const [payloadFields, setPayloadFields] = useState<PayloadField[]>([{ id: "init", key: "", value: "" }]);
 
     const injectSignalMutation = useMutation({
         mutationFn: async (event: { eventType: string; payload?: Record<string, string> }) => {

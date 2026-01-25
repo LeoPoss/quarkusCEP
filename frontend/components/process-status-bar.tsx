@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardBody, CardHeader, Spinner, Tooltip } from "@heroui/react";
+import { Card, CardBody, CardHeader, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import ky from "ky";
 
@@ -58,20 +58,29 @@ export default function ProcessStatusBar() {
             </CardHeader>
             <CardBody className="p-4 space-y-3">
                 {/* Finishability */}
-                <Tooltip
-                    content={
-                        finishability?.canFinish
-                            ? "Process can complete"
-                            : finishability?.reasons?.slice(0, 3).join("; ") || "Cannot finish"
-                    }
-                >
-                    <div className="flex items-center justify-between cursor-help">
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
                         <span className="text-xs text-gray-600 dark:text-gray-400">Finishable</span>
                         <span className={`text-xs font-mono font-medium ${finishability?.canFinish ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`}>
                             {finishability?.canFinish ? "YES" : "NO"}
                         </span>
                     </div>
-                </Tooltip>
+                    {/* Inline reasons if not finishable */}
+                    {!finishability?.canFinish && finishability?.reasons && finishability.reasons.length > 0 && (
+                        <div className="mt-1 pl-2 border-l-2 border-amber-200 dark:border-amber-900/50 space-y-1">
+                            {finishability.reasons.slice(0, 3).map((reason, idx) => (
+                                <div key={idx} className="text-[10px] text-gray-500 leading-tight">
+                                    {reason}
+                                </div>
+                            ))}
+                            {finishability.reasons.length > 3 && (
+                                <div className="text-[10px] text-gray-400 italic">
+                                    + {finishability.reasons.length - 3} more...
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 {/* Constraint counts */}
                 <div className="space-y-1.5 text-xs">

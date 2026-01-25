@@ -10,27 +10,14 @@ import {
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import ky from "ky";
+import { formatConstraint, Constraint } from "../utils/constraint-formatter";
 
-interface EplStatement {
-    deploymentId: string;
-    statement: string;
-    type: string;
-}
-
-interface Constraint {
-    name: string;
-    type: string;
-    status: string;
-    activationEvent?: { name: string; type: string };
-    targetEvent?: { name: string; type: string };
-    eplStatements?: EplStatement[];
-}
 
 const statusStyles: Record<string, string> = {
-    FULFILLED: "border-l-green-500 bg-green-50/50 dark:bg-green-900/10",
-    INIT: "border-l-gray-300 bg-gray-50/50 dark:bg-gray-800/20",
-    TEMPORARY_VIOLATION: "border-l-amber-500 bg-amber-50/50 dark:bg-amber-900/10",
-    PERMANENT_VIOLATION: "border-l-red-500 bg-red-50/50 dark:bg-red-900/10",
+    FULFILLED: "border-l-green-500 bg-green-100 dark:bg-green-900",
+    INIT: "border-l-gray-300 bg-gray-100 dark:bg-gray-800",
+    TEMPORARY_VIOLATION: "border-l-amber-500 bg-amber-100 dark:bg-amber-900",
+    PERMANENT_VIOLATION: "border-l-red-500 bg-red-100 dark:bg-red-900",
 };
 
 const fetchConstraints = async (): Promise<Constraint[]> => {
@@ -62,13 +49,8 @@ export default function ConstraintsList() {
         );
     }
 
-    const formatConstraint = (c: Constraint) => {
-        const act = c.activationEvent?.name || "?";
-        const tgt = c.targetEvent?.name || "?";
-        if (c.type === "EXISTENCE" || c.type === "NOT_EXISTENCE") {
-            return `${c.type}(${tgt})`;
-        }
-        return `${c.type}(${act}, ${tgt})`;
+    const formatConstraintText = (c: Constraint) => {
+        return formatConstraint(c);
     };
 
     return (
@@ -94,7 +76,7 @@ export default function ConstraintsList() {
                                         trigger: "py-3",
                                         indicator: "text-gray-400 text-small",
                                     }}
-                                    title={`${c.name}: ${formatConstraint(c)}`}
+                                    title={`${c.name}: ${formatConstraintText(c)}`}
                                 >
                                     <div className="space-y-2 pl-2 border-l border-gray-200 dark:border-gray-700 ml-1">
                                         <div className="text-[10px] uppercase tracking-wider text-gray-500">

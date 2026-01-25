@@ -16,7 +16,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import ky from "ky";
 import { useState } from "react";
 
-// Constraints that only need one event (target = activation)
 const singleEventConstraints = ["existence", "notexistence"];
 
 export default function ConstraintQuickCreate() {
@@ -55,7 +54,6 @@ export default function ConstraintQuickCreate() {
             });
             queryClient.invalidateQueries({ queryKey: ["constraints"] });
             queryClient.invalidateQueries({ queryKey: ["analysis"] });
-            // Keep form values for rapid iteration
         },
         onError: (error) => {
             addToast({
@@ -92,8 +90,8 @@ export default function ConstraintQuickCreate() {
             name: name.trim(),
             activationEvent: activationEvent.trim(),
             activationEventType: activationEventType,
-            targetEvent: isSingleEvent ? activationEvent.trim() : targetEvent.trim(),
-            targetEventType: isSingleEvent ? activationEventType : targetEventType,
+            targetEvent: targetEvent.trim(),
+            targetEventType: targetEventType,
             timer: timer ? parseInt(timer, 10) : null,
         };
 
@@ -116,6 +114,68 @@ export default function ConstraintQuickCreate() {
         }
 
         createConstraintMutation.mutate(payload);
+    };
+
+    const handleDebugSeed = async () => {
+        const debugConstraints = [
+            {
+                type: "notexistence",
+                payload: {
+                    name: "PreventOverheating",
+                    targetEvent: "Temp",
+                    targetEventType: "signal",
+                    timer: null,
+                    targetCondition: { param: "temp", operator: ">", value: "90", timer: 10 }
+                }
+            },
+            {
+                type: "response",
+                payload: {
+                    name: "StartCoolingMustHappen",
+                    activationEvent: "Temp",
+                    activationEventType: "signal",
+                    targetEvent: "StartCooling",
+                    targetEventType: "task",
+                    timer: null,
+                    activationCondition: { param: "temp", operator: ">", value: "80", timer: 10 },
+                    targetCondition: { param: "user", operator: "==", value: "3" }
+                }
+            },
+            {
+                type: "precedence",
+                payload: {
+                    name: "BlockRestart",
+                    activationEvent: "Temp",
+                    activationEventType: "signal",
+                    targetEvent: "Restart",
+                    targetEventType: "task",
+                    timer: null,
+                    activationCondition: { param: "temp", operator: "<", value: "50", timer: 20 }
+                }
+            }
+        ];
+
+        for (const constraint of debugConstraints) {
+            try {
+                await ky.post(
+                    `http://localhost:8080/constraints/${constraint.type}`,
+                    { json: constraint.payload }
+                );
+                addToast({
+                    title: "Debug Seed Created",
+                    description: `Constraint "${constraint.payload.name}" created`,
+                    color: "success",
+                });
+            } catch (error) {
+                addToast({
+                    title: "Debug Seed Failed",
+                    description: `Failed to create "${constraint.payload.name}"`,
+                    color: "danger",
+                });
+            }
+        }
+        queryClient.invalidateQueries({ queryKey: ["constraints"] });
+        queryClient.invalidateQueries({ queryKey: ["analysis"] });
     };
 
     const needsTarget = constraintType && !singleEventConstraints.includes(constraintType);
@@ -363,6 +423,15 @@ export default function ConstraintQuickCreate() {
                         onPress={handleCreate}
                     >
                         Create Constraint
+                    </Button>
+                    <Button
+                        color="secondary"
+                        variant="ghost"
+                        size="sm"
+                        className="w-full font-medium"
+                        onPress={handleDebugSeed}
+                    >
+                        Seed Debug Data
                     </Button>
                 </div>
             </CardBody>
