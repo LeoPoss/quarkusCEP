@@ -10,7 +10,27 @@ import {
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import ky from "ky";
-import { formatConstraint, Constraint } from "../utils/constraint-formatter";
+import React from "react";
+
+
+export interface Constraint {
+    name: string;
+    type: string;
+    status: string;
+    timer?: number;
+    activationEvent?: { name: string; type: string };
+    targetEvent?: { name: string; type: string };
+    activationCondition?: { param: string; operator: string; value: string; timer?: number };
+    targetCondition?: { param: string; operator: string; value: string; timer?: number };
+    eplStatements?: { deploymentId: string; statement: string; type: string }[];
+}
+
+type Condition = {
+    param: string;
+    operator: string;
+    value: string;
+    timer?: number;
+};
 
 
 const statusStyles: Record<string, string> = {
@@ -49,10 +69,6 @@ export default function ConstraintsList() {
         );
     }
 
-    const formatConstraintText = (c: Constraint) => {
-        return formatConstraint(c);
-    };
-
     return (
         <Card className="h-full border-none shadow-sm">
             <CardHeader className="text-sm font-medium px-4 py-3 bg-gradient-to-b from-gray-50/80 to-gray-100/50 dark:from-gray-800/80 dark:to-gray-800/50 text-gray-700 dark:text-gray-200 flex justify-between items-center">
@@ -71,12 +87,11 @@ export default function ConstraintsList() {
                                     classNames={{
                                         base: `px-4 ${statusStyles[c.status] || statusStyles.INIT}`,
                                         title: "text-xs font-medium font-mono text-gray-800 dark:text-gray-200",
-                                        subtitle: "hidden",
                                         content: "pt-0 pb-3",
                                         trigger: "py-3",
                                         indicator: "text-gray-400 text-small",
                                     }}
-                                    title={`${c.name}: ${formatConstraintText(c)}`}
+                                    title={formatConstraintDisplay(c)}
                                 >
                                     <div className="space-y-2 pl-2 border-l border-gray-200 dark:border-gray-700 ml-1">
                                         <div className="text-[10px] uppercase tracking-wider text-gray-500">
@@ -104,5 +119,76 @@ export default function ConstraintsList() {
                 )}
             </CardBody>
         </Card>
+    );
+}
+
+
+function formatConstraintDisplay(c?: Constraint): React.ReactNode {
+    if (!c) return "";
+    const type = c.type.toUpperCase();
+
+    const formatEvent = (
+        evtName?: string,
+        evtType?: string,
+        cond?: { param: string; operator: string; value: string; timer?: number }
+    ) => {
+        if (!evtName) return <span className="text-gray-400">?</span>;
+
+        const name = evtName;
+        // Condition: [param operator value]
+        const condition = (cond?.param && cond?.operator && cond?.value)
+            ? <span className="text-gray-600 dark:text-gray-400">[{cond.param} {cond.operator} {cond.value}]</span>
+            : null;
+
+        // Timer: [0,t] specialized styling
+        const timer = cond?.timer ? (
+            <span className="text-xs align-sub ml-0.5 text-gray-500">
+                [0,{cond.timer}]
+            </span>
+        ) : null;
+
+        const isTask = evtType?.toLowerCase() === "task";
+
+        if (isTask) {
+            return (
+                <span className="font-mono">
+                    dis({name}{condition}){timer}
+                </span>
+            )
+        }
+
+        return (
+            <span className="font-mono">
+                {name}
+                {condition}
+                {timer}
+            </span>
+        );
+    };
+
+    const partA = formatEvent(c.activationEvent?.name, c.activationEvent?.type, c.activationCondition);
+    const partB = formatEvent(c.targetEvent?.name, c.targetEvent?.type, c.targetCondition);
+
+    // Parse top-level timer if needed, though user example focused on event timer.
+    // Assuming top-level timer is handled similarly if it exists logic, but following user example style primarily.
+    const constraintTimer = c.timer ? (
+        <span className="text-xs align-sub ml-0.5 text-gray-500">[0,{c.timer}]</span>
+    ) : null;
+
+    // Some constraints only have A (Existence, NotExistence)
+    // Note: User wanted "RESPONSE(...)" -> Uppercase
+    if (["EXISTENCE", "NOTEXISTENCE", "NOT_EXISTENCE"].includes(type)) {
+        const subject = c.targetEvent?.name ? partB : partA;
+        return (
+            <span>
+                {type}{constraintTimer}({subject})
+            </span>
+        );
+    }
+
+    return (
+        <span>
+            {type}{constraintTimer}({partA}, {partB})
+        </span>
     );
 }
