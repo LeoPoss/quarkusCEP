@@ -46,7 +46,7 @@ export default function TraceViewer() {
             </CardHeader>
             <CardBody className="p-0">
                 {trace.length === 0 ? (
-                    <div className="text-xs text-gray-500 text-center py-8 italic">No events recorded</div>
+                    <div className="text-xs text-gray-500 text-center py-8 italic">No tasks executed</div>
                 ) : (
                     <div className="h-48 overflow-y-auto font-mono text-xs">
                         {[...trace].reverse().map((event, index) => {
