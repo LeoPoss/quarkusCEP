@@ -83,16 +83,16 @@ export default function ProcessStatusBar() {
                 </div>
 
                 {/* Constraint counts */}
-                <div className="space-y-1.5 text-xs">
-                    <div className="flex justify-between">
+                <div className="text-xs">
+                    <div className="flex justify-between bg-green-50 dark:bg-green-900/50 p-1">
                         <span className="text-green-600 dark:text-green-400">Fulfilled</span>
                         <span className="font-mono text-green-900 dark:text-green-100">{fulfilledCount}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between bg-amber-50 dark:bg-amber-900/50 p-1">
                         <span className="text-amber-600 dark:text-amber-400">Pending</span>
                         <span className="font-mono text-amber-900 dark:text-amber-100">{pendingCount}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex justify-between bg-red-50 dark:bg-red-900/50 p-1">
                         <span className="text-red-600 dark:text-red-400">Violated</span>
                         <span className="font-mono text-red-900 dark:text-red-100">{violatedCount}</span>
                     </div>

@@ -86,8 +86,7 @@ export default function TasksPage() {
             <Modal isOpen={isOpen} onClose={onClose} size="sm">
                 <ModalContent>
                     <ModalHeader className="flex items-center gap-2 text-sm">
-                        <WarningIcon size={20} className="text-amber-500" />
-                        Reset Process?
+                        Reset Esper Engine?
                     </ModalHeader>
                     <ModalBody className="text-sm">
                         <p>This will clear trace, constraints, and reset Esper.</p>

@@ -5,16 +5,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import ky from "ky";
 import { useState } from "react";
 
-interface PayloadField {
-    id: string;
-    key: string;
-    value: string;
-}
-
 export default function SignalInjection() {
     const queryClient = useQueryClient();
     const [signalName, setSignalName] = useState("");
-    const [payloadFields, setPayloadFields] = useState<PayloadField[]>([{ id: "init", key: "", value: "" }]);
+    const [paramKey, setParamKey] = useState("");
+    const [paramValue, setParamValue] = useState("");
 
     const injectSignalMutation = useMutation({
         mutationFn: async (event: { eventType: string; payload?: Record<string, string> }) => {
@@ -34,29 +29,17 @@ export default function SignalInjection() {
         },
     });
 
-    const addPayloadField = () => {
-        setPayloadFields([...payloadFields, { id: Date.now().toString(), key: "", value: "" }]);
-    };
-
-    const removePayloadField = (id: string) => {
-        setPayloadFields(payloadFields.filter((f) => f.id !== id));
-    };
-
-    const updatePayloadField = (id: string, field: "key" | "value", value: string) => {
-        setPayloadFields(payloadFields.map((f) => (f.id === id ? { ...f, [field]: value } : f)));
-    };
-
     const handleInject = () => {
         if (!signalName.trim()) {
             addToast({ title: "Error", description: "Signal name required", color: "warning" });
             return;
         }
+
         const payload: Record<string, string> = {};
-        payloadFields.forEach((f) => {
-            if (f.key.trim() && f.value.trim()) {
-                payload[f.key.trim()] = f.value.trim();
-            }
-        });
+        if (paramKey.trim() && paramValue.trim()) {
+            payload[paramKey.trim()] = paramValue.trim();
+        }
+
         injectSignalMutation.mutate({
             eventType: signalName.trim(),
             payload: Object.keys(payload).length > 0 ? payload : undefined,
@@ -68,8 +51,8 @@ export default function SignalInjection() {
             <CardHeader className="text-sm font-medium px-4 py-3 bg-gradient-to-b from-gray-50/80 to-gray-100/50 dark:from-gray-800/80 dark:to-gray-800/50 text-gray-700 dark:text-gray-200">
                 Signal Injection
             </CardHeader>
-            <CardBody className="p-4 space-y-3">
-                <div className="flex gap-2">
+            <CardBody className="p-4 flex flex-col gap-3">
+                <div className="flex gap-2 items-center">
                     <Input
                         size="sm"
                         placeholder="Signal Name"
@@ -81,47 +64,31 @@ export default function SignalInjection() {
                             inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200"
                         }}
                     />
-                    <Button size="sm" variant="flat" onPress={addPayloadField} className="bg-default-100 dark:bg-default-50 text-default-600">
-                        + Param
-                    </Button>
+                    <Input
+                        size="sm"
+                        placeholder="Payload Key"
+                        value={paramKey}
+                        onChange={(e) => setParamKey(e.target.value)}
+                        className="w-1/4 font-mono text-sm"
+                        classNames={{
+                            input: "font-mono bg-default-100 dark:bg-default-50",
+                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200"
+                        }}
+                    />
+                    <span className="text-gray-300">=</span>
+                    <Input
+                        size="sm"
+                        placeholder="Payload Value"
+                        value={paramValue}
+                        onChange={(e) => setParamValue(e.target.value)}
+                        className="w-1/4 font-mono text-sm"
+                        classNames={{
+                            input: "font-mono bg-default-100 dark:bg-default-50",
+                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200"
+                        }}
+                    />
                 </div>
-                {payloadFields.length > 0 && (
-                    <div className="space-y-2 pl-3 border-l-2 border-default-100 dark:border-default-50">
-                        {payloadFields.map((field) => (
-                            <div key={field.id} className="flex gap-2 items-center font-mono text-xs">
-                                <Input
-                                    size="sm"
-                                    placeholder="key"
-                                    value={field.key}
-                                    onChange={(e) => updatePayloadField(field.id, "key", e.target.value)}
-                                    className="flex-1"
-                                    classNames={{
-                                        input: "font-mono text-xs bg-default-100 dark:bg-default-50",
-                                        inputWrapper: "h-8 min-h-8 bg-default-100 dark:bg-default-50 shadow-none border-none"
-                                    }}
-                                />
-                                <span className="text-gray-300">=</span>
-                                <Input
-                                    size="sm"
-                                    placeholder="value"
-                                    value={field.value}
-                                    onChange={(e) => updatePayloadField(field.id, "value", e.target.value)}
-                                    className="flex-1"
-                                    classNames={{
-                                        input: "font-mono text-xs bg-default-100 dark:bg-default-50",
-                                        inputWrapper: "h-8 min-h-8 bg-default-100 dark:bg-default-50 shadow-none border-none"
-                                    }}
-                                />
-                                <button
-                                    className="text-gray-400 hover:text-red-500 px-1 transition-colors"
-                                    onClick={() => removePayloadField(field.id)}
-                                >
-                                    ×
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
+
                 <Button
                     size="sm"
                     color="secondary"
