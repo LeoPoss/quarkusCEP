@@ -1,8 +1,6 @@
 # DeclareCEP: A Unified Engine for Declarative Process Specifications and Event Processing
 
-![implshort1.png](implshort1.png)
-
-![implshort2.png](implshort2.png)
+![tasklist.png](tasklist.png)
 
 ## Project Overview
 
