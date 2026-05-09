@@ -1,6 +1,5 @@
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
-import { Link } from "@heroui/link";
 import clsx from "clsx";
 
 import { Providers } from "./providers";
@@ -48,14 +47,7 @@ export default function RootLayout({
               {children}
             </main>
             <footer className="w-full flex items-center justify-center py-3">
-              <Link
-                isExternal
-                className="flex items-center gap-1 text-current"
-                href="tbd"
-              >
-                <p className="text-primary">...</p> &bull;
-                <span className="text-default-600">2025</span>
-              </Link>
+              <p className="text-default-600 text-sm">DeclareCEP &bull; 2026</p>
             </footer>
           </div>
         </Providers>

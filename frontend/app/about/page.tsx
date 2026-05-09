@@ -24,7 +24,7 @@ export default function AboutPage() {
         management in data-rich contexts.
       </p>
 
-      <p>2025, the authors</p>
+      <p>2026, the authors</p>
     </div>
   );
 }

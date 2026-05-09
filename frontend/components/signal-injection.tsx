@@ -2,8 +2,8 @@
 
 import { addToast, Button, Card, CardBody, CardHeader, Input } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import ky from "ky";
 import { useState } from "react";
+import { api } from "@/lib/api";
 
 export default function SignalInjection() {
     const queryClient = useQueryClient();
@@ -13,7 +13,7 @@ export default function SignalInjection() {
 
     const injectSignalMutation = useMutation({
         mutationFn: async (event: { eventType: string; payload?: Record<string, string> }) => {
-            return await ky.post("http://localhost:8080/esper/event", { json: event });
+            return await api.post("esper/event", { json: event });
         },
         onSuccess: () => {
             addToast({
@@ -48,7 +48,7 @@ export default function SignalInjection() {
 
     return (
         <Card className="border-none shadow-sm">
-            <CardHeader className="text-sm font-medium px-4 py-3 bg-gradient-to-b from-gray-50/80 to-gray-100/50 dark:from-gray-800/80 dark:to-gray-800/50 text-gray-700 dark:text-gray-200">
+            <CardHeader className="text-sm font-medium px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200">
                 Signal Injection
             </CardHeader>
             <CardBody className="p-4 flex flex-col gap-3">
@@ -60,8 +60,8 @@ export default function SignalInjection() {
                         onChange={(e) => setSignalName(e.target.value)}
                         className="flex-1 font-mono text-sm"
                         classNames={{
-                            input: "font-mono bg-default-100 dark:bg-default-50",
-                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200"
+                            input: "font-mono text-xs bg-default-100 dark:bg-default-50",
+                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-b border-default-200 dark:border-default-700 hover:bg-default-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all"
                         }}
                     />
                     <Input
@@ -69,10 +69,10 @@ export default function SignalInjection() {
                         placeholder="Payload Key"
                         value={paramKey}
                         onChange={(e) => setParamKey(e.target.value)}
-                        className="w-1/4 font-mono text-sm"
+                        className="w-1/4 font-mono"
                         classNames={{
-                            input: "font-mono bg-default-100 dark:bg-default-50",
-                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200"
+                            input: "font-mono text-xs bg-default-100 dark:bg-default-50",
+                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-b border-default-200 dark:border-default-700 hover:bg-default-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all"
                         }}
                     />
                     <span className="text-gray-300">=</span>
@@ -81,10 +81,10 @@ export default function SignalInjection() {
                         placeholder="Payload Value"
                         value={paramValue}
                         onChange={(e) => setParamValue(e.target.value)}
-                        className="w-1/4 font-mono text-sm"
+                        className="w-1/4 font-mono"
                         classNames={{
-                            input: "font-mono bg-default-100 dark:bg-default-50",
-                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200"
+                            input: "font-mono text-xs bg-default-100 dark:bg-default-50",
+                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-b border-default-200 dark:border-default-700 hover:bg-default-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all"
                         }}
                     />
                 </div>

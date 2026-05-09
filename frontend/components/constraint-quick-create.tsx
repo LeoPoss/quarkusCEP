@@ -13,8 +13,8 @@ import {
     SelectSection,
 } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import ky from "ky";
 import { useState } from "react";
+import { api } from "@/lib/api";
 
 const singleEventConstraints = ["existence", "notexistence"];
 
@@ -41,8 +41,8 @@ export default function ConstraintQuickCreate() {
 
     const createConstraintMutation = useMutation({
         mutationFn: async (payload: Record<string, unknown>) => {
-            return await ky.post(
-                `http://localhost:8080/constraints/${constraintType.toLowerCase()}`,
+            return await api.post(
+                `constraints/${constraintType.toLowerCase()}`,
                 { json: payload }
             );
         },
@@ -157,8 +157,8 @@ export default function ConstraintQuickCreate() {
 
         for (const constraint of debugConstraints) {
             try {
-                await ky.post(
-                    `http://localhost:8080/constraints/${constraint.type}`,
+                await api.post(
+                    `constraints/${constraint.type}`,
                     { json: constraint.payload }
                 );
                 addToast({
@@ -222,7 +222,7 @@ export default function ConstraintQuickCreate() {
 
     return (
         <Card className="border-none shadow-sm">
-            <CardHeader className="text-sm font-medium px-4 py-3 bg-gradient-to-b from-gray-50/80 to-gray-100/50 dark:from-gray-800/80 dark:to-gray-800/50 text-gray-700 dark:text-gray-200">
+            <CardHeader className="text-sm font-medium px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200">
                 Create Constraint
             </CardHeader>
             <CardBody className="p-4">

@@ -15,7 +15,8 @@ import {
     WarningIcon,
 } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import ky from "ky";
+
+import { api } from "@/lib/api";
 
 import ProcessStatusBar from "@/components/process-status-bar";
 import TaskList from "@/components/task-list";
@@ -30,7 +31,7 @@ export default function TasksPage() {
 
     const resetMutation = useMutation({
         mutationFn: async () => {
-            return await ky.post("http://localhost:8080/esper/reset");
+            return await api.post("esper/reset");
         },
         onSuccess: () => {
             addToast({
@@ -67,7 +68,7 @@ export default function TasksPage() {
             </div>
 
             {/* Status + Trace + Constraints row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <ProcessStatusBar />
                 <TraceViewer />
                 <ConstraintsList />
@@ -77,7 +78,7 @@ export default function TasksPage() {
             <TaskList />
 
             {/* Signal + Constraint Create row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <SignalInjection />
                 <ConstraintQuickCreate />
             </div>

@@ -15,10 +15,11 @@ import {
     TableHeader,
     TableRow,
     Tooltip,
+    Chip,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import ky from "ky";
 import { useState } from "react";
+import { api } from "@/lib/api";
 
 interface TaskAnalysis {
     task: string;
@@ -32,11 +33,11 @@ interface TraceEvent {
 }
 
 const fetchTasks = async (): Promise<TaskAnalysis[]> => {
-    return await ky.get("http://localhost:8080/analysis/allowed-tasks").json();
+    return await api.get("analysis/allowed-tasks").json();
 };
 
 const fetchTrace = async (): Promise<TraceEvent[]> => {
-    return await ky.get("http://localhost:8080/esper/trace").json();
+    return await api.get("esper/trace").json();
 };
 
 export default function TaskList() {
@@ -65,7 +66,7 @@ export default function TaskList() {
 
     const executeTaskMutation = useMutation({
         mutationFn: async ({ taskName, payload }: { taskName: string; payload?: Record<string, string> }) => {
-            return await ky.post("http://localhost:8080/esper/event", {
+            return await api.post("esper/event", {
                 json: { eventType: taskName, payload },
             });
         },
@@ -146,7 +147,7 @@ export default function TaskList() {
 
     return (
         <Card className="border-none shadow-sm h-full">
-            <CardHeader className="text-sm font-medium px-4 py-3 bg-gradient-to-b from-gray-50/80 to-gray-100/50 dark:from-gray-800/80 dark:to-gray-800/50 text-gray-700 dark:text-gray-200 flex justify-between items-center">
+            <CardHeader className="text-sm font-medium px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200 flex justify-between items-center">
                 <span>Task Overview</span>
                 <span className="text-xs text-gray-500 font-mono">Total: {uniqueTasks.length}</span>
             </CardHeader>
@@ -166,7 +167,12 @@ export default function TaskList() {
                         <TableColumn>Payload & Action</TableColumn>
                         <TableColumn>Requirements</TableColumn>
                     </TableHeader>
-                    <TableBody emptyContent="No tasks defined. Create constraints to populate tasks.">
+                    <TableBody emptyContent={
+                        <div className="py-8 text-center">
+                            <p className="text-gray-500 text-sm">No tasks defined yet</p>
+                            <p className="text-xs text-gray-400 mt-1">Create a constraint with activation/target events to register tasks.</p>
+                        </div>
+                    }>
                         {uniqueTasks.map((taskName) => {
                             const state = getTaskState(taskName);
                             const restrictions = getRestrictions(taskName);
@@ -178,14 +184,14 @@ export default function TaskList() {
                                         <span className="font-mono font-medium text-gray-800 dark:text-gray-200">{taskName}</span>
                                     </TableCell>
                                     <TableCell>
-                                        <div className={`
-                                            inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-medium rounded
-                                            ${state === "READY" ? "bg-green-100/50 text-green-700 dark:bg-green-900/20 dark:text-green-300" : ""}
-                                            ${state === "CONDITIONAL" ? "bg-amber-100/50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300" : ""}
-                                            ${state === "BLOCKED" ? "bg-red-100/50 text-red-700 dark:bg-red-900/20 dark:text-red-300" : ""}
-                                        `}>
+                                        <Chip
+                                            size="sm"
+                                            variant="flat"
+                                            color={state === "READY" ? "success" : state === "CONDITIONAL" ? "warning" : "danger"}
+                                            classNames={{ content: "text-[10px] font-mono font-medium" }}
+                                        >
                                             {state}
-                                        </div>
+                                        </Chip>
                                     </TableCell>
                                     <TableCell>
                                         {isEnabled ? (

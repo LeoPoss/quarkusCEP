@@ -4,6 +4,7 @@ import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
 import de.ur.dao.CorrelationCondition;
 import de.ur.dao.StatementType;
+import de.ur.service.EplQueryHelper;
 import de.ur.service.GenericStatusUpdateListener;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -22,8 +23,8 @@ public class ExistenceConstraintHandler extends BaseConstraintHandler {
                 WHERE name = '%s' AND type = 'TARGET'
                 """.formatted(name);
 
-        if (correlation != null && correlation.isValid()) {
-            query = appendCondition(query, correlation.getCorrelationQueryPart());
+        if (EplQueryHelper.isCorrelationValid(correlation)) {
+            query = appendCondition(query, EplQueryHelper.toEplCorrelation(correlation));
         }
 
         var statement = esperService.deployStatements(name, query);

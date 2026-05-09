@@ -3,6 +3,7 @@ package de.ur.service;
 import de.ur.dao.*;
 import de.ur.dto.ConditionRequest;
 import de.ur.service.constraint.ConstraintHandlerFactory;
+import de.ur.service.EplQueryHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
@@ -25,10 +26,6 @@ public class ConstraintService {
 
     @Getter
     private List<Map<String, Object>> trace = new ArrayList<>();
-
-    public org.slf4j.Logger getLogger() {
-        return log;
-    }
 
     public Set<String> getKnownEvents() {
         return getConstraints().values().stream().flatMap(constraint -> Stream.of(constraint.getActivationEvent(), constraint.getTargetEvent())).filter(Objects::nonNull).filter(event -> event.type() == Event.EventType.TASK).map(Event::name).collect(Collectors.toSet());
@@ -72,7 +69,7 @@ public class ConstraintService {
         Set<String> relevantKeys = getRelevantKeys(correlationCondition, safeActivationCondition, safeTargetCondition);
 
         // Create and add the constraint to the map first
-        Constraint constraint = new Constraint(name, withinPeriod != null ? withinPeriod : null, new ArrayList<>(), activationEvent, safeActivationCondition.isValid() ? new ConstraintCondition(safeActivationCondition.param(), safeActivationCondition.operator(), safeActivationCondition.value(), safeActivationCondition.timer()) : null, targetEvent, safeTargetCondition.isValid() ? new ConstraintCondition(safeTargetCondition.param(), safeTargetCondition.operator(), safeTargetCondition.value(), safeTargetCondition.timer()) : null, correlationCondition, type, status);
+        Constraint constraint = new Constraint(name, withinPeriod != null ? withinPeriod : null, new ArrayList<>(), activationEvent, EplQueryHelper.isConditionValid(safeActivationCondition) ? new ConstraintCondition(safeActivationCondition.param(), safeActivationCondition.operator(), safeActivationCondition.value(), safeActivationCondition.timer()) : null, targetEvent, EplQueryHelper.isConditionValid(safeTargetCondition) ? new ConstraintCondition(safeTargetCondition.param(), safeTargetCondition.operator(), safeTargetCondition.value(), safeTargetCondition.timer()) : null, correlationCondition, type, status);
         constraints.put(name, constraint);
 
         var handler = constraintHandlerFactory.getHandler(type);
@@ -94,13 +91,13 @@ public class ConstraintService {
 
     private static Set<String> getRelevantKeys(CorrelationCondition correlationCondition, ConditionRequest safeActivationCondition, ConditionRequest safeTargetCondition) {
         Set<String> relevantKeys = new java.util.HashSet<>();
-        if (safeActivationCondition.isValid()) {
+        if (EplQueryHelper.isConditionValid(safeActivationCondition)) {
             relevantKeys.add(safeActivationCondition.param());
         }
-        if (safeTargetCondition.isValid()) {
+        if (EplQueryHelper.isConditionValid(safeTargetCondition)) {
             relevantKeys.add(safeTargetCondition.param());
         }
-        if (correlationCondition != null && correlationCondition.isValid()) {
+        if (correlationCondition != null && EplQueryHelper.isCorrelationValid(correlationCondition)) {
             relevantKeys.add(correlationCondition.activationParam());
             relevantKeys.add(correlationCondition.targetParam());
         }

@@ -9,8 +9,18 @@ import {
     Spinner,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import ky from "ky";
 import React from "react";
+import { useTheme } from "next-themes";
+import ShikiHighlighter from "react-shiki";
+import { api } from "@/lib/api";
+
+import eql from "../langs/eql.tmLanguage.json";
+import {
+    CheckCircle,
+    Warning,
+    XCircle,
+    Circle,
+} from "@phosphor-icons/react";
 
 
 export interface Constraint {
@@ -41,7 +51,7 @@ const statusStyles: Record<string, string> = {
 };
 
 const fetchConstraints = async (): Promise<Constraint[]> => {
-    return await ky.get("http://localhost:8080/constraints").json();
+    return await api.get("constraints").json();
 };
 
 export default function ConstraintsList() {
@@ -50,6 +60,8 @@ export default function ConstraintsList() {
         queryFn: fetchConstraints,
         refetchInterval: 1000,
     });
+
+    const { resolvedTheme } = useTheme();
 
     if (isLoading) {
         return (
@@ -71,13 +83,16 @@ export default function ConstraintsList() {
 
     return (
         <Card className="h-full border-none shadow-sm">
-            <CardHeader className="text-sm font-medium px-4 py-3 bg-gradient-to-b from-gray-50/80 to-gray-100/50 dark:from-gray-800/80 dark:to-gray-800/50 text-gray-700 dark:text-gray-200 flex justify-between items-center">
+            <CardHeader className="text-sm font-medium px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200 flex justify-between items-center">
                 <span>Active Constraints</span>
                 <span className="text-xs font-mono opacity-60">{constraints.length}</span>
             </CardHeader>
             <CardBody className="p-0">
                 {constraints.length === 0 ? (
-                    <div className="text-xs text-gray-500 text-center py-8 italic">No constraints defined</div>
+                    <div className="text-xs text-gray-500 text-center py-8">
+                        <p className="italic">No constraints defined yet</p>
+                        <p className="text-[10px] text-gray-400 mt-1">Use the form below to create one.</p>
+                    </div>
                 ) : (
                     <div className="max-h-48 overflow-y-auto">
                         <Accordion isCompact selectionMode="multiple" className="px-0 gap-0 divider-y divide-gray-100 dark:divide-gray-800">
@@ -92,6 +107,14 @@ export default function ConstraintsList() {
                                         indicator: "text-gray-400 text-small",
                                     }}
                                     title={formatConstraintDisplay(c)}
+                                    startContent={
+                                        <div className="shrink-0">
+                                            {c.status === "FULFILLED" && <CheckCircle size={14} className="text-green-500" weight="fill" />}
+                                            {c.status === "TEMPORARY_VIOLATION" && <Warning size={14} className="text-amber-500" weight="fill" />}
+                                            {c.status === "PERMANENT_VIOLATION" && <XCircle size={14} className="text-red-500" weight="fill" />}
+                                            {(!c.status || c.status === "INIT") && <Circle size={14} className="text-gray-400" />}
+                                        </div>
+                                    }
                                 >
                                     <div className="space-y-2 pl-2 border-l border-gray-200 dark:border-gray-700 ml-1">
                                         <div className="text-[10px] uppercase tracking-wider text-gray-500">
@@ -102,9 +125,13 @@ export default function ConstraintsList() {
                                                 {c.eplStatements.map((s, i) => (
                                                     <div key={i}>
                                                         <div className="text-[9px] text-gray-400 mb-0.5 font-mono uppercase">{s.type}</div>
-                                                        <pre className="text-[10px] bg-white dark:bg-black p-2 rounded border border-gray-100 dark:border-gray-800 overflow-x-auto whitespace-pre-wrap break-all text-gray-600 dark:text-gray-400 font-mono leading-relaxed">
+                                                        <ShikiHighlighter
+                                                            className="text-[10px] border border-gray-100 dark:border-gray-800 rounded overflow-x-auto"
+                                                            language={eql as any}
+                                                            theme={resolvedTheme === "dark" ? "material-theme-darker" : "material-theme-lighter"}
+                                                        >
                                                             {s.statement.trim()}
-                                                        </pre>
+                                                        </ShikiHighlighter>
                                                     </div>
                                                 ))}
                                             </div>

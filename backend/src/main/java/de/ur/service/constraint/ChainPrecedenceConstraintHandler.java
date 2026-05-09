@@ -4,6 +4,7 @@ import de.ur.dao.ConstraintStatus;
 import de.ur.dao.ConstraintType;
 import de.ur.dao.CorrelationCondition;
 import de.ur.dao.StatementType;
+import de.ur.service.EplQueryHelper;
 import de.ur.service.GenericStatusUpdateListener;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -21,8 +22,8 @@ public class ChainPrecedenceConstraintHandler extends BaseConstraintHandler {
                 FROM PATTERN [every a=constraintStatus(type='ACTIVATION', name='%s') -> b=constraintStatus(type='TARGET', name='%s')]
                 """.formatted(name, name);
 
-        if (correlation != null && correlation.isValid()) {
-            query = appendCondition(query, correlation.getCorrelationQueryPart());
+        if (EplQueryHelper.isCorrelationValid(correlation)) {
+            query = appendCondition(query, EplQueryHelper.toEplCorrelation(correlation));
         }
 
         var statement = esperService.deployStatements(name + "_fulfill", query);
@@ -50,8 +51,8 @@ public class ChainPrecedenceConstraintHandler extends BaseConstraintHandler {
                 FROM PATTERN [every a=constraintStatus(type='ACTIVATION', name='%s') -> b=constraintStatus(name!='%s')]
                 """.formatted(name, name);
 
-        if (correlation != null && correlation.isValid()) {
-            query = appendCondition(query, correlation.getCorrelationQueryPart());
+        if (EplQueryHelper.isCorrelationValid(correlation)) {
+            query = appendCondition(query, EplQueryHelper.toEplCorrelation(correlation));
         }
 
         var statement = esperService.deployStatements(name + "_perm_vio", query);

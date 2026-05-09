@@ -5,6 +5,7 @@ import de.ur.dao.StatementType;
 import de.ur.dto.ConditionRequest;
 import de.ur.service.ConstraintService;
 import de.ur.service.EsperService;
+import de.ur.service.EplQueryHelper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -38,12 +39,12 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
             conditions.add("eventType = '" + event.name() + "'");
 
             // Condition B: The simple activation/target condition
-            if (condition.isValid()) {
-                conditions.add(condition.getConditionQueryPart());
+            if (EplQueryHelper.isConditionValid(condition)) {
+                conditions.add(EplQueryHelper.toEplCondition(condition));
             }
 
             // Condition C: The correlation existence check (for activations only)
-            if (type == StatementType.ACTIVATION && correlation != null && correlation.isValid()) {
+            if (type == StatementType.ACTIVATION && EplQueryHelper.isCorrelationValid(correlation)) {
                 String existenceCheck = "payload('" + correlation.activationParam() + "') IS NOT NULL";
                 conditions.add(existenceCheck);
             }
@@ -76,12 +77,12 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
             patternConditions.add("eventType = '" + event.name() + "'");
 
             // Condition B: The simple activation/target condition
-            if (condition.isValid()) {
-                patternConditions.add(condition.getConditionQueryPart());
+            if (EplQueryHelper.isConditionValid(condition)) {
+                patternConditions.add(EplQueryHelper.toEplCondition(condition));
             }
 
             // Condition C: The correlation existence check (for activations only)
-            if (type == StatementType.ACTIVATION && correlation != null && correlation.isValid()) {
+            if (type == StatementType.ACTIVATION && EplQueryHelper.isCorrelationValid(correlation)) {
                 String existenceCheck = "payload('" + correlation.activationParam() + "') IS NOT NULL";
                 patternConditions.add(existenceCheck);
             }
@@ -89,7 +90,7 @@ public abstract class BaseConstraintHandler implements ConstraintHandler {
             // --- 3. Build the pattern clause with timer guard ---
             query += "every t1 = GenericEvent(" + String.join(", ", patternConditions) + ")";
             
-            if (condition.isValid()) {
+            if (EplQueryHelper.isConditionValid(condition)) {
                 String negatedCondition = negateCondition(condition);
                 query += " -> (timer:interval(" + condition.timer() + " sec) ";
                 query += "and not GenericEvent(eventType = '" + event.name() + "', " + negatedCondition + "))";

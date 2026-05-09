@@ -25,13 +25,23 @@ public class ConstraintResource {
         return Response.ok(constraintService.getConstraints().values()).build();
     }
 
-
     @POST
-    @Path("/existence")
-    public Response createExistenceConstraint(ConstraintRequest request) {
-        log.info(request.toString());
+    @Path("/{type}")
+    public Response createConstraint(@PathParam("type") String type, ConstraintRequest request) {
+        ConstraintType constraintType = parseConstraintType(type);
+        if (constraintType == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Unknown constraint type: " + type)
+                    .build();
+        }
+
+        ConstraintStatus initialStatus = constraintType == ConstraintType.EXISTENCE
+                ? ConstraintStatus.TEMPORARY_VIOLATION
+                : ConstraintStatus.INIT;
+
+        log.info("Creating {} constraint: {}", type, request);
         constraintService.setupConstraint(
-                ConstraintType.EXISTENCE,
+                constraintType,
                 request.name(),
                 request.timer(),
                 request.activationEvent(),
@@ -39,200 +49,27 @@ public class ConstraintResource {
                 request.targetEvent(),
                 request.targetCondition(),
                 request.correlationCondition(),
-                ConstraintStatus.TEMPORARY_VIOLATION,
+                initialStatus,
                 request.activationEventType(),
                 request.targetEventType()
         );
         return Response.created(URI.create(request.name())).build();
     }
 
-    @POST
-    @Path("/notexistence")
-    public Response createNotExistenceConstraint(ConstraintRequest request) {
-        constraintService.setupConstraint(
-                ConstraintType.NOT_EXISTENCE,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                ConstraintStatus.INIT,
-                request.activationEventType(),
-                request.targetEventType()
-        );
-        return Response.created(URI.create(request.name())).build();
-    }
-
-    @POST
-    @Path("/response")
-    public Response createResponseConstraint(ConstraintRequest request) {
-        constraintService.setupConstraint(
-                ConstraintType.RESPONSE,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                ConstraintStatus.INIT,
-                request.activationEventType(),
-                request.targetEventType()
-        );
-        return Response.created(URI.create(request.name())).build();
-    }
-
-    @POST
-    @Path("/respondedexistence")
-    public Response createRespondedExistenceConstraint(ConstraintRequest request) {
-        constraintService.setupConstraint(
-                ConstraintType.RESPONDED_EXISTENCE,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                ConstraintStatus.INIT,
-                request.activationEventType(),
-                request.targetEventType()
-        );
-        return Response.created(URI.create(request.name())).build();
-    }
-
-    @POST
-    @Path("/alternateresponse")
-    public Response createAlternateResponseConstraint(ConstraintRequest request) {
-        constraintService.setupConstraint(
-                ConstraintType.ALTERNATE_RESPONSE,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                ConstraintStatus.INIT,
-                request.activationEventType(),
-                request.targetEventType()
-        );
-        return Response.created(URI.create(request.name())).build();
-    }
-
-    @POST
-    @Path("/chainresponse")
-    public Response createChainResponseConstraint(ConstraintRequest request) {
-        constraintService.setupConstraint(
-                ConstraintType.CHAIN_RESPONSE,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                ConstraintStatus.INIT,
-                request.activationEventType(),
-                request.targetEventType()
-        );
-        return Response.created(URI.create(request.name())).build();
-    }
-
-    @POST
-    @Path("/precedence")
-    public Response createPrecedenceConstraint(ConstraintRequest request) {
-        constraintService.setupConstraint(
-                ConstraintType.PRECEDENCE,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                ConstraintStatus.INIT,
-                request.activationEventType(),
-                request.targetEventType()
-        );
-        return Response.created(URI.create(request.name())).build();
-    }
-
-    @POST
-    @Path("/alternateprecedence")
-    public Response createAlternatePrecedenceConstraint(ConstraintRequest request) {
-        constraintService.setupConstraint(
-                ConstraintType.ALTERNATE_PRECEDENCE,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                ConstraintStatus.INIT,
-                request.activationEventType(),
-                request.targetEventType()
-        );
-        return Response.created(URI.create(request.name())).build();
-    }
-
-    @POST
-    @Path("/chainprecedence")
-    public Response createChainPrecedenceConstraint(ConstraintRequest request) {
-        constraintService.setupConstraint(
-                ConstraintType.CHAIN_PRECEDENCE,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                ConstraintStatus.INIT,
-                request.activationEventType(),
-                request.targetEventType()
-        );
-        return Response.created(URI.create(request.name())).build();
-    }
-
-    @POST
-    @Path("/notresponse")
-    public Response createNotResponseConstraint(ConstraintRequest request) {
-        constraintService.setupConstraint(
-                ConstraintType.NOT_RESPONSE,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                ConstraintStatus.INIT,
-                request.activationEventType(),
-                request.targetEventType()
-        );
-        return Response.created(URI.create(request.name())).build();
-    }
-
-    @POST
-    @Path("/notprecedence")
-    public Response createNotPrecedenceConstraint(ConstraintRequest request) {
-        constraintService.setupConstraint(
-                ConstraintType.NOT_PRECEDENCE,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                ConstraintStatus.INIT,
-                request.activationEventType(),
-                request.targetEventType()
-        );
-        return Response.created(URI.create(request.name())).build();
+    private static ConstraintType parseConstraintType(String type) {
+        return switch (type.toLowerCase()) {
+            case "existence" -> ConstraintType.EXISTENCE;
+            case "notexistence" -> ConstraintType.NOT_EXISTENCE;
+            case "response" -> ConstraintType.RESPONSE;
+            case "respondedexistence" -> ConstraintType.RESPONDED_EXISTENCE;
+            case "alternateresponse" -> ConstraintType.ALTERNATE_RESPONSE;
+            case "chainresponse" -> ConstraintType.CHAIN_RESPONSE;
+            case "precedence" -> ConstraintType.PRECEDENCE;
+            case "alternateprecedence" -> ConstraintType.ALTERNATE_PRECEDENCE;
+            case "chainprecedence" -> ConstraintType.CHAIN_PRECEDENCE;
+            case "notresponse" -> ConstraintType.NOT_RESPONSE;
+            case "notprecedence" -> ConstraintType.NOT_PRECEDENCE;
+            default -> null;
+        };
     }
 }
