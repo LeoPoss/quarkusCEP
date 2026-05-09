@@ -18,12 +18,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
 
-import ProcessStatusBar from "@/components/process-status-bar";
+import ArchitectureFlow from "@/components/architecture-flow";
 import TaskList from "@/components/task-list";
 import SignalInjection from "@/components/signal-injection";
 import ConstraintQuickCreate from "@/components/constraint-quick-create";
-import TraceViewer from "@/components/trace-viewer";
-import ConstraintsList from "@/components/constraints-list";
 
 export default function TasksPage() {
     const queryClient = useQueryClient();
@@ -67,12 +65,8 @@ export default function TasksPage() {
                 </Button>
             </div>
 
-            {/* Status + Trace + Constraints row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <ProcessStatusBar />
-                <TraceViewer />
-                <ConstraintsList />
-            </div>
+            {/* Three-tier architecture overview */}
+            <ArchitectureFlow />
 
             {/* Task List */}
             <TaskList />

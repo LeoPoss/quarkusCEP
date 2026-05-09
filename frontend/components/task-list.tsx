@@ -193,7 +193,7 @@ export default function TaskList() {
                         {uniqueTasks.map((taskName) => {
                             const state = getTaskState(taskName);
                             const restrictions = getRestrictions(taskName);
-                            const isEnabled = state === "READY" || state === "CONDITIONAL";
+                            const isEnabled = state === "READY";
 
                             return (
                                 <TableRow key={taskName} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
