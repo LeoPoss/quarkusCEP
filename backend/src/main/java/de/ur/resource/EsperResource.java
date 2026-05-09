@@ -47,6 +47,12 @@ public class EsperResource {
         return Response.ok(constraintService.getKnownEvents()).build();
     }
 
+    @GET
+    @Path("/signals")
+    public Response getSignalStates() {
+        return Response.ok(analyzerService.getAllSignalStates()).build();
+    }
+
     @POST
     @Path("/deploy")
     public Response deployStatement(DeployStatementRequest request) {

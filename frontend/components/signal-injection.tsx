@@ -1,7 +1,7 @@
 "use client";
 
-import { addToast, Button, Card, CardBody, CardHeader, Input } from "@heroui/react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { addToast, Button, Card, CardBody, CardHeader, Divider, Input, Spinner } from "@heroui/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/lib/api";
 
@@ -10,6 +10,14 @@ export default function SignalInjection() {
     const [signalName, setSignalName] = useState("");
     const [paramKey, setParamKey] = useState("");
     const [paramValue, setParamValue] = useState("");
+
+    const { data: signalStates = {} } = useQuery<Record<string, Record<string, string>>>({
+        queryKey: ["esper", "signals"],
+        queryFn: async () => await api.get("esper/signals").json(),
+        refetchInterval: 1000,
+    });
+
+    const hasSignals = Object.keys(signalStates).length > 0;
 
     const injectSignalMutation = useMutation({
         mutationFn: async (event: { eventType: string; payload?: Record<string, string> }) => {
@@ -23,6 +31,7 @@ export default function SignalInjection() {
             });
             queryClient.invalidateQueries({ queryKey: ["esper", "trace"] });
             queryClient.invalidateQueries({ queryKey: ["analysis"] });
+            queryClient.invalidateQueries({ queryKey: ["esper", "signals"] });
         },
         onError: (error) => {
             addToast({ title: "Error", description: error.message, color: "danger" });
@@ -61,7 +70,7 @@ export default function SignalInjection() {
                         className="flex-1 font-mono text-sm"
                         classNames={{
                             input: "font-mono text-xs bg-default-100 dark:bg-default-50",
-                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-b border-default-200 dark:border-default-700 hover:bg-default-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all"
+                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200 transition-all"
                         }}
                     />
                     <Input
@@ -72,7 +81,7 @@ export default function SignalInjection() {
                         className="w-1/4 font-mono"
                         classNames={{
                             input: "font-mono text-xs bg-default-100 dark:bg-default-50",
-                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-b border-default-200 dark:border-default-700 hover:bg-default-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all"
+                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200 transition-all"
                         }}
                     />
                     <span className="text-gray-300">=</span>
@@ -84,7 +93,7 @@ export default function SignalInjection() {
                         className="w-1/4 font-mono"
                         classNames={{
                             input: "font-mono text-xs bg-default-100 dark:bg-default-50",
-                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-b border-default-200 dark:border-default-700 hover:bg-default-200 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all"
+                            inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200 transition-all"
                         }}
                     />
                 </div>
@@ -99,6 +108,44 @@ export default function SignalInjection() {
                 >
                     Inject Signal
                 </Button>
+
+                {hasSignals && <Divider className="my-1" />}
+
+                {/* Current signal states */}
+                {hasSignals ? (
+                    <div className="space-y-1.5">
+                        <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400">
+                            Current Signal States
+                        </span>
+                        {Object.entries(signalStates).map(([name, payload]) => (
+                            <div
+                                key={name}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded bg-gray-50 dark:bg-gray-800/40 font-mono text-xs"
+                            >
+                                <span className="font-semibold text-gray-800 dark:text-gray-200 shrink-0">
+                                    {name}
+                                </span>
+                                {Object.keys(payload).length > 0 ? (
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {Object.entries(payload).map(([k, v]) => (
+                                            <span key={k} className="text-gray-500 dark:text-gray-400">
+                                                <span className="text-gray-700 dark:text-gray-300">{k}</span>
+                                                <span className="text-gray-400">=</span>
+                                                <span className="text-blue-600 dark:text-blue-400">"{v}"</span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <span className="text-gray-400 italic">(no payload)</span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-[10px] text-gray-400 text-center italic py-1">
+                        No signals injected yet
+                    </div>
+                )}
             </CardBody>
         </Card>
     );

@@ -174,6 +174,10 @@ public class AnalyzerService {
         return signalStates.get(signalName);
     }
 
+    public Map<String, Map<String, String>> getAllSignalStates() {
+        return new HashMap<>(signalStates);
+    }
+
     public boolean isSignalTimerConditionMet(String constraintName, String signalName, 
             ConstraintCondition condition, boolean isActivation) {
         if (condition == null || condition.timer() == null || condition.timer() <= 0) {
