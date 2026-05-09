@@ -84,19 +84,74 @@ public class AnalyzerService {
                     List<String> actEvents = getEventNames(activationEvent);
                     if (actEvents.contains(event) && constraint.getActivationCondition() != null) {
                         var cond = constraint.getActivationCondition();
-                        conditions.put(cond.param(), cond.operator() + " " + cond.value());
+                        boolean isSignal = constraint.getActivationEvent() != null
+                                && constraint.getActivationEvent().type() == Event.EventType.SIGNAL;
+                        String required = cond.operator() + " " + cond.value();
+                        if (isSignal) {
+                            Map<String, String> state = getSignalState(constraint.getActivationEvent().name());
+                            String current = state != null ? state.getOrDefault(cond.param(), "?") : "?";
+                            conditions.put(cond.param(), required + " (current: " + current + ")");
+                        } else {
+                            conditions.put(cond.param(), required);
+                        }
                     }
 
                     Event targetEvent = constraint.getTargetEvent();
                     List<String> trgEvents = getEventNames(targetEvent);
                     if (trgEvents.contains(event) && constraint.getTargetCondition() != null) {
                         var cond = constraint.getTargetCondition();
-                        conditions.put(cond.param(), cond.operator() + " " + cond.value());
+                        boolean isSignal = constraint.getTargetEvent() != null
+                                && constraint.getTargetEvent().type() == Event.EventType.SIGNAL;
+                        String required = cond.operator() + " " + cond.value();
+                        if (isSignal) {
+                            Map<String, String> state = getSignalState(constraint.getTargetEvent().name());
+                            String current = state != null ? state.getOrDefault(cond.param(), "?") : "?";
+                            conditions.put(cond.param(), required + " (current: " + current + ")");
+                        } else {
+                            conditions.put(cond.param(), required);
+                        }
+                    }
+
+                    // Fallback: if no condition was captured on the triggering event side,
+                    // show the condition from the other side (e.g., Precedence where
+                    // target triggers but condition is on the activation event)
+                    if (conditions.isEmpty()) {
+                        if (trgEvents.contains(event) && constraint.getActivationCondition() != null) {
+                            var cond = constraint.getActivationCondition();
+                            boolean isSignal = constraint.getActivationEvent() != null
+                                    && constraint.getActivationEvent().type() == Event.EventType.SIGNAL;
+                            String required = cond.operator() + " " + cond.value();
+                            String label = constraint.getActivationEvent() != null ? constraint.getActivationEvent().name() + "." + cond.param() : cond.param();
+                            if (isSignal) {
+                                Map<String, String> state = getSignalState(constraint.getActivationEvent().name());
+                                String current = state != null ? state.getOrDefault(cond.param(), "?") : "?";
+                                if (cond.timer() != null && cond.timer() > 0) {
+                                    conditions.put(label, required + " for " + cond.timer() + "s (current: " + current + ")");
+                                } else {
+                                    conditions.put(label, required + " (current: " + current + ")");
+                                }
+                            } else {
+                                conditions.put(label, required);
+                            }
+                        } else if (actEvents.contains(event) && constraint.getTargetCondition() != null) {
+                            var cond = constraint.getTargetCondition();
+                            boolean isSignal = constraint.getTargetEvent() != null
+                                    && constraint.getTargetEvent().type() == Event.EventType.SIGNAL;
+                            String required = cond.operator() + " " + cond.value();
+                            String label = constraint.getTargetEvent() != null ? constraint.getTargetEvent().name() + "." + cond.param() : cond.param();
+                            if (isSignal) {
+                                Map<String, String> state = getSignalState(constraint.getTargetEvent().name());
+                                String current = state != null ? state.getOrDefault(cond.param(), "?") : "?";
+                                conditions.put(label, required + " (current: " + current + ")");
+                            } else {
+                                conditions.put(label, required);
+                            }
+                        }
                     }
 
                     log.debug("  [!] Event '{}' is unsafe: violates {} ({}). Conditions: {}", event,
                             constraint.getName(), constraint.getType(), conditions);
-                    return AllowedTaskResponse.unsafe(event, conditions);
+                    return AllowedTaskResponse.unsafe(event, conditions, constraint.getName());
                 }
             }
 

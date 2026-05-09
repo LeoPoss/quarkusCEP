@@ -25,6 +25,7 @@ interface TaskAnalysis {
     task: string;
     isUnsafe: boolean;
     unsafeConditions?: Record<string, string>;
+    violatedBy?: string[];
 }
 
 interface TraceEvent {
@@ -42,8 +43,7 @@ const fetchTrace = async (): Promise<TraceEvent[]> => {
 
 export default function TaskList() {
     const queryClient = useQueryClient();
-    const [payloadKey, setPayloadKey] = useState("");
-    const [payloadValue, setPayloadValue] = useState("");
+    const [taskPayloads, setTaskPayloads] = useState<Record<string, { key: string; value: string }>>({});
 
     const {
         data: tasks = [],
@@ -78,8 +78,11 @@ export default function TaskList() {
             });
             queryClient.invalidateQueries({ queryKey: ["esper", "trace"] });
             queryClient.invalidateQueries({ queryKey: ["analysis"] });
-            setPayloadKey("");
-            setPayloadValue("");
+            setTaskPayloads((prev) => {
+                const next = { ...prev };
+                delete next[taskName];
+                return next;
+            });
         },
         onError: (error) => {
             addToast({
@@ -91,8 +94,9 @@ export default function TaskList() {
     });
 
     const handleExecute = (taskName: string) => {
-        const payload = payloadKey.trim() && payloadValue.trim()
-            ? { [payloadKey.trim()]: payloadValue.trim() }
+        const p = taskPayloads[taskName];
+        const payload = p?.key?.trim() && p?.value?.trim()
+            ? { [p.key.trim()]: p.value.trim() }
             : undefined;
         executeTaskMutation.mutate({ taskName, payload });
     };
@@ -135,14 +139,27 @@ export default function TaskList() {
         return "BLOCKED";
     };
 
-    const getRestrictions = (taskName: string) => {
+    const getRestrictions = (taskName: string): { label: string; tooltip: string; count: number } | null => {
         const taskAnalysis = tasks.filter((t) => t.task === taskName && t.isUnsafe);
         if (taskAnalysis.length === 0) return null;
-        const conditions = taskAnalysis
-            .filter((t) => t.unsafeConditions)
-            .flatMap((t) => Object.entries(t.unsafeConditions || {}))
-            .map(([key, value]) => `${key}=${value}`);
-        return conditions.length > 0 ? conditions : ["Constraint violation"];
+
+        const lines: string[] = [];
+        for (const t of taskAnalysis) {
+            const constraintName = t.violatedBy?.[0] ?? "unknown";
+            if (t.unsafeConditions && Object.keys(t.unsafeConditions).length > 0) {
+                for (const [param, detail] of Object.entries(t.unsafeConditions)) {
+                    lines.push(`${param} ${detail} (from: ${constraintName})`);
+                }
+            } else {
+                lines.push(`Violates constraint: ${constraintName}`);
+            }
+        }
+
+        return {
+            label: lines.length === 1 ? "1 requirement" : `${lines.length} requirements`,
+            tooltip: lines.join("\n"),
+            count: lines.length,
+        };
     };
 
     return (
@@ -199,8 +216,13 @@ export default function TaskList() {
                                                 <Input
                                                     size="sm"
                                                     placeholder="key"
-                                                    value={payloadKey}
-                                                    onChange={(e) => setPayloadKey(e.target.value)}
+                                                    value={taskPayloads[taskName]?.key ?? ""}
+                                                    onChange={(e) =>
+                                                        setTaskPayloads((prev) => ({
+                                                            ...prev,
+                                                            [taskName]: { key: e.target.value, value: prev[taskName]?.value ?? "" },
+                                                        }))
+                                                    }
                                                     className="w-20"
                                                     classNames={{
                                                         input: "font-mono text-xs bg-default-100 dark:bg-default-50",
@@ -211,8 +233,13 @@ export default function TaskList() {
                                                 <Input
                                                     size="sm"
                                                     placeholder="value"
-                                                    value={payloadValue}
-                                                    onChange={(e) => setPayloadValue(e.target.value)}
+                                                    value={taskPayloads[taskName]?.value ?? ""}
+                                                    onChange={(e) =>
+                                                        setTaskPayloads((prev) => ({
+                                                            ...prev,
+                                                            [taskName]: { key: prev[taskName]?.key ?? "", value: e.target.value },
+                                                        }))
+                                                    }
                                                     className="w-20"
                                                     classNames={{
                                                         input: "font-mono text-xs bg-default-100 dark:bg-default-50",
@@ -235,9 +262,9 @@ export default function TaskList() {
                                     </TableCell>
                                     <TableCell>
                                         {restrictions ? (
-                                            <Tooltip content={restrictions.join(", ")} placement="left">
+                                            <Tooltip content={restrictions.tooltip} placement="left">
                                                 <span className="text-xs font-mono text-red-600 dark:text-red-400 cursor-help border-b border-dotted border-red-300 dark:border-red-700 hover:border-solid">
-                                                    {restrictions.length} condition{restrictions.length > 1 ? 's' : ''}
+                                                    {restrictions.label}
                                                 </span>
                                             </Tooltip>
                                         ) : (
