@@ -18,9 +18,14 @@ public class Constraint {
     private CorrelationCondition correlationCondition;
     private ConstraintType type;
     private ConstraintStatus status;
+    private boolean autoExecute;
 
     public void updateStatus(ConstraintStatus status) {
         if (this.status == ConstraintStatus.PERMANENT_VIOLATION) {
+            return;
+        }
+        // Never downgrade from FULFILLED
+        if (this.status == ConstraintStatus.FULFILLED) {
             return;
         }
         this.status = status;

@@ -40,19 +40,23 @@ public class ConstraintResource {
                 : ConstraintStatus.INIT;
 
         log.info("Creating {} constraint: {}", type, request);
+        log.info("autoExecute raw value: {} (class: {})", request.autoExecute(), request.autoExecute() != null ? request.autoExecute().getClass().getName() : "null");
+        boolean autoExec = request.autoExecute() != null && request.autoExecute();
+        log.info("autoExecute resolved to: {}", autoExec);
         constraintService.setupConstraint(
-                constraintType,
-                request.name(),
-                request.timer(),
-                request.activationEvent(),
-                request.activationCondition(),
-                request.targetEvent(),
-                request.targetCondition(),
-                request.correlationCondition(),
-                initialStatus,
-                request.activationEventType(),
-                request.targetEventType()
-        );
+                        constraintType,
+                        request.name(),
+                        request.timer(),
+                        request.activationEvent(),
+                        request.activationCondition(),
+                        request.targetEvent(),
+                        request.targetCondition(),
+                        request.correlationCondition(),
+                        initialStatus,
+                        request.activationEventType(),
+                        request.targetEventType(),
+                        autoExec
+                );
         return Response.created(URI.create(request.name())).build();
     }
 

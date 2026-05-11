@@ -21,6 +21,9 @@ public class ConstraintService {
     @Inject
     ConstraintHandlerFactory constraintHandlerFactory;
 
+    @Inject
+    EsperService esperService;
+
     @Getter
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
 
@@ -48,7 +51,7 @@ public class ConstraintService {
         constraints.clear();
     }
 
-    public void setupConstraint(ConstraintType type, String name, Long withinPeriod, String activationEventName, ConditionRequest activationCondition, String targetEventName, ConditionRequest targetCondition, CorrelationCondition correlationCondition, ConstraintStatus status, String activationEventType, String targetEventType) {
+    public void setupConstraint(ConstraintType type, String name, Long withinPeriod, String activationEventName, ConditionRequest activationCondition, String targetEventName, ConditionRequest targetCondition, CorrelationCondition correlationCondition, ConstraintStatus status, String activationEventType, String targetEventType, boolean autoExecute) {
         // Create activation event
         Event activationEvent = null;
         if (activationEventName != null && !activationEventName.isBlank()) {
@@ -69,7 +72,7 @@ public class ConstraintService {
         Set<String> relevantKeys = getRelevantKeys(correlationCondition, safeActivationCondition, safeTargetCondition);
 
         // Create and add the constraint to the map first
-        Constraint constraint = new Constraint(name, withinPeriod != null ? withinPeriod : null, new ArrayList<>(), activationEvent, EplQueryHelper.isConditionValid(safeActivationCondition) ? new ConstraintCondition(safeActivationCondition.param(), safeActivationCondition.operator(), safeActivationCondition.value(), safeActivationCondition.timer()) : null, targetEvent, EplQueryHelper.isConditionValid(safeTargetCondition) ? new ConstraintCondition(safeTargetCondition.param(), safeTargetCondition.operator(), safeTargetCondition.value(), safeTargetCondition.timer()) : null, correlationCondition, type, status);
+        Constraint constraint = new Constraint(name, withinPeriod != null ? withinPeriod : null, new ArrayList<>(), activationEvent, EplQueryHelper.isConditionValid(safeActivationCondition) ? new ConstraintCondition(safeActivationCondition.param(), safeActivationCondition.operator(), safeActivationCondition.value(), safeActivationCondition.timer()) : null, targetEvent, EplQueryHelper.isConditionValid(safeTargetCondition) ? new ConstraintCondition(safeTargetCondition.param(), safeTargetCondition.operator(), safeTargetCondition.value(), safeTargetCondition.timer()) : null, correlationCondition, type, status, autoExecute);
         constraints.put(name, constraint);
 
         var handler = constraintHandlerFactory.getHandler(type);
@@ -77,6 +80,42 @@ public class ConstraintService {
         // Only create activation detection query if activationEvent is provided
         if (activationEvent != null) {
             handler.createDetectionQuery(StatementType.ACTIVATION, name, activationEvent, safeActivationCondition, correlationCondition, relevantKeys, safeActivationCondition, safeTargetCondition);
+
+            // Auto-execute: when activation fires, automatically inject the target event
+            if (autoExecute && targetEvent != null) {
+                log.info("Setting up auto-execute for '{}': target='{}'", name, targetEvent.name());
+                final String targetName = targetEvent.name();
+                // Build target payload that satisfies the constraint's target condition
+                final java.util.Map<String, String> targetPayload = new java.util.HashMap<>();
+                targetPayload.put("source", "autoexecute");
+                targetPayload.put("constraint", name);
+                if (safeTargetCondition != null && safeTargetCondition.param() != null && !safeTargetCondition.param().isBlank()) {
+                    targetPayload.put(safeTargetCondition.param(), safeTargetCondition.value());
+                }
+                // Find the deployed ACTIVATION statement and attach a listener directly
+                for (var s : constraint.getEplStatements()) {
+                    if (s.type() == StatementType.ACTIVATION) {
+                        var stmt = esperService.getRuntime().getDeploymentService()
+                            .getStatement(s.deploymentId(), name + "_activation");
+                        if (stmt != null) {
+                            stmt.addListener((newEvents, oldEvents, statement, runtime) -> {
+                                if (newEvents != null && newEvents.length > 0) {
+                                    log.info("Auto-execute triggered for '{}': injecting '{}' with payload {}",
+                                        name, targetName, targetPayload);
+                                    GenericEvent target = new GenericEvent(
+                                        java.util.UUID.randomUUID().toString(), targetName,
+                                        System.currentTimeMillis(), new java.util.HashMap<>(targetPayload));
+                                    addToTrace(targetName, target.getPayload(), target.getTimestamp());
+                                    esperService.sendEvent(target);
+                                }
+                            });
+                            log.info("Auto-execute listener attached for '{}'", name);
+                        } else {
+                            log.warn("Could not find ACTIVATION statement for auto-execute '{}'", name);
+                        }
+                    }
+                }
+            }
         }
 
         // Only create target detection query if targetEvent is provided

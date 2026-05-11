@@ -38,6 +38,7 @@ export default function ConstraintQuickCreate() {
     const [tgtValue, setTgtValue] = useState("");
     const [actTimer, setActTimer] = useState("");
     const [tgtTimer, setTgtTimer] = useState("");
+    const [autoExecute, setAutoExecute] = useState(false);
 
     const createConstraintMutation = useMutation({
         mutationFn: async (payload: Record<string, unknown>) => {
@@ -93,6 +94,7 @@ export default function ConstraintQuickCreate() {
             targetEvent: targetEvent.trim(),
             targetEventType: targetEventType,
             timer: timer ? parseInt(timer, 10) : null,
+            autoExecute: autoExecute,
         };
 
         // Add conditions if provided
@@ -138,7 +140,8 @@ export default function ConstraintQuickCreate() {
                     targetEventType: "task",
                     timer: null,
                     activationCondition: { param: "temp", operator: ">", value: "80", timer: 10 },
-                    targetCondition: { param: "user", operator: "==", value: "3" }
+                    targetCondition: { param: "user", operator: "==", value: "3" },
+                    autoExecute: true,
                 }
             },
             {
@@ -313,7 +316,22 @@ export default function ConstraintQuickCreate() {
                         <Checkbox size="sm" isSelected={showConditions} onValueChange={setShowConditions}>
                             <span className="text-xs text-gray-500">Conditions</span>
                         </Checkbox>
+                        {needsTarget && (
+                            <Checkbox size="sm" isSelected={autoExecute} onValueChange={setAutoExecute}>
+                                <span className="text-xs text-amber-600 dark:text-amber-500">Auto</span>
+                            </Checkbox>
+                        )}
                     </div>
+
+                    {/* Formula preview */}
+                    {constraintType && name && activationEvent && (
+                        <div className="text-[10px] font-mono text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40 rounded px-2.5 py-1.5 border border-gray-100 dark:border-gray-800 leading-relaxed">
+                            {constraintType.toUpperCase()}({singleEventConstraints.includes(constraintType)
+                                ? `${activationEvent}${actParam ? `[${actParam} ${actOperator} ${actValue}]` : ""}${actTimer ? `[0,${actTimer}]` : ""}`
+                                : `${activationEvent}${actParam ? `[${actParam} ${actOperator} ${actValue}]` : ""}${actTimer ? `[0,${actTimer}]` : ""}, ${autoExecute ? "auto(" : "dis("}${targetEvent}${tgtParam ? `[${tgtParam} ${tgtOperator} ${tgtValue}]` : ""}${tgtTimer ? `[0,${tgtTimer}]` : ""})`
+                            })
+                        </div>
+                    )}
 
                     {showConditions && (
                         <div className="space-y-2 p-3 bg-default-50 rounded-lg">

@@ -12,6 +12,7 @@ import eql from "../langs/eql.tmLanguage.json";
 interface TraceEvent {
     eventType: string;
     payload?: Record<string, string>;
+    timestamp: number;
 }
 
 interface EplStatement {
@@ -29,6 +30,7 @@ interface Constraint {
     activationCondition?: { param: string; operator: string; value: string; timer?: number };
     targetCondition?: { param: string; operator: string; value: string; timer?: number };
     eplStatements?: EplStatement[];
+    autoExecute?: boolean;
 }
 
 interface FinishabilityResponse {
@@ -46,14 +48,8 @@ const statusColor: Record<string, "success" | "warning" | "danger" | "default"> 
 export default function ArchitectureFlow() {
     const { resolvedTheme } = useTheme();
     const [expandedConstraint, setExpandedConstraint] = useState<string | null>(null);
-    const [signalChanges, setSignalChanges] = useState<Array<{name: string; payload: Record<string, string>}>>([]);
+    const [signalChanges, setSignalChanges] = useState<Array<{name: string; payload: Record<string, string>; timestamp: number}>>([]);
     const prevSignalStates = useRef<Record<string, Record<string, string>>>({});
-    const eventTimestamps = useRef<Map<string, number>>(new Map());
-    const [, forceUpdate] = useState(0);
-    useEffect(() => {
-        const id = setInterval(() => forceUpdate((n) => n + 1), 1000);
-        return () => clearInterval(id);
-    }, []);
 
     const { data: trace = [] } = useQuery<TraceEvent[]>({
         queryKey: ["esper", "trace"],
@@ -82,50 +78,26 @@ export default function ArchitectureFlow() {
     // Track signal state changes for the timeline
     useEffect(() => {
         const prev = prevSignalStates.current;
-        const newEntries: Array<{name: string; payload: Record<string, string>}> = [];
+        const newEntries: Array<{name: string; payload: Record<string, string>; timestamp: number}> = [];
 
         for (const [name, payload] of Object.entries(signalStates)) {
             const prevPayload = prev[name];
             if (!prevPayload || JSON.stringify(prevPayload) !== JSON.stringify(payload)) {
-                newEntries.push({ name, payload });
+                newEntries.push({ name, payload, timestamp: Date.now() });
             }
         }
 
         if (newEntries.length > 0) {
-            setSignalChanges((prev) => [...newEntries.reverse(), ...prev].slice(0, 20));
+            setSignalChanges((prev) => [...prev, ...newEntries].slice(-20));
         }
 
         prevSignalStates.current = JSON.parse(JSON.stringify(signalStates));
     }, [signalStates]);
 
-    const recentEvents = [...trace].reverse();
-    // Interleave tasks and signal changes in a single feed, newest first
-    // Both arrays oldest-first → zip → then reverse for newest-at-top
-    const orderedSignals = [...signalChanges].reverse();
-    const feed: Array<
-        {type: 'task'; name: string; payload?: Record<string, string>; id: string} |
-        {type: 'signal'; name: string; payload: Record<string, string>; id: string}
-    > = [];
-    const maxLen = Math.max(recentEvents.length, orderedSignals.length);
-    for (let i = 0; i < maxLen; i++) {
-        if (i < recentEvents.length) {
-            const e = recentEvents[i];
-            const id = `task-${e.eventType}-${JSON.stringify(e.payload ?? {})}`;
-            feed.push({ id, type: 'task' as const, name: e.eventType, payload: e.payload });
-        }
-        if (i < orderedSignals.length) {
-            const s = orderedSignals[i];
-            const id = `sig-${s.name}-${JSON.stringify(s.payload)}`;
-            feed.push({ id, type: 'signal' as const, name: s.name, payload: s.payload });
-        }
-    }
-    feed.reverse();
-    // Assign stable client-side timestamps to new unique events
-    for (const ev of feed) {
-        if (!eventTimestamps.current.has(ev.id)) {
-            eventTimestamps.current.set(ev.id, Date.now());
-        }
-    }
+    const feed = [
+        ...trace.map((e) => ({ type: 'task' as const, name: e.eventType, payload: e.payload, timestamp: e.timestamp, id: `task-${e.eventType}-${JSON.stringify(e.payload ?? {})}-${e.timestamp}` })),
+        ...signalChanges.map((s) => ({ type: 'signal' as const, name: s.name, payload: s.payload, timestamp: s.timestamp, id: `sig-${s.name}-${JSON.stringify(s.payload)}-${s.timestamp}` })),
+    ].sort((a, b) => b.timestamp - a.timestamp);
     const fulfilledCount = constraints.filter((c) => c.status === "FULFILLED").length;
     const violatedCount = constraints.filter((c) => c.status === "PERMANENT_VIOLATION").length;
     const pendingCount = constraints.filter((c) => c.status === "TEMPORARY_VIOLATION" || c.status === "INIT").length;
@@ -145,18 +117,15 @@ export default function ArchitectureFlow() {
                         </div>
 
                         <div className="max-h-56 overflow-y-auto space-y-0">
-                            {recentEvents.length > 0 || signalChanges.length > 0 ? (
+                            {trace.length > 0 || signalChanges.length > 0 ? (
                                 <div className="relative">
-                                    {/* Vertical timeline line */}
                                     <div className="absolute left-[7px] top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
 
-                                    {/* Merged chronological timeline */}
                                     {feed.map((ev, i) => {
                                         const isTask = ev.type === 'task';
+                                        const isTrigger = isTask && ev.payload?.["source"] === "autoexecute";
                                         const hasPayload = ev.payload && Object.keys(ev.payload).length > 0;
-                                        const ts = eventTimestamps.current.get(ev.id);
-                                        const elapsed = ts ? Math.floor((Date.now() - ts) / 1000) : -1;
-                                        const timeStr = elapsed <= 0 ? "now" : elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed / 60)}m`;
+                                        const timeStr = new Date(ev.timestamp).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
                                         return (
                                             <div key={ev.id} className="flex items-start py-0.5 pl-1">
                                                 <div className={`w-1.5 h-1.5 rounded-full ring-2 ring-background z-10 shrink-0 mt-1 ${
@@ -170,7 +139,9 @@ export default function ArchitectureFlow() {
                                                         }`}>{isTask ? "task" : "sig"}</span>
                                                         {hasPayload && (
                                                             <span className="ml-1.5 text-[9px] text-gray-400 dark:text-gray-500">
-                                                                {Object.entries(ev.payload!).map(([k, v]) => `${k}=${v}`).join(", ")}
+                                                                {isTrigger
+                                                                    ? `trigger=${ev.payload!["constraint"]}, ${Object.entries(ev.payload!).filter(([k]) => k !== "source" && k !== "constraint").map(([k, v]) => `${k}=${v}`).join(", ")}`
+                                                                    : Object.entries(ev.payload!).map(([k, v]) => `${k}=${v}`).join(", ")}
                                                             </span>
                                                         )}
                                                     </span>
@@ -201,7 +172,6 @@ export default function ArchitectureFlow() {
                             <span className="text-[10px] text-gray-400">({constraints.length})</span>
                         </div>
 
-                        {/* Scrollable constraint list */}
                         <div className="space-y-1 flex-1 overflow-y-auto max-h-64">
                             {constraints.length > 0 ? (
                                 constraints.map((c) => (
@@ -301,7 +271,6 @@ export default function ArchitectureFlow() {
                         </div>
 
                         <div className="flex-1 flex flex-col items-center justify-center gap-4">
-                            {/* Finishability status */}
                             <div className={`flex flex-col items-center gap-3 p-5 rounded-xl border w-full max-w-xs mx-auto ${
                                 finishability?.canFinish
                                     ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
@@ -327,7 +296,6 @@ export default function ArchitectureFlow() {
                                 </div>
                             </div>
 
-                            {/* Blocking constraints */}
                             {!finishability?.canFinish && finishability?.reasons && finishability.reasons.length > 0 && (
                                 <div className="w-full max-w-xs mx-auto space-y-1.5">
                                     <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider block text-center">
@@ -352,20 +320,21 @@ function mpDeclareFormula(type: string, c?: Constraint): string {
     if (!c) return type;
 
     const formatEvent = (name?: string, evtType?: string,
-        cond?: { param?: string; operator?: string; value?: string; timer?: number }
+        cond?: { param?: string; operator?: string; value?: string; timer?: number },
+        isAuto?: boolean
     ): string => {
         if (!name) return "?";
         const condStr = cond?.param && cond?.operator && cond?.value
             ? `[${cond.param} ${cond.operator} ${cond.value}]` : "";
         const timer = cond?.timer ? `[0,${cond.timer}]` : "";
         const isTask = evtType?.toLowerCase() === "task";
-        const prefix = isTask ? "dis(" : "";
+        const prefix = isTask ? (isAuto ? "auto(" : "dis(") : "";
         const suffix = isTask ? ")" : "";
         return `${prefix}${name}${condStr}${timer}${suffix}`;
     };
 
     const evtA = formatEvent(c.activationEvent?.name, c.activationEvent?.type, c.activationCondition);
-    const evtB = formatEvent(c.targetEvent?.name, c.targetEvent?.type, c.targetCondition);
+    const evtB = formatEvent(c.targetEvent?.name, c.targetEvent?.type, c.targetCondition, c.autoExecute);
 
     if (["EXISTENCE", "NOTEXISTENCE", "NOT_EXISTENCE"].includes(type)) {
         return `${type}(${c.targetEvent?.name ? evtB : evtA})`;

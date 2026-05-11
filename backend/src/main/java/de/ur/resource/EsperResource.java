@@ -5,6 +5,7 @@ import com.espertech.esper.runtime.client.EPStatement;
 import de.ur.dao.GenericEvent;
 import de.ur.service.AnalyzerService;
 import de.ur.service.ConstraintService;
+import de.ur.service.EnforcementService;
 import de.ur.service.EsperService;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -29,6 +30,7 @@ public class EsperResource {
     private final EsperService esperService;
     private final ConstraintService constraintService;
     private final AnalyzerService analyzerService;
+    private final EnforcementService enforcementService;
 
     @GET
     public Response getDeployments() {
@@ -91,7 +93,6 @@ public class EsperResource {
         }
     }
 
-
     @POST
     @Path("/events/batch")
     public Response receiveEventBatch(List<Map<String, Object>> events) {
@@ -101,7 +102,6 @@ public class EsperResource {
         }
         try {
             log.debug("Received event batch of size: {}", events.size());
-            // Loop through the list and process each event
             for (Map<String, Object> event : events) {
                 processSingleEvent(event);
             }
@@ -133,12 +133,10 @@ public class EsperResource {
                 payload
         );
 
-        // Add to trace if this is a known task event
         if (constraintService.getKnownEvents().contains(eventType)) {
             constraintService.addToTrace(eventType, payload, genericEvent.getTimestamp());
         }
-        
-        // Update signal state if this is a known signal event
+
         if (constraintService.getKnownSignals().contains(eventType)) {
             analyzerService.updateSignalState(eventType, payload);
         }
@@ -154,6 +152,7 @@ public class EsperResource {
             constraintService.resetConstraints();
             constraintService.getTrace().clear();
             analyzerService.resetSignalTracking();
+            enforcementService.reset();
             return Response.ok(Map.of(
                     "status", "Esper engine has been reset and reinitialized",
                     "timestamp", java.time.Instant.now()
@@ -169,10 +168,58 @@ public class EsperResource {
         }
     }
 
+    @GET
+    @Path("/enforcement")
+    public Response getEnforcementRules() {
+        return Response.ok(enforcementService.getRules()).build();
+    }
+
+    @POST
+    @Path("/enforcement")
+    public Response createEnforcementRule(EnforcementRuleRequest request) {
+        if (request.signalType == null || request.actionEventType == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "signalType and actionEventType are required"))
+                    .build();
+        }
+        try {
+            var rule = enforcementService.createRule(
+                    request.name,
+                    request.signalType, request.conditionParam,
+                    request.conditionOperator, request.conditionValue,
+                    request.durationSeconds, request.actionEventType
+            );
+            return Response.ok(rule).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.CONFLICT)
+                    .entity(Map.of("error", e.getMessage()))
+                    .build();
+        }
+    }
+
+    @DELETE
+    @Path("/enforcement/{name}")
+    public Response removeEnforcementRule(@PathParam("name") String name) {
+        enforcementService.removeRule(name);
+        return Response.ok(Map.of("status", "Rule removed")).build();
+    }
+
     @Setter
     @Getter
     public static class DeployStatementRequest {
         private String eplStatement;
         private boolean addListener;
+    }
+
+    @Setter
+    @Getter
+    public static class EnforcementRuleRequest {
+        private String name;
+        private String signalType;
+        private String conditionParam;
+        private String conditionOperator;
+        private String conditionValue;
+        private long durationSeconds;
+        private String actionEventType;
     }
 }
