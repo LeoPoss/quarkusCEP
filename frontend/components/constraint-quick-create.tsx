@@ -1,16 +1,20 @@
 "use client";
 
 import {
-    addToast,
+    toast,
     Button,
     Card,
-    CardBody,
-    CardHeader,
     Checkbox,
     Input,
     Select,
-    SelectItem,
-    SelectSection,
+    ListBox,
+    Label,
+    Header,
+    Separator,
+    Spinner,
+    ToggleButton,
+    ToggleButtonGroup,
+    Tooltip,
 } from "@heroui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -20,7 +24,7 @@ const singleEventConstraints = ["existence", "notexistence"];
 
 export default function ConstraintQuickCreate() {
     const queryClient = useQueryClient();
-    const [constraintType, setConstraintType] = useState("");
+    const [constraintType, setConstraintType] = useState<string | null>(null);
     const [name, setName] = useState("");
     const [activationEvent, setActivationEvent] = useState("");
     const [activationEventType, setActivationEventType] = useState<"task" | "signal">("task");
@@ -31,10 +35,10 @@ export default function ConstraintQuickCreate() {
     // Conditions
     const [showConditions, setShowConditions] = useState(false);
     const [actParam, setActParam] = useState("");
-    const [actOperator, setActOperator] = useState("");
+    const [actOperator, setActOperator] = useState<string | null>(null);
     const [actValue, setActValue] = useState("");
     const [tgtParam, setTgtParam] = useState("");
-    const [tgtOperator, setTgtOperator] = useState("");
+    const [tgtOperator, setTgtOperator] = useState<string | null>(null);
     const [tgtValue, setTgtValue] = useState("");
     const [actTimer, setActTimer] = useState("");
     const [tgtTimer, setTgtTimer] = useState("");
@@ -43,61 +47,51 @@ export default function ConstraintQuickCreate() {
     const createConstraintMutation = useMutation({
         mutationFn: async (payload: Record<string, unknown>) => {
             return await api.post(
-                `constraints/${constraintType.toLowerCase()}`,
+                `constraints/${(constraintType as string).toLowerCase()}`,
                 { json: payload }
             );
         },
         onSuccess: () => {
-            addToast({
-                title: "Constraint Created",
+            toast.success("Constraint Created", {
                 description: `Constraint "${name}" created`,
-                color: "success",
             });
             queryClient.invalidateQueries({ queryKey: ["constraints"] });
             queryClient.invalidateQueries({ queryKey: ["analysis"] });
         },
-        onError: (error) => {
-            addToast({
-                title: "Creation Failed",
+        onError: (error: any) => {
+            toast.danger("Creation Failed", {
                 description: error.message,
-                color: "danger",
             });
         },
     });
 
     const handleCreate = () => {
         if (!constraintType || !name.trim() || !activationEvent.trim()) {
-            addToast({
-                title: "Validation Error",
+            toast.warning("Validation Error", {
                 description: "All fields required",
-                color: "warning",
             });
             return;
         }
 
         const needsTarget = !singleEventConstraints.includes(constraintType);
         if (needsTarget && !targetEvent.trim()) {
-            addToast({
-                title: "Validation Error",
+            toast.warning("Validation Error", {
                 description: "Target event required",
-                color: "warning",
             });
             return;
         }
-
         const isSingleEvent = singleEventConstraints.includes(constraintType);
 
         const payload: Record<string, unknown> = {
             name: name.trim(),
-            activationEvent: activationEvent.trim(),
-            activationEventType: activationEventType,
-            targetEvent: targetEvent.trim(),
-            targetEventType: targetEventType,
+            activationEvent: isSingleEvent ? null : activationEvent.trim(),
+            activationEventType: isSingleEvent ? null : activationEventType,
+            targetEvent: isSingleEvent ? activationEvent.trim() : targetEvent.trim(),
+            targetEventType: isSingleEvent ? activationEventType : targetEventType,
             timer: timer ? parseInt(timer, 10) : null,
-            autoExecute: autoExecute,
+            autoExecute: isSingleEvent ? false : autoExecute,
         };
 
-        // Add conditions if provided
         if (actParam.trim() && actOperator && actValue.trim()) {
             payload.activationCondition = {
                 param: actParam.trim(),
@@ -164,16 +158,12 @@ export default function ConstraintQuickCreate() {
                     `constraints/${constraint.type}`,
                     { json: constraint.payload }
                 );
-                addToast({
-                    title: "Debug Seed Created",
+                toast.success("Debug Seed Created", {
                     description: `Constraint "${constraint.payload.name}" created`,
-                    color: "success",
                 });
-            } catch (error) {
-                addToast({
-                    title: "Debug Seed Failed",
-                    description: `Failed to create "${constraint.payload.name}"`,
-                    color: "danger",
+            } catch (error: any) {
+                toast.danger("Debug Seed Failed", {
+                    description: `Failed to create "${constraint.payload.name}": ${error.message}`,
                 });
             }
         }
@@ -192,108 +182,88 @@ export default function ConstraintQuickCreate() {
         onChange: (v: "task" | "signal") => void;
         disabled?: boolean;
     }) => (
-        <div className={`flex bg-default-100 h-[36px] dark:bg-default-50 rounded-md text-[10px] p-1 ${disabled ? "opacity-50" : ""}`}>
-            <button
-                type="button"
-                disabled={disabled}
-                className={`px-2 py-0.5 rounded transition-colors ${value === "signal"
-                    ? "bg-white dark:bg-black font-medium text-foreground shadow-sm"
-                    : "text-foreground-500 hover:text-foreground"
-                    }`}
-                onClick={() => onChange("signal")}
-            >
-                Sig
-            </button>
-            <button
-                type="button"
-                disabled={disabled}
-                className={`px-2 py-0.5 rounded transition-colors ${value === "task"
-                    ? "bg-white dark:bg-black font-medium text-foreground shadow-sm"
-                    : "text-foreground-500 hover:text-foreground"
-                    }`}
-                onClick={() => onChange("task")}
-            >
-                Tsk
-            </button>
-        </div>
+        <ToggleButtonGroup
+            isDisabled={disabled}
+            selectedKeys={[value]}
+            onSelectionChange={(keys) => {
+                const v = Array.from(keys)[0];
+                if (v === "signal" || v === "task") onChange(v);
+            }}
+            className="shrink-0"
+        >
+            <ToggleButton id="signal" className="text-xs h-8">Sig</ToggleButton>
+            <ToggleButton id="task" className="text-xs h-8">Tsk</ToggleButton>
+        </ToggleButtonGroup>
     );
 
-    const inputClasses = {
-        input: "font-mono text-xs bg-default-100 dark:bg-default-50",
-        inputWrapper: "bg-default-100 dark:bg-default-50 shadow-none border-none hover:bg-default-200 h-9 min-h-9"
-    };
-
     return (
-        <Card className="border-none shadow-sm">
-            <CardHeader className="text-sm font-medium px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200">
-                Create Constraint
-            </CardHeader>
-            <CardBody className="p-4">
+        <Card>
+            <Card.Header>
+                <Card.Title>Create Constraint</Card.Title>
+            </Card.Header>
+            <Card.Content>
                 <div className="space-y-3">
                     <div className="flex gap-2">
                         <Select
-                            aria-label="Constraint Type"
-                            placeholder="Type"
-                            size="sm"
+                            variant="secondary" placeholder="Type"
                             className="w-1/2"
-                            classNames={{
-                                trigger: "bg-default-100 dark:bg-default-50 shadow-none border-none h-9 min-h-9",
-                                value: "text-xs font-mono"
-                            }}
-                            selectedKeys={constraintType ? [constraintType] : []}
-                            onChange={(e) => setConstraintType(e.target.value)}
+                            selectedKey={constraintType}
+                            onSelectionChange={(k) => setConstraintType(k as string)}
                         >
-                            <SelectSection title="Existence">
-                                <SelectItem key="existence">Existence</SelectItem>
-                                <SelectItem key="notexistence">NotExistence</SelectItem>
-                            </SelectSection>
-                            <SelectSection title="Relation">
-                                <SelectItem key="response">Response</SelectItem>
-                                <SelectItem key="precedence">Precedence</SelectItem>
-                                <SelectItem key="respondedexistence">RespondedExist</SelectItem>
-                            </SelectSection>
-                            <SelectSection title="Negative">
-                                <SelectItem key="notresponse">NotResponse</SelectItem>
-                            </SelectSection>
+                            <Select.Trigger>
+                                <Select.Value className="text-xs font-mono" />
+                                <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover>
+                                <ListBox>
+                                    <ListBox.Section>
+                                        <Header>Existence</Header>
+                                        <ListBox.Item id="existence">Existence</ListBox.Item>
+                                        <ListBox.Item id="notexistence">NotExistence</ListBox.Item>
+                                    </ListBox.Section>
+                                    <Separator />
+                                    <ListBox.Section>
+                                        <Header>Relation</Header>
+                                        <ListBox.Item id="response">Response</ListBox.Item>
+                                        <ListBox.Item id="precedence">Precedence</ListBox.Item>
+                                        <ListBox.Item id="respondedexistence">RespondedExist</ListBox.Item>
+                                    </ListBox.Section>
+                                    <Separator />
+                                    <ListBox.Section>
+                                        <Header>Negative</Header>
+                                        <ListBox.Item id="notresponse">NotResponse</ListBox.Item>
+                                    </ListBox.Section>
+                                </ListBox>
+                            </Select.Popover>
                         </Select>
-                        <Input
+                        <Input variant="secondary"
                             placeholder="Name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            size="sm"
                             className="w-1/2"
-                            classNames={inputClasses}
-                            isRequired
                         />
                     </div>
 
-                    {/* Events row */}
-                    <div className="flex gap-2 items-center">
-                        <div className="flex-1 flex gap-2 items-center">
-                            <Input
-                                placeholder={needsTarget ? "Activation (A)" : "Event"}
+                    <div className={`${needsTarget ? "grid grid-cols-[1fr_auto_1fr] gap-1 items-center" : "flex gap-2 items-center"}`}>
+                        <div className="flex gap-1 items-center min-w-0">
+                            <Input variant="secondary"
+                                placeholder={needsTarget ? "Activation" : "Event"}
                                 value={activationEvent}
                                 onChange={(e) => setActivationEvent(e.target.value)}
-                                size="sm"
-                                className="flex-1"
-                                classNames={inputClasses}
-                                isRequired
+                                className="flex-1 min-w-0"
                             />
                             <EventTypeToggle value={activationEventType} onChange={setActivationEventType} />
                         </div>
 
                         {needsTarget && (
                             <>
-                                <span className="text-gray-300">→</span>
-                                <div className="flex-1 flex gap-2 items-center">
-                                    <Input
-                                        placeholder="Target (B)"
+                                <span className="text-default-300">→</span>
+                                <div className="flex gap-1 items-center min-w-0">
+                                    <Input variant="secondary"
+                                        placeholder="Target"
                                         value={targetEvent}
                                         onChange={(e) => setTargetEvent(e.target.value)}
-                                        size="sm"
-                                        className="flex-1"
-                                        classNames={inputClasses}
-                                        isRequired
+                                        className="flex-1 min-w-0"
                                     />
                                     <EventTypeToggle value={targetEventType} onChange={setTargetEventType} />
                                 </div>
@@ -301,31 +271,44 @@ export default function ConstraintQuickCreate() {
                         )}
                     </div>
 
-                    {/* Timer + Conditions */}
                     <div className="flex items-center gap-4">
-                        <Input
-                            placeholder="Constraint Timer (s)"
+                        <Input variant="secondary"
+                            placeholder="Timer (s)"
                             value={timer}
                             onChange={(e) => setTimer(e.target.value)}
-                            size="sm"
                             type="number"
                             min={1}
-                            className="w-24"
-                            classNames={inputClasses}
+                            className="w-32"
                         />
-                        <Checkbox size="sm" isSelected={showConditions} onValueChange={setShowConditions}>
-                            <span className="text-xs text-gray-500">Conditions</span>
+                        <Checkbox id="show-conditions" isSelected={showConditions} onChange={setShowConditions}>
+                            <Checkbox.Control>
+                                <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <Checkbox.Content>
+                                <Label htmlFor="show-conditions" className="text-xs text-default-500">Conditions</Label>
+                            </Checkbox.Content>
                         </Checkbox>
                         {needsTarget && (
-                            <Checkbox size="sm" isSelected={autoExecute} onValueChange={setAutoExecute}>
-                                <span className="text-xs text-amber-600 dark:text-amber-500">Auto</span>
-                            </Checkbox>
+                            <Tooltip>
+                                <Tooltip.Trigger>
+                                    <Checkbox id="auto-execute" isSelected={autoExecute} onChange={setAutoExecute}>
+                                        <Checkbox.Control>
+                                            <Checkbox.Indicator />
+                                        </Checkbox.Control>
+                                        <Checkbox.Content>
+                                            <Label htmlFor="auto-execute" className="text-xs text-warning">Auto</Label>
+                                        </Checkbox.Content>
+                                    </Checkbox>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content placement="top">
+                                    Automatically injects the target event when the activation condition is met
+                                </Tooltip.Content>
+                            </Tooltip>
                         )}
                     </div>
 
-                    {/* Formula preview */}
                     {constraintType && name && activationEvent && (
-                        <div className="text-[10px] font-mono text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/40 rounded px-2.5 py-1.5 border border-gray-100 dark:border-gray-800 leading-relaxed">
+                        <div className="text-xs font-mono text-default-500 dark:text-default-400 bg-default-50 rounded px-2.5 py-1.5 border border-divider leading-relaxed overflow-x-auto">
                             {constraintType.toUpperCase()}({singleEventConstraints.includes(constraintType)
                                 ? `${activationEvent}${actParam ? `[${actParam} ${actOperator} ${actValue}]` : ""}${actTimer ? `[0,${actTimer}]` : ""}`
                                 : `${activationEvent}${actParam ? `[${actParam} ${actOperator} ${actValue}]` : ""}${actTimer ? `[0,${actTimer}]` : ""}, ${autoExecute ? "auto(" : "dis("}${targetEvent}${tgtParam ? `[${tgtParam} ${tgtOperator} ${tgtValue}]` : ""}${tgtTimer ? `[0,${tgtTimer}]` : ""})`
@@ -335,124 +318,44 @@ export default function ConstraintQuickCreate() {
 
                     {showConditions && (
                         <div className="space-y-2 p-3 bg-default-50 rounded-lg">
-                            {/* Activation condition */}
-                            <div className="flex gap-2 items-center text-xs">
-                                <span className="w-18 text-gray-400 font-mono">Activation</span>
-                                <Input
-                                    placeholder="param"
-                                    value={actParam}
-                                    onChange={(e) => setActParam(e.target.value)}
-                                    size="sm"
-                                    className="flex-1"
-                                    classNames={inputClasses}
-                                />
-                                <Select
-                                    aria-label="Operator"
-                                    placeholder="op"
-                                    size="sm"
-                                    className="w-20"
-                                    classNames={{
-                                        trigger: "bg-white dark:bg-black shadow-none border-none h-9 min-h-9",
-                                        value: "text-[10px] font-mono"
-                                    }}
-                                    selectedKeys={actOperator ? [actOperator] : []}
-                                    onChange={(e) => setActOperator(e.target.value)}
-                                >
-                                    <SelectItem key="=">{"="}</SelectItem>
-                                    <SelectItem key="!=">{"!="}</SelectItem>
-                                    <SelectItem key=">">{">"}</SelectItem>
-                                    <SelectItem key="<">{"<"}</SelectItem>
+                            <div className="flex gap-1 items-center">
+                                <span className="text-default-400 font-mono text-xs w-24 shrink-0">Activation</span>
+                                <Input variant="secondary" placeholder="param" value={actParam} onChange={(e) => setActParam(e.target.value)} className="flex-1 min-w-0" />
+                                <Select variant="secondary" placeholder="op" className="w-20 shrink-0" selectedKey={actOperator} onSelectionChange={(k) => setActOperator(k as string)}>
+                                    <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
+                                    <Select.Popover><ListBox><ListBox.Item id="=">=</ListBox.Item><ListBox.Item id="!=">!=</ListBox.Item><ListBox.Item id=">">{">"}</ListBox.Item><ListBox.Item id="<">{"<"}</ListBox.Item></ListBox></Select.Popover>
                                 </Select>
-                                <Input
-                                    placeholder="val"
-                                    value={actValue}
-                                    onChange={(e) => setActValue(e.target.value)}
-                                    size="sm"
-                                    className="flex-1"
-                                    classNames={inputClasses}
-                                />
-                                <Input
-                                    placeholder="time (s)"
-                                    value={actTimer}
-                                    onChange={(e) => setActTimer(e.target.value)}
-                                    size="sm"
-                                    type="number"
-                                    className="w-20"
-                                    classNames={inputClasses}
-                                />
+                                <Input variant="secondary" placeholder="val" value={actValue} onChange={(e) => setActValue(e.target.value)} className="w-16 shrink-0" />
+                                <Input variant="secondary" placeholder="time (s)" value={actTimer} onChange={(e) => setActTimer(e.target.value)} type="number" className="w-24 shrink-0" />
                             </div>
-                            {/* Target condition */}
                             {needsTarget && (
-                                <div className="flex gap-2 items-center text-xs">
-                                    <span className="w-18 text-gray-400 font-mono">Target</span>
-                                    <Input
-                                        placeholder="param"
-                                        value={tgtParam}
-                                        onChange={(e) => setTgtParam(e.target.value)}
-                                        size="sm"
-                                        className="flex-1"
-                                        classNames={inputClasses}
-                                    />
-                                    <Select
-                                        aria-label="Operator"
-                                        placeholder="op"
-                                        size="sm"
-                                        className="w-20"
-                                        classNames={{
-                                            trigger: "bg-white dark:bg-black shadow-none border-none h-9 min-h-9",
-                                            value: "text-[10px] font-mono"
-                                        }}
-                                        selectedKeys={tgtOperator ? [tgtOperator] : []}
-                                        onChange={(e) => setTgtOperator(e.target.value)}
-                                    >
-                                        <SelectItem key="=">{"="}</SelectItem>
-                                        <SelectItem key="!=">{"!="}</SelectItem>
-                                        <SelectItem key=">">{">"}</SelectItem>
-                                        <SelectItem key="<">{"<"}</SelectItem>
+                                <div className="flex gap-1 items-center">
+                                    <span className="text-default-400 font-mono text-xs w-24 shrink-0">Target</span>
+                                    <Input variant="secondary" placeholder="param" value={tgtParam} onChange={(e) => setTgtParam(e.target.value)} className="flex-1 min-w-0" />
+                                    <Select variant="secondary" placeholder="op" className="w-20 shrink-0" selectedKey={tgtOperator} onSelectionChange={(k) => setTgtOperator(k as string)}>
+                                        <Select.Trigger><Select.Value /><Select.Indicator /></Select.Trigger>
+                                        <Select.Popover><ListBox><ListBox.Item id="=">=</ListBox.Item><ListBox.Item id="!=">!=</ListBox.Item><ListBox.Item id=">">{">"}</ListBox.Item><ListBox.Item id="<">{"<"}</ListBox.Item></ListBox></Select.Popover>
                                     </Select>
-                                    <Input
-                                        placeholder="val"
-                                        value={tgtValue}
-                                        onChange={(e) => setTgtValue(e.target.value)}
-                                        size="sm"
-                                        className="flex-1"
-                                        classNames={inputClasses}
-                                    />
-                                    <Input
-                                        placeholder="time (s)"
-                                        value={tgtTimer}
-                                        onChange={(e) => setTgtTimer(e.target.value)}
-                                        size="sm"
-                                        type="number"
-                                        className="w-20"
-                                        classNames={inputClasses}
-                                    />
+                                    <Input variant="secondary" placeholder="val" value={tgtValue} onChange={(e) => setTgtValue(e.target.value)} className="w-16 shrink-0" />
+                                    <Input variant="secondary" placeholder="time (s)" value={tgtTimer} onChange={(e) => setTgtTimer(e.target.value)} type="number" className="w-24 shrink-0" />
                                 </div>
                             )}
                         </div>
                     )}
 
-                    <Button
-                        color="primary"
-                        variant="flat"
-                        size="sm"
-                        className="w-full font-medium"
-                        isLoading={createConstraintMutation.isPending}
-                        onPress={handleCreate}
-                    >
-                        Create Constraint
+                    <Button variant="primary" isPending={createConstraintMutation.isPending} onPress={handleCreate} className="w-full font-medium">
+                        {({isPending}) => (
+                            <>
+                                {isPending && <Spinner color="current" size="sm" />}
+                                Create Constraint
+                            </>
+                        )}
                     </Button>
-                    <Button
-                        color="secondary"
-                        variant="ghost"
-                        size="sm"
-                        className="w-full font-medium"
-                        onPress={handleDebugSeed}
-                    >
+                    <Button variant="secondary" onPress={handleDebugSeed} className="w-full font-medium">
                         Seed Debug Data
                     </Button>
                 </div>
-            </CardBody>
+            </Card.Content>
         </Card>
     );
 }

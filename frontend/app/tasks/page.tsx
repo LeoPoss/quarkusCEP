@@ -1,18 +1,14 @@
 "use client";
 
 import {
-    addToast,
+    toast,
     Button,
     Modal,
-    ModalBody,
-    ModalContent,
-    ModalFooter,
-    ModalHeader,
-    useDisclosure,
+    useOverlayState,
+    Spinner,
 } from "@heroui/react";
 import {
     ArrowCounterClockwiseIcon,
-    WarningIcon,
 } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -25,42 +21,37 @@ import ConstraintQuickCreate from "@/components/constraint-quick-create";
 
 export default function TasksPage() {
     const queryClient = useQueryClient();
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const modalState = useOverlayState();
 
     const resetMutation = useMutation({
         mutationFn: async () => {
             return await api.post("esper/reset");
         },
         onSuccess: () => {
-            addToast({
-                title: "Process Reset",
+            toast.success("Process Reset", {
                 description: "Process instance reset",
-                color: "success",
             });
             queryClient.invalidateQueries();
-            onClose();
+            modalState.close();
         },
-        onError: (error) => {
-            addToast({
-                title: "Reset Failed",
+        onError: (error: any) => {
+            toast.danger("Reset Failed", {
                 description: error.message,
-                color: "danger",
             });
         },
     });
 
     return (
-        <section className="flex flex-col gap-4 pb-6">
+        <section className="flex flex-col gap-4">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <h1 className="text-xl font-bold">Tasklist</h1>
+                <h1 className="text-xl font-bold text-foreground">Tasklist</h1>
                 <Button
+                    variant="danger-soft"
                     size="sm"
-                    color="danger"
-                    variant="flat"
-                    startContent={<ArrowCounterClockwiseIcon size={16} />}
-                    onPress={onOpen}
+                    onPress={modalState.open}
                 >
+                    <ArrowCounterClockwiseIcon size={16} />
                     Reset
                 </Button>
             </div>
@@ -78,26 +69,39 @@ export default function TasksPage() {
             </div>
 
             {/* Reset Modal */}
-            <Modal isOpen={isOpen} onClose={onClose} size="sm">
-                <ModalContent>
-                    <ModalHeader className="flex items-center gap-2 text-sm">
-                        Reset Esper Engine?
-                    </ModalHeader>
-                    <ModalBody className="text-sm">
-                        <p>This will clear trace, constraints, and reset Esper.</p>
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button size="sm" variant="flat" onPress={onClose}>Cancel</Button>
-                        <Button
-                            size="sm"
-                            color="danger"
-                            isLoading={resetMutation.isPending}
-                            onPress={() => resetMutation.mutate()}
-                        >
-                            Reset
-                        </Button>
-                    </ModalFooter>
-                </ModalContent>
+            <Modal state={modalState}>
+                <Modal.Backdrop variant="blur">
+                    <Modal.Container size="sm">
+                        <Modal.Dialog>
+                            {({close}) => (
+                                <>
+                                    <Modal.Header>
+                                        <Modal.Heading>Reset Esper Engine?</Modal.Heading>
+                                    </Modal.Header>
+                                    <Modal.Body className="text-sm">
+                                        <p className="text-default-600">This will clear trace, constraints, and reset Esper.</p>
+                                    </Modal.Body>
+                                    <Modal.Footer>
+                                        <Button variant="ghost" size="sm" onPress={close}>Cancel</Button>
+                                        <Button
+                                            variant="danger"
+                                            size="sm"
+                                            isPending={resetMutation.isPending}
+                                            onPress={() => resetMutation.mutate()}
+                                        >
+                                            {({isPending}) => (
+                                                <>
+                                                    {isPending && <Spinner color="current" size="sm" />}
+                                                    Reset
+                                                </>
+                                            )}
+                                        </Button>
+                                    </Modal.Footer>
+                                </>
+                            )}
+                        </Modal.Dialog>
+                    </Modal.Container>
+                </Modal.Backdrop>
             </Modal>
         </section>
     );

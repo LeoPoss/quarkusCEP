@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardBody, CardHeader, Spinner } from "@heroui/react";
+import { Card, Spinner } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
@@ -39,10 +39,10 @@ export default function ProcessStatusBar() {
 
     if (isLoading) {
         return (
-            <Card className="h-full border-none shadow-sm">
-                <CardBody className="flex justify-center py-4">
-                    <Spinner size="sm" />
-                </CardBody>
+            <Card className="h-full">
+                <Card.Content className="flex justify-center py-4">
+                    <Spinner size="sm" color="accent" />
+                </Card.Content>
             </Card>
         );
     }
@@ -53,11 +53,11 @@ export default function ProcessStatusBar() {
     const total = fulfilledCount + pendingCount + violatedCount;
 
     return (
-        <Card className="h-full border-none shadow-sm">
-            <CardHeader className="text-sm font-medium px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200">
-                Process Status
-            </CardHeader>
-            <CardBody className="p-4 space-y-4">
+        <Card className="h-full">
+            <Card.Header>
+                <Card.Title>Process Status</Card.Title>
+            </Card.Header>
+            <Card.Content className="space-y-4">
                 {/* Mini donut + finishability in a row */}
                 <div className="flex items-center gap-4">
                     {/* Donut chart */}
@@ -66,8 +66,8 @@ export default function ProcessStatusBar() {
                             {total > 0 && (
                                 <>
                                     <circle cx="18" cy="18" r="15.9" fill="none"
-                                        stroke="#e5e7eb" strokeWidth="3"
-                                        className="dark:stroke-gray-700" />
+                                        stroke="currentColor" strokeWidth="3"
+                                        className="text-default-200 dark:text-default-800" />
                                     <circle cx="18" cy="18" r="15.9" fill="none"
                                         stroke="#22c55e" strokeWidth="3"
                                         strokeDasharray={`${(fulfilledCount / total) * 100} 100`}
@@ -87,8 +87,8 @@ export default function ProcessStatusBar() {
                             )}
                             {total === 0 && (
                                 <circle cx="18" cy="18" r="15.9" fill="none"
-                                    stroke="#e5e7eb" strokeWidth="3"
-                                    className="dark:stroke-gray-700" />
+                                    stroke="currentColor" strokeWidth="3"
+                                    className="text-default-200 dark:text-default-800" />
                             )}
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -99,20 +99,20 @@ export default function ProcessStatusBar() {
                     {/* Finishability status */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-600 dark:text-gray-400">Finishable</span>
-                            <span className={`text-xs font-mono font-medium ${finishability?.canFinish ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`}>
+                            <span className="text-xs text-default-600 dark:text-default-400">Finishable</span>
+                            <span className={`text-xs font-mono font-medium ${finishability?.canFinish ? "text-success" : "text-warning"}`}>
                                 {finishability?.canFinish ? "YES" : "NO"}
                             </span>
                         </div>
                         {!finishability?.canFinish && finishability?.reasons && finishability.reasons.length > 0 && (
-                            <div className="mt-1 pl-2 border-l-2 border-amber-200 dark:border-amber-900/50 space-y-1">
+                            <div className="mt-1 pl-2 border-l-2 border-warning/20 space-y-1">
                                 {finishability.reasons.slice(0, 3).map((reason, idx) => (
-                                    <div key={idx} className="text-[10px] text-gray-500 leading-tight">
+                                    <div key={idx} className="text-[10px] text-default-500 leading-tight">
                                         {reason}
                                     </div>
                                 ))}
                                 {finishability.reasons.length > 3 && (
-                                    <div className="text-[10px] text-gray-400 italic">
+                                    <div className="text-[10px] text-default-400 italic">
                                         + {finishability.reasons.length - 3} more...
                                     </div>
                                 )}
@@ -124,25 +124,25 @@ export default function ProcessStatusBar() {
                 {/* Stacked bar */}
                 {total > 0 && (
                     <div className="space-y-1.5">
-                        <div className="flex h-2 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800">
+                        <div className="flex h-2 rounded-full overflow-hidden bg-default-100 dark:bg-default-800">
                             {fulfilledCount > 0 && (
-                                <div className="bg-green-500 transition-all" style={{ width: `${(fulfilledCount / total) * 100}%` }} />
+                                <div className="bg-success transition-all" style={{ width: `${(fulfilledCount / total) * 100}%` }} />
                             )}
                             {pendingCount > 0 && (
-                                <div className="bg-amber-500 transition-all" style={{ width: `${(pendingCount / total) * 100}%` }} />
+                                <div className="bg-warning transition-all" style={{ width: `${(pendingCount / total) * 100}%` }} />
                             )}
                             {violatedCount > 0 && (
-                                <div className="bg-red-500 transition-all" style={{ width: `${(violatedCount / total) * 100}%` }} />
+                                <div className="bg-danger transition-all" style={{ width: `${(violatedCount / total) * 100}%` }} />
                             )}
                         </div>
-                        <div className="flex justify-between text-[10px] text-gray-500">
+                        <div className="flex justify-between text-[10px] text-default-500">
                             <span>{fulfilledCount} fulfilled</span>
                             <span>{pendingCount} pending</span>
                             <span>{violatedCount} violated</span>
                         </div>
                     </div>
                 )}
-            </CardBody>
+            </Card.Content>
         </Card>
     );
 }

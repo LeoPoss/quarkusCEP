@@ -2,10 +2,7 @@
 
 import {
     Accordion,
-    AccordionItem,
     Card,
-    CardBody,
-    CardHeader,
     Spinner,
 } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
@@ -35,17 +32,9 @@ export interface Constraint {
     eplStatements?: { deploymentId: string; statement: string; type: string }[];
 }
 
-type Condition = {
-    param: string;
-    operator: string;
-    value: string;
-    timer?: number;
-};
-
-
 const statusStyles: Record<string, string> = {
     FULFILLED: "border-l-green-500 bg-green-100 dark:bg-green-900",
-    INIT: "border-l-gray-300 bg-gray-100 dark:bg-gray-800",
+    INIT: "border-l-default-300 bg-default-100 dark:bg-default-800",
     TEMPORARY_VIOLATION: "border-l-amber-500 bg-amber-100 dark:bg-amber-900",
     PERMANENT_VIOLATION: "border-l-red-500 bg-red-100 dark:bg-red-900",
 };
@@ -65,86 +54,94 @@ export default function ConstraintsList() {
 
     if (isLoading) {
         return (
-            <Card className="h-full border-none shadow-sm">
-                <CardBody className="flex justify-center py-4">
-                    <Spinner size="sm" />
-                </CardBody>
+            <Card className="h-full">
+                <Card.Content className="flex justify-center py-4">
+                    <Spinner size="sm" color="accent" />
+                </Card.Content>
             </Card>
         );
     }
 
     if (error) {
         return (
-            <Card className="h-full border-none shadow-sm">
-                <CardBody className="text-red-500 text-sm">Error: {error.message}</CardBody>
+            <Card className="h-full">
+                <Card.Content className="text-danger text-sm">Error: {error.message}</Card.Content>
             </Card>
         );
     }
 
     return (
-        <Card className="h-full border-none shadow-sm">
-            <CardHeader className="text-sm font-medium px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200 flex justify-between items-center">
-                <span>Active Constraints</span>
-                <span className="text-xs font-mono opacity-60">{constraints.length}</span>
-            </CardHeader>
-            <CardBody className="p-0">
+        <Card className="h-full">
+            <Card.Header>
+                <div className="flex items-center justify-between w-full">
+                    <Card.Title>Active Constraints</Card.Title>
+                    <span className="text-xs font-mono opacity-60">{constraints.length}</span>
+                </div>
+            </Card.Header>
+            <Card.Content className="p-0">
                 {constraints.length === 0 ? (
-                    <div className="text-xs text-gray-500 text-center py-8">
+                    <div className="text-xs text-default-500 text-center py-8">
                         <p className="italic">No constraints defined yet</p>
-                        <p className="text-[10px] text-gray-400 mt-1">Use the form below to create one.</p>
+                        <p className="text-[10px] text-default-400 mt-1">Use the form below to create one.</p>
                     </div>
                 ) : (
                     <div className="max-h-48 overflow-y-auto">
-                        <Accordion isCompact selectionMode="multiple" className="px-0 gap-0 divider-y divide-gray-100 dark:divide-gray-800">
+                        <Accordion allowsMultipleExpanded className="px-0 gap-0 divide-y divide-divider">
                             {constraints.map((c) => (
-                                <AccordionItem
+                                <Accordion.Item
                                     key={c.name}
-                                    classNames={{
-                                        base: `px-4 ${statusStyles[c.status] || statusStyles.INIT}`,
-                                        title: "text-xs font-medium font-mono text-gray-800 dark:text-gray-200",
-                                        content: "pt-0 pb-3",
-                                        trigger: "py-3",
-                                        indicator: "text-gray-400 text-small",
-                                    }}
-                                    title={formatConstraintDisplay(c)}
-                                    startContent={
-                                        <div className="shrink-0">
-                                            {c.status === "FULFILLED" && <CheckCircle size={14} className="text-green-500" weight="fill" />}
-                                            {c.status === "TEMPORARY_VIOLATION" && <Warning size={14} className="text-amber-500" weight="fill" />}
-                                            {c.status === "PERMANENT_VIOLATION" && <XCircle size={14} className="text-red-500" weight="fill" />}
-                                            {(!c.status || c.status === "INIT") && <Circle size={14} className="text-gray-400" />}
-                                        </div>
-                                    }
+                                    id={c.name}
+                                    className={`px-4 ${statusStyles[c.status] || statusStyles.INIT}`}
                                 >
-                                    <div className="space-y-2 pl-2 border-l border-gray-200 dark:border-gray-700 ml-1">
-                                        <div className="text-[10px] uppercase tracking-wider text-gray-500">
-                                            Status: <span className="font-semibold text-gray-700 dark:text-gray-300">{c.status}</span>
-                                        </div>
-                                        {c.eplStatements && c.eplStatements.length > 0 ? (
-                                            <div className="space-y-2">
-                                                {c.eplStatements.map((s, i) => (
-                                                    <div key={i}>
-                                                        <div className="text-[9px] text-gray-400 mb-0.5 font-mono uppercase">{s.type}</div>
-                                                        <ShikiHighlighter
-                                                            className="text-[10px] border border-gray-100 dark:border-gray-800 rounded overflow-x-auto"
-                                                            language={eql as any}
-                                                            theme={resolvedTheme === "dark" ? "material-theme-darker" : "material-theme-lighter"}
-                                                        >
-                                                            {s.statement.trim()}
-                                                        </ShikiHighlighter>
-                                                    </div>
-                                                ))}
+                                    <Accordion.Heading>
+                                        <Accordion.Trigger className="py-3">
+                                            <div className="flex items-center gap-3 w-full">
+                                                <div className="shrink-0">
+                                                    {c.status === "FULFILLED" && <CheckCircle size={14} className="text-green-500" weight="fill" />}
+                                                    {c.status === "TEMPORARY_VIOLATION" && <Warning size={14} className="text-amber-500" weight="fill" />}
+                                                    {c.status === "PERMANENT_VIOLATION" && <XCircle size={14} className="text-red-500" weight="fill" />}
+                                                    {(!c.status || c.status === "INIT") && <Circle size={14} className="text-default-400" />}
+                                                </div>
+                                                <span className="text-xs font-medium font-mono text-foreground">
+                                                    {formatConstraintDisplay(c)}
+                                                </span>
                                             </div>
-                                        ) : (
-                                            <div className="text-gray-400 text-[10px] italic">No EPL statements</div>
-                                        )}
-                                    </div>
-                                </AccordionItem>
+                                            <Accordion.Indicator className="text-default-400 text-sm" />
+                                        </Accordion.Trigger>
+                                    </Accordion.Heading>
+                                    <Accordion.Panel>
+                                        <Accordion.Body className="pt-0 pb-3">
+                                            <div className="space-y-2 pl-2 border-l border-divider ml-1">
+                                                <div className="text-[10px]   text-default-500">
+                                                    Status: <span className="font-semibold text-foreground">{c.status}</span>
+                                                </div>
+                                                {c.eplStatements && c.eplStatements.length > 0 ? (
+                                                    <div className="space-y-2">
+                                                        {c.eplStatements.map((s, i) => (
+                                                            <div key={i}>
+                                                                <div className="text-[9px] text-default-400 mb-0.5 font-mono ">{s.type}</div>
+                                                                <ShikiHighlighter
+                                                                    className="text-[10px] border border-divider rounded overflow-x-auto"
+                                                                    language={eql as any}
+                                                                    theme={resolvedTheme === "dark" ? "material-theme-darker" : "material-theme-lighter"}
+                                                                >
+                                                                    {s.statement.trim()}
+                                                                </ShikiHighlighter>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-default-400 text-[10px] italic">No EPL statements</div>
+                                                )}
+                                            </div>
+                                        </Accordion.Body>
+                                    </Accordion.Panel>
+                                </Accordion.Item>
                             ))}
                         </Accordion>
                     </div>
                 )}
-            </CardBody>
+            </Card.Content>
         </Card>
     );
 }
@@ -159,17 +156,17 @@ function formatConstraintDisplay(c?: Constraint): React.ReactNode {
         evtType?: string,
         cond?: { param: string; operator: string; value: string; timer?: number }
     ) => {
-        if (!evtName) return <span className="text-gray-400">?</span>;
+        if (!evtName) return <span className="text-default-400">?</span>;
 
         const name = evtName;
         // Condition: [param operator value]
         const condition = (cond?.param && cond?.operator && cond?.value)
-            ? <span className="text-gray-600 dark:text-gray-400">[{cond.param} {cond.operator} {cond.value}]</span>
+            ? <span className="text-default-600 dark:text-default-400">[{cond.param} {cond.operator} {cond.value}]</span>
             : null;
 
         // Timer: [0,t] specialized styling
         const timer = cond?.timer ? (
-            <span className="text-xs align-sub ml-0.5 text-gray-500">
+            <span className="text-xs align-sub ml-0.5 text-default-500">
                 [0,{cond.timer}]
             </span>
         ) : null;
@@ -199,7 +196,7 @@ function formatConstraintDisplay(c?: Constraint): React.ReactNode {
     // Parse top-level timer if needed, though user example focused on event timer.
     // Assuming top-level timer is handled similarly if it exists logic, but following user example style primarily.
     const constraintTimer = c.timer ? (
-        <span className="text-xs align-sub ml-0.5 text-gray-500">[0,{c.timer}]</span>
+        <span className="text-xs align-sub ml-0.5 text-default-500">[0,{c.timer}]</span>
     ) : null;
 
     // Some constraints only have A (Existence, NotExistence)

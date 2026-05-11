@@ -1,20 +1,12 @@
 "use client";
 
 import {
-    addToast,
+    toast,
     Button,
     Card,
-    CardBody,
-    CardHeader,
     Input,
     Spinner,
     Table,
-    TableBody,
-    TableCell,
-    TableColumn,
-    TableHeader,
-    TableRow,
-    Tooltip,
     Chip,
 } from "@heroui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -71,10 +63,8 @@ export default function TaskList() {
             });
         },
         onSuccess: (_, { taskName }) => {
-            addToast({
-                title: "Executed",
+            toast.success("Executed", {
                 description: taskName,
-                color: "success",
             });
             queryClient.invalidateQueries({ queryKey: ["esper", "trace"] });
             queryClient.invalidateQueries({ queryKey: ["analysis"] });
@@ -84,11 +74,9 @@ export default function TaskList() {
                 return next;
             });
         },
-        onError: (error) => {
-            addToast({
-                title: "Failed",
+        onError: (error: any) => {
+            toast.danger("Failed", {
                 description: error.message,
-                color: "danger",
             });
         },
     });
@@ -105,38 +93,30 @@ export default function TaskList() {
 
     if (isLoading) {
         return (
-            <Card className="border-none shadow-sm h-full">
-                <CardBody className="flex justify-center py-8">
-                    <Spinner size="sm" />
-                </CardBody>
+            <Card className="h-full">
+                <Card.Content className="flex justify-center py-8">
+                    <Spinner size="sm" color="accent" />
+                </Card.Content>
             </Card>
         );
     }
 
     if (tasksError) {
         return (
-            <Card className="border-none shadow-sm h-full">
-                <CardBody className="text-red-600">
+            <Card className="h-full">
+                <Card.Content className="text-danger">
                     Error: {tasksError.message}
-                </CardBody>
+                </Card.Content>
             </Card>
         );
     }
 
     const uniqueTasks = Array.from(new Set(tasks.map((t) => t.task))).sort();
 
-    const getExecutionCount = (taskName: string) =>
-        trace.filter((t) => t.eventType === taskName).length;
-
     const getTaskState = (taskName: string) => {
         const taskAnalysis = tasks.filter((t) => t.task === taskName);
         const hasUnsafe = taskAnalysis.some((t) => t.isUnsafe);
-        if (!hasUnsafe) return "READY";
-        const hasConditions = taskAnalysis.some(
-            (t) => t.isUnsafe && t.unsafeConditions && Object.keys(t.unsafeConditions).length > 0
-        );
-        if (hasConditions) return "CONDITIONAL";
-        return "BLOCKED";
+        return hasUnsafe ? "BLOCKED" : "READY";
     };
 
     const getRestrictions = (taskName: string): { label: string; tooltip: string; count: number } | null => {
@@ -163,120 +143,114 @@ export default function TaskList() {
     };
 
     return (
-        <Card className="border-none shadow-sm h-full">
-            <CardHeader className="text-sm font-medium px-4 py-3 border-b border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-200 flex justify-between items-center">
-                <span>Task Overview</span>
-                <span className="text-xs text-gray-500 font-mono">Total: {uniqueTasks.length}</span>
-            </CardHeader>
-            <CardBody className="p-0 overflow-auto">
+        <Card className="h-full">
+            <Card.Header>
+                <div className="flex items-center justify-between w-full">
+                    <Card.Title>Task Overview</Card.Title>
+                    <span className="text-xs text-default-500 font-mono">Total: {uniqueTasks.length}</span>
+                </div>
+            </Card.Header>
+            <Card.Content className="p-0 overflow-auto">
                 <Table
-                    aria-label="Task list"
-                    removeWrapper
-                    classNames={{
-                        th: "bg-transparent border-b border-gray-100 dark:border-gray-800 text-xs font-semibold text-gray-500 dark:text-gray-400 font-mono py-3 px-4",
-                        td: "py-3 border-b border-gray-50 dark:border-gray-800/50 text-sm px-4",
-                        base: "min-h-[300px]"
-                    }}
+                    className="min-h-[300px]"
                 >
-                    <TableHeader>
-                        <TableColumn>Task</TableColumn>
-                        <TableColumn>Status</TableColumn>
-                        <TableColumn>Payload & Action</TableColumn>
-                        <TableColumn>Requirements</TableColumn>
-                    </TableHeader>
-                    <TableBody emptyContent={
-                        <div className="py-8 text-center">
-                            <p className="text-gray-500 text-sm">No tasks defined yet</p>
-                            <p className="text-xs text-gray-400 mt-1">Create a constraint with activation/target events to register tasks.</p>
-                        </div>
-                    }>
-                        {uniqueTasks.map((taskName) => {
-                            const state = getTaskState(taskName);
-                            const restrictions = getRestrictions(taskName);
-                            const isEnabled = state === "READY";
+                    <Table.ScrollContainer>
+                        <Table.Content aria-label="Task list">
+                            <Table.Header>
+                                <Table.Column isRowHeader className="bg-transparent border-b border-divider text-xs font-semibold text-default-500 font-mono py-3 px-4">Task</Table.Column>
+                                <Table.Column className="bg-transparent border-b border-divider text-xs font-semibold text-default-500 font-mono py-3 px-4">Status</Table.Column>
+                                <Table.Column className="bg-transparent border-b border-divider text-xs font-semibold text-default-500 font-mono py-3 px-4">Payload & Action</Table.Column>
+                                <Table.Column className="bg-transparent border-b border-divider text-xs font-semibold text-default-500 font-mono py-3 px-4">Requirements</Table.Column>
+                            </Table.Header>
+                            <Table.Body renderEmptyState={() => (
+                                <div className="py-8 text-center">
+                                    <p className="text-default-500 text-sm">No tasks defined yet</p>
+                                    <p className="text-xs text-default-400 mt-1">Create a constraint with activation/target events to register tasks.</p>
+                                </div>
+                            )}>
+                                {uniqueTasks.map((taskName) => {
+                                    const state = getTaskState(taskName);
+                                    const restrictions = getRestrictions(taskName);
+                                    const isEnabled = state === "READY";
 
-                            return (
-                                <TableRow key={taskName} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                                    <TableCell>
-                                        <span className="font-mono font-medium text-gray-800 dark:text-gray-200">{taskName}</span>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Chip
-                                            size="sm"
-                                            variant="flat"
-                                            color={state === "READY" ? "success" : state === "CONDITIONAL" ? "warning" : "danger"}
-                                            classNames={{ content: "text-[10px] font-mono font-medium" }}
-                                        >
-                                            {state}
-                                        </Chip>
-                                    </TableCell>
-                                    <TableCell>
-                                        {isEnabled ? (
-                                            <div className="flex items-center gap-2">
-                                                <Input
+                                    return (
+                                        <Table.Row key={taskName} className="hover:bg-default-50 transition-colors">
+                                            <Table.Cell className="py-3 border-b border-divider/50 text-sm px-4">
+                                                <span className="font-mono font-medium text-foreground">{taskName}</span>
+                                            </Table.Cell>
+                                            <Table.Cell className="py-3 border-b border-divider/50 text-sm px-4">
+                                                <Chip
+                                                    variant="soft"
                                                     size="sm"
-                                                    placeholder="key"
-                                                    value={taskPayloads[taskName]?.key ?? ""}
-                                                    onChange={(e) =>
-                                                        setTaskPayloads((prev) => ({
-                                                            ...prev,
-                                                            [taskName]: { key: e.target.value, value: prev[taskName]?.value ?? "" },
-                                                        }))
-                                                    }
-                                                    className="w-20"
-                                                    classNames={{
-                                                        input: "font-mono text-xs bg-default-100 dark:bg-default-50",
-                                                        inputWrapper: "h-8 min-h-8 bg-default-100 dark:bg-default-50 shadow-none border-none"
-                                                    }}
-                                                />
-                                                <span className="text-gray-300">=</span>
-                                                <Input
-                                                    size="sm"
-                                                    placeholder="value"
-                                                    value={taskPayloads[taskName]?.value ?? ""}
-                                                    onChange={(e) =>
-                                                        setTaskPayloads((prev) => ({
-                                                            ...prev,
-                                                            [taskName]: { key: prev[taskName]?.key ?? "", value: e.target.value },
-                                                        }))
-                                                    }
-                                                    className="w-20"
-                                                    classNames={{
-                                                        input: "font-mono text-xs bg-default-100 dark:bg-default-50",
-                                                        inputWrapper: "h-8 min-h-8 bg-default-100 dark:bg-default-50 shadow-none border-none"
-                                                    }}
-                                                />
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    className="min-w-0 px-4 h-8 bg-gray-900 dark:bg-gray-100 text-white dark:text-black font-medium text-xs rounded shadow-none hover:opacity-90"
-                                                    isLoading={executeTaskMutation.isPending && executeTaskMutation.variables?.taskName === taskName}
-                                                    onPress={() => handleExecute(taskName)}
+                                                    color={state === "READY" ? "success" : "danger"}
                                                 >
-                                                    Finish
-                                                </Button>
-                                            </div>
-                                        ) : (
-                                            <span className="text-gray-300 dark:text-gray-700 italic text-xs pl-2">Unavailable</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        {restrictions ? (
-                                            <Tooltip content={restrictions.tooltip} placement="left">
-                                                <span className="text-xs font-mono text-red-600 dark:text-red-400 cursor-help border-b border-dotted border-red-300 dark:border-red-700 hover:border-solid">
-                                                    {restrictions.label}
-                                                </span>
-                                            </Tooltip>
-                                        ) : (
-                                            <span className="text-gray-300 text-xs pl-2">-</span>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
-                    </TableBody>
+                                                    {state}
+                                                </Chip>
+                                            </Table.Cell>
+                                            <Table.Cell className="py-3 border-b border-divider/50 text-sm px-4">
+                                                {isEnabled ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <Input variant="secondary"
+                                                            placeholder="key"
+                                                            value={taskPayloads[taskName]?.key ?? ""}
+                                                            onChange={(e) =>
+                                                                setTaskPayloads((prev) => ({
+                                                                    ...prev,
+                                                                    [taskName]: { key: e.target.value, value: prev[taskName]?.value ?? "" },
+                                                                }))
+                                                            }
+                                                            className="w-20 font-mono"
+                                                        />
+                                                        <span className="text-default-300">=</span>
+                                                        <Input variant="secondary"
+                                                            placeholder="value"
+                                                            value={taskPayloads[taskName]?.value ?? ""}
+                                                            onChange={(e) =>
+                                                                setTaskPayloads((prev) => ({
+                                                                    ...prev,
+                                                                    [taskName]: { key: prev[taskName]?.key ?? "", value: e.target.value },
+                                                                }))
+                                                            }
+                                                            className="w-20 font-mono"
+                                                        />
+                                                        <Button
+                                                            size="sm"
+                                                            variant="primary"
+                                                            className="min-w-0 px-4 h-8"
+                                                            isPending={executeTaskMutation.isPending && executeTaskMutation.variables?.taskName === taskName}
+                                                            onPress={() => handleExecute(taskName)}
+                                                        >
+                                                            {({isPending}) => (
+                                                                <>
+                                                                    {isPending && <Spinner color="current" size="sm" />}
+                                                                    Finish
+                                                                </>
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-default-300 italic text-xs pl-2">Unavailable</span>
+                                                )}
+                                            </Table.Cell>
+                                            <Table.Cell className="py-3 border-b border-divider/50 text-sm px-4">
+                                                {restrictions ? (
+                                                    <div className="text-[10px] font-mono text-danger leading-tight space-y-0.5">
+                                                        {restrictions.tooltip.split("\n").map((line, i) => (
+                                                            <div key={i}>{line}</div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-default-300 text-xs pl-2">-</span>
+                                                )}
+                                            </Table.Cell>
+                                        </Table.Row>
+                                    );
+                                })}
+                            </Table.Body>
+                        </Table.Content>
+                    </Table.ScrollContainer>
                 </Table>
-            </CardBody>
+            </Card.Content>
         </Card>
     );
 }
