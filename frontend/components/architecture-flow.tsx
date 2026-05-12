@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import ShikiHighlighter from "react-shiki";
+import { CheckCircle, Lightning, Warning } from "@phosphor-icons/react";
 import { api } from "@/lib/api";
 import eql from "../langs/eql.tmLanguage.json";
 
@@ -176,6 +177,16 @@ export default function ArchitectureFlow() {
                                                         <Chip variant="soft" size="sm" color={statusColor[c.status] ?? "secondary"}>
                                                             {c.status === "TEMPORARY_VIOLATION" ? "TEMP" : c.status === "PERMANENT_VIOLATION" ? "PERM" : c.status}
                                                         </Chip>
+                                                        {c.autoExecute && (
+                                                            <Tooltip>
+                                                                <Tooltip.Trigger>
+                                                                    <Lightning size={12} className="text-warning shrink-0" weight="fill" />
+                                                                </Tooltip.Trigger>
+                                                                <Tooltip.Content placement="top" offset={4}>
+                                                                    Auto-executes target event when activation condition met
+                                                                </Tooltip.Content>
+                                                            </Tooltip>
+                                                        )}
                                                         <Accordion.Indicator className="text-default-400 shrink-0 -mr-1" />
                                                     </span>
                                                     <span className="text-[9px] text-default-400 font-mono text-left w-full">
@@ -259,7 +270,7 @@ export default function ArchitectureFlow() {
                         )}
                     </div>
 
-                    {/* L3: Process Level */}
+                    {/* L3: Process State */}
                     <div className="px-4 flex flex-col">
                         <div className="flex items-center gap-2 mb-4">
                             <span className="text-sm font-medium text-default-500 dark:text-default-400">
@@ -272,10 +283,10 @@ export default function ArchitectureFlow() {
                                     ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
                                     : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
                             }`}>
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
                                     finishability?.canFinish ? "bg-green-500 text-white" : "bg-amber-500 text-white"
                                 }`}>
-                                    {finishability?.canFinish ? "✓" : "!"}
+                                    {finishability?.canFinish ? <CheckCircle size={24} weight="fill" /> : <Warning size={24} weight="fill" />}
                                 </div>
                                 <div className="text-center">
                                     <div className="text-sm font-semibold text-foreground">
@@ -293,13 +304,27 @@ export default function ArchitectureFlow() {
                             </div>
 
                             {!finishability?.canFinish && finishability?.reasons && finishability.reasons.length > 0 && (
-                                <div className="w-full max-w-xs mx-auto space-y-1.5">
-                                    <span className="text-sm font-medium text-default-500 dark:text-default-400 text-center">Blocking constraints</span>
-                                    {finishability.reasons.slice(0, 3).map((reason, i) => (
-                                        <div key={i} className="text-[10px] text-default-600 dark:text-default-400 font-mono leading-snug pl-2 border-l-2 border-amber-300 dark:border-amber-700 py-0.5">
-                                            {reason}
-                                        </div>
-                                    ))}
+                                <div className="w-full max-w-xs mx-auto -mt-2 space-y-1">
+                                    <span className="text-[10px] font-medium text-default-500">
+                                        {finishability.reasons.length} blocking constraint{finishability.reasons.length !== 1 ? 's' : ''}
+                                    </span>
+                                    {finishability.reasons.map((reason, i) => {
+                                        const matched = constraints.find(c => reason.includes(c.name));
+                                        const status = matched?.status;
+                                        const isPerm = status === "PERMANENT_VIOLATION";
+                                        return (
+                                            <div key={i} className="flex items-start gap-1.5">
+                                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1 ${
+                                                    isPerm ? "bg-red-500" : "bg-amber-500"
+                                                }`} />
+                                                <span className={`text-[10px] font-mono leading-snug ${
+                                                    isPerm ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"
+                                                }`}>
+                                                    {reason}
+                                                </span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -309,6 +334,8 @@ export default function ArchitectureFlow() {
         </Card>
     );
 }
+
+
 
 function mpDeclareFormula(type: string, c?: Constraint): string {
     if (!c) return type;
@@ -335,5 +362,3 @@ function mpDeclareFormula(type: string, c?: Constraint): string {
     }
     return `${type}(${evtA}, ${evtB})`;
 }
-
-

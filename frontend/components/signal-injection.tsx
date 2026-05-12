@@ -96,7 +96,7 @@ export default function SignalInjection() {
                     variant="secondary"
                     isPending={injectSignalMutation.isPending}
                     onPress={handleInject}
-                    className="w-full font-medium h-9 text-xs"
+                    className="w-full font-medium"
                 >
                     {({isPending}) => (
                         <>

@@ -23,6 +23,7 @@ interface TaskAnalysis {
 interface TraceEvent {
     eventType: string;
     payload?: Record<string, string>;
+    timestamp: number;
 }
 
 const fetchTasks = async (): Promise<TaskAnalysis[]> => {
@@ -216,14 +217,14 @@ export default function TaskList() {
                                                         <Button
                                                             size="sm"
                                                             variant="primary"
-                                                            className="min-w-0 px-4 h-8"
+                                                            className="min-w-0 px-4"
                                                             isPending={executeTaskMutation.isPending && executeTaskMutation.variables?.taskName === taskName}
                                                             onPress={() => handleExecute(taskName)}
                                                         >
                                                             {({isPending}) => (
                                                                 <>
                                                                     {isPending && <Spinner color="current" size="sm" />}
-                                                                    Finish
+                                                                    Complete Task
                                                                 </>
                                                             )}
                                                         </Button>

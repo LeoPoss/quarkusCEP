@@ -8,7 +8,7 @@ import {
     Spinner,
 } from "@heroui/react";
 import {
-    ArrowCounterClockwiseIcon,
+    ArrowCounterClockwise,
 } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -51,7 +51,7 @@ export default function TasksPage() {
                     size="sm"
                     onPress={modalState.open}
                 >
-                    <ArrowCounterClockwiseIcon size={16} />
+                    <ArrowCounterClockwise size={16} />
                     Reset
                 </Button>
             </div>

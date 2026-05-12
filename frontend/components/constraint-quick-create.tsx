@@ -280,7 +280,7 @@ export default function ConstraintQuickCreate() {
                             min={1}
                             className="w-32"
                         />
-                        <Checkbox id="show-conditions" isSelected={showConditions} onChange={setShowConditions}>
+                        <Checkbox id="show-conditions" variant={"secondary"} isSelected={showConditions} onChange={setShowConditions}>
                             <Checkbox.Control>
                                 <Checkbox.Indicator />
                             </Checkbox.Control>
@@ -291,7 +291,7 @@ export default function ConstraintQuickCreate() {
                         {needsTarget && (
                             <Tooltip>
                                 <Tooltip.Trigger>
-                                    <Checkbox id="auto-execute" isSelected={autoExecute} onChange={setAutoExecute}>
+                                    <Checkbox id="auto-execute" variant={"secondary"} isSelected={autoExecute} onChange={setAutoExecute}>
                                         <Checkbox.Control>
                                             <Checkbox.Indicator />
                                         </Checkbox.Control>

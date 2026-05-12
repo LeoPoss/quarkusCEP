@@ -4,7 +4,7 @@ export default function AboutPage() {
   return (
     <div className="space-y-6">
       <h1 className={title()}>About</h1>
-      <p className="leading-relaxed text-muted-foreground">
+      <p className="leading-relaxed text-default-600">
         This implementation introduces a novel approach for synergistically
         integrating declarative process specifications and event processing
         within a unified engine paradigm. It leverages a single Complex Event
@@ -13,7 +13,7 @@ export default function AboutPage() {
         constraints into executable CEP queries using a multi-level event
         abstraction framework.
       </p>
-      <p className="leading-relaxed text-muted-foreground">
+      <p className="leading-relaxed text-default-600">
         The proof-of-concept demonstrates this integration, allowing MP-Declare
         models to be enacted directly from event streams. This approach aims to
         simplify architectures, reduce latency, and enable responsive,

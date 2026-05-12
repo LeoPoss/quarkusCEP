@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 interface TraceEvent {
     eventType: string;
     payload?: Record<string, string>;
+    timestamp: number;
 }
 
 const fetchTrace = async (): Promise<TraceEvent[]> => {
@@ -42,7 +43,7 @@ export default function TraceViewer() {
         <Card className="h-full">
             <Card.Header>
                 <div className="flex items-center justify-between w-full">
-                    <span>Execution Trace</span>
+                    <Card.Title>Execution Trace</Card.Title>
                     <span className="text-xs font-mono opacity-60">{trace.length}</span>
                 </div>
             </Card.Header>
@@ -54,30 +55,36 @@ export default function TraceViewer() {
                     </div>
                 ) : (
                     <div className="h-48 overflow-y-auto text-xs">
-                        {[...trace].reverse().map((event, index) => {
-                            const hasPayload = event.payload && Object.keys(event.payload).length > 0;
-                            const isLast = index === trace.length - 1;
-                            return (
-                                <div key={index} className="flex gap-3 px-4">
-                                    {/* Timeline column */}
-                                    <div className="flex flex-col items-center shrink-0 pt-2">
-                                        <div className="w-2 h-2 rounded-full bg-default-400 dark:bg-default-500 ring-2 ring-background z-10" />
-                                        {!isLast && <div className="w-px flex-1 bg-divider" />}
-                                    </div>
-                                    {/* Content */}
-                                    <div className={`flex-1 min-w-0 pb-3 ${isLast ? '' : ''}`}>
-                                        <div className="text-foreground font-mono font-medium text-[11px]">
-                                            {event.eventType}
+                        {[...trace]
+                            .sort((a, b) => b.timestamp - a.timestamp)
+                            .map((event, index, sorted) => {
+                                const hasPayload = event.payload && Object.keys(event.payload).length > 0;
+                                const isLast = index === sorted.length - 1;
+                                const timeStr = new Date(event.timestamp).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+                                return (
+                                    <div key={`${event.eventType}-${event.timestamp}`} className="flex gap-3 px-4">
+                                        {/* Timeline column */}
+                                        <div className="flex flex-col items-center shrink-0 pt-2">
+                                            <div className="w-2 h-2 rounded-full bg-default-400 dark:bg-default-500 ring-2 ring-background z-10" />
+                                            {!isLast && <div className="w-px flex-1 bg-divider" />}
                                         </div>
-                                        {hasPayload && (
-                                            <div className="text-default-500 truncate mt-0.5 text-[10px] font-mono">
-                                                {JSON.stringify(event.payload).replace(/["{}]/g, '').replace(/:/g, ': ').replace(/,/g, ', ')}
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0 pb-3 flex items-baseline justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <div className="text-foreground font-mono font-medium text-[11px]">
+                                                    {event.eventType}
+                                                </div>
+                                                {hasPayload && (
+                                                    <div className="text-default-500 truncate mt-0.5 text-[10px] font-mono">
+                                                        {JSON.stringify(event.payload).replace(/["{}]/g, '').replace(/:/g, ': ').replace(/,/g, ', ')}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
+                                            <span className="text-[9px] text-default-400 shrink-0 tabular-nums">{timeStr}</span>
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
                     </div>
                 )}
             </Card.Content>
