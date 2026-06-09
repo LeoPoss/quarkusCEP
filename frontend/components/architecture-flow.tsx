@@ -174,7 +174,7 @@ export default function ArchitectureFlow() {
                                                 <Accordion.Trigger className="flex-col items-start py-3 gap-0.5 relative">
                                                     <span className="flex items-center gap-2 w-full pr-6">
                                                         <span className="text-xs font-medium text-foreground truncate flex-1 min-w-0">{c.name}</span>
-                                                        <Chip variant="soft" size="sm" color={statusColor[c.status] ?? "secondary"}>
+                                                        <Chip variant="soft" size="sm" color={statusColor[c.status] ?? "default"}>
                                                             {c.status === "TEMPORARY_VIOLATION" ? "TEMP" : c.status === "PERMANENT_VIOLATION" ? "PERM" : c.status}
                                                         </Chip>
                                                         {c.autoExecute && (

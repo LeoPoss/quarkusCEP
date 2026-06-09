@@ -4,7 +4,7 @@ import {
     toast,
     Button,
     Card,
-    Checkbox,
+    Switch,
     Input,
     Select,
     ListBox,
@@ -280,25 +280,21 @@ export default function ConstraintQuickCreate() {
                             min={1}
                             className="w-32"
                         />
-                        <Checkbox id="show-conditions" variant={"secondary"} isSelected={showConditions} onChange={setShowConditions}>
-                            <Checkbox.Control>
-                                <Checkbox.Indicator />
-                            </Checkbox.Control>
-                            <Checkbox.Content>
-                                <Label htmlFor="show-conditions" className="text-xs text-default-500">Conditions</Label>
-                            </Checkbox.Content>
-                        </Checkbox>
+                        <Switch isSelected={showConditions} onChange={setShowConditions}>
+                            <Switch.Control>
+                                <Switch.Thumb />
+                            </Switch.Control>
+                            <Label className="text-xs text-default-500">Conditions</Label>
+                        </Switch>
                         {needsTarget && (
                             <Tooltip>
                                 <Tooltip.Trigger>
-                                    <Checkbox id="auto-execute" variant={"secondary"} isSelected={autoExecute} onChange={setAutoExecute}>
-                                        <Checkbox.Control>
-                                            <Checkbox.Indicator />
-                                        </Checkbox.Control>
-                                        <Checkbox.Content>
-                                            <Label htmlFor="auto-execute" className="text-xs text-warning">Auto</Label>
-                                        </Checkbox.Content>
-                                    </Checkbox>
+                                    <Switch isSelected={autoExecute} onChange={setAutoExecute}>
+                                        <Switch.Control>
+                                            <Switch.Thumb />
+                                        </Switch.Control>
+                                        <Label className="text-xs text-warning">Auto</Label>
+                                    </Switch>
                                 </Tooltip.Trigger>
                                 <Tooltip.Content placement="top">
                                     Automatically injects the target event when the activation condition is met
