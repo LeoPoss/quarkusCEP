@@ -1,131 +1,67 @@
-# DeclareCEP: A Unified Engine for Declarative Process Specifications and Event Processing
+# DeclareCEP Artifact
 
-![implshort1.png](implshort1.png)
+Companion repository contains the full implementation of the unified CEP engine, the web frontend, and replication instructions.
 
-![implshort2.png](implshort2.png)
+## Artifact Structure
 
-## Project Overview
+```
+.
+├── backend/          Java/Quarkus CEP engine (Esper EPL translation, constraint management)
+├── frontend/         Next.js 16 web frontend (process visualization, signal injection, task analysis)
+├── docker-compose.yml
+└── README.md
+```
 
-This implementation demonstrates a novel approach for integrating Business Process Management (BPM) and Complex Event
-Processing (CEP) to enable flexible, declarative process execution with high-frequency Internet of Things (IoT) data. It
-introduces a unified engine paradigm that leverages a single CEP engine for both event abstraction and the direct
-execution of MP-Declare models. This simplifies architectures, reduces latency, and enables responsive, event-driven
-execution by eliminating the need for dedicated preprocessing middleware.
+## Abstract
 
-The project consists of several key components:
+We collapse event abstraction and declarative process execution into a single CEP engine, removing the preprocessing middleware layer found in prior architectures. MP-Declare constraints translate directly to Esper EPL queries over three abstraction tiers: atomic events, constraint-level events, and process-level events. The engine handles real-time compliance monitoring, automated constraint enforcement through background task execution, and interactive signal injection for debugging.
 
-1. A Java-based backend application integrating a CEP engine.
-2. A React-based web frontend application for user interaction and visualization.
-3. An event abstraction framework that translates declarative constraints into executable CEP queries.
+## Key Claims
 
-## Features
+1. **Unified Engine Architecture.** Event abstraction and constraint enactment coexist within one Esper runtime, reducing architectural complexity and end-to-end latency compared to multi-engine designs.
+2. **Direct MP-Declare Translation.** Declarative constraints (Precedence, Response, Not-CoExistence, etc.) are systematically translated to EPL queries without intermediate DSLs or middleware queues.
+3. **Automated Enforcement.** Activation events trigger downstream task injection and lifecycle-logged background execution.
 
-- Unified Engine Paradigm: Integrates event abstraction and declarative process execution within a single CEP engine,
-  eliminating separate middleware.
-- Direct MP-Declare Execution: Enables direct enactment of MP-Declare models over high-frequency event streams (e.g.,
-  IoT data).
-- Multi-Level Event Abstraction: Processes events across three abstraction layers: Atomic Events, Constraint Level
-  Events, and Process Level Events.
-- Real-time Process Compliance: Continuously monitors and enforces declarative constraints, ensuring process compliance
-  in dynamic environments.
-- Reduced Complexity & Latency: Streamlines system architecture by removing intermediary layers, leading to lower
-  latency and simplified management.
-- Flexible Process Execution: Supports runtime adaptation of process instances based on real-time event data, reacting
-  to deviations and changing conditions.
-- Separation of Concerns: Decouples process logic (declarative constraints) from event processing, allowing independent
-  evolution.
+## Three-Tier Event Abstraction
 
-## Conceptual Overview: How it Works
+1. **Atomic Events** — raw IoT/system events; activation/target patterns detected per constraint.
+2. **Constraint Level** — stateless per-constraint status (activation, fulfillment, violation) via continuous EPL queries.
+3. **Process Level** — real-time instance-wide state: currently allowed tasks, fulfilled/violated constraints.
 
-Our approach is founded on a three-tiered event abstraction framework that seamlessly integrates declarative process
-logic with real-time event streams:
+## Technologies
 
-1. **Atomic Events**: These are the lowest-level events, typically originating from IoT devices or system logs. Our
-   system detects specific "activation" and "target" events from these raw streams for each defined declarative
-   constraint.
-2. **Constraint Level Events**: Upon detection of atomic activation/target events, the system generates higher-level "
-   constraint level" events. This layer manages the stateless status of individual constraints, including their
-   activation, fulfillment, and potential violation, by examining and querying the continuous flow of these abstract
-   events. This layer is crucial for handling complex temporal relations and ambiguities inherent in declarative
-   constraints.
-3. **Process Level Events**: At the highest abstraction, "process level" events represent the real-time status of the
-   overall process instance and its constituent constraints. This provides insights into the current state of the
-   process, indicating which tasks are currently available or if any constraints have been fulfilled or violated.
+| Layer    | Stack                                              |
+|----------|----------------------------------------------------|
+| Backend  | Java 21, Quarkus, Esper CEP                        |
+| Frontend | Next.js 16 (React 19), HeroUI v3, Tailwind CSS v4, TanStack Query |
+| Modeling | MP-Declare                                         |
 
-This multi-level abstraction allows for the systematic translation of MP-Declare constraints into executable CEP
-queries (specifically Esper EPL), enabling the CEP engine to directly evaluate and enforce these constraints against
-incoming event data.
-
-## Technologies Used
-
-- Backend: Java, Quarkus, Esper CEP Engine
-- Frontend: Next.js (React)
-- Process Modeling: MP-Declare (declarative constraints)
-
-## Setup and Running
-
-To set up and run the DeclareCEP proof-of-concept locally:
+## Replication
 
 ### Prerequisites
 
-- Java Development Kit (JDK): Version 21 or newer.
-- Gradle: For building the backend.
-- Node.js & npm/yarn: For building the frontend.
-- Git: For cloning the repository.
+- JDK 21+
+- Gradle
+- Node.js + bun
+- Docker (optional)
 
-### Installation and Setup
+### Running Locally
 
-1. Clone this repository:
-    ```console
-    git clone https://anonymous.4open.science/r/quarkus-CEP
-    cd quarkus-CEP
-    ```
+```bash
+# Backend
+cd backend && ./gradlew quarkusDev        # → http://localhost:8080
 
-2. Start backend:
-    ```console
-    cd backend
-    ./gradlew quarkusDev
-    ```
-   The backend server will typically run on http://localhost:8080.
-
-3. Set up and run the frontend:
-    ```console
-    cd ../frontend
-    bun install
-    bun dev
-    ```
+# Frontend
+cd frontend && bun install && bun dev     # → http://localhost:3000
+```
 
 ### Docker
 
-You can run the entire application using Docker Compose without needing to install any dependencies locally:
-
 ```bash
-cd backend
-./gradlew build 
-
-cd ..
-docker compose up --build
+cd backend && ./gradlew build
+cd .. && docker compose up --build
 ```
-
-This will:
-
-1. Build the backend with Gradle
-2. Build the frontend with all dependencies
-3. Start both services with proper networking
-
-The application will be available at:
-
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8080
-
-To rebuild the containers (e.g., after making changes):
-
-```bash
-docker compose up --build --force-recreate
-```
-
-The frontend application will typically be accessible at http://localhost:3000.
 
 ## License
 
-This project is licensed under the GNU GPLv3 License -- see the LICENSE file for details.
+GNU GPLv3. See LICENSE.
