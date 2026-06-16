@@ -18,6 +18,7 @@ import ArchitectureFlow from "@/components/architecture-flow";
 import TaskList from "@/components/task-list";
 import SignalInjection from "@/components/signal-injection";
 import ConstraintQuickCreate from "@/components/constraint-quick-create";
+import ExecutionLogs from "@/components/execution-logs";
 
 export default function TasksPage() {
     const queryClient = useQueryClient();
@@ -62,10 +63,13 @@ export default function TasksPage() {
             {/* Task List */}
             <TaskList />
 
-            {/* Signal + Constraint Create row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <SignalInjection />
+            {/* Creation, Injection and Log Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ConstraintQuickCreate />
+                <div className="flex flex-col gap-4">
+                    <SignalInjection />
+                    <ExecutionLogs />
+                </div>
             </div>
 
             {/* Reset Modal */}

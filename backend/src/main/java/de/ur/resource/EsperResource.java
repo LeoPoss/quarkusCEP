@@ -7,6 +7,7 @@ import de.ur.service.AnalyzerService;
 import de.ur.service.ConstraintService;
 import de.ur.service.EnforcementService;
 import de.ur.service.EsperService;
+import de.ur.service.TaskExecutorService;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -31,6 +32,7 @@ public class EsperResource {
     private final ConstraintService constraintService;
     private final AnalyzerService analyzerService;
     private final EnforcementService enforcementService;
+    private final TaskExecutorService taskExecutorService;
 
     @GET
     public Response getDeployments() {
@@ -135,6 +137,7 @@ public class EsperResource {
 
         if (constraintService.getKnownEvents().contains(eventType)) {
             constraintService.addToTrace(eventType, payload, genericEvent.getTimestamp());
+            constraintService.logExecution("COMPLETE", "Manual UI", eventType, "Task '" + eventType + "' completed manually.", payload);
         }
 
         if (constraintService.getKnownSignals().contains(eventType)) {
@@ -151,6 +154,7 @@ public class EsperResource {
             esperService.reset();
             constraintService.resetConstraints();
             constraintService.getTrace().clear();
+            constraintService.getExecutionLogs().clear();
             analyzerService.resetSignalTracking();
             enforcementService.reset();
             return Response.ok(Map.of(
@@ -166,6 +170,12 @@ public class EsperResource {
                     ))
                     .build();
         }
+    }
+
+    @GET
+    @Path("/execution-logs")
+    public Response getExecutionLogs() {
+        return Response.ok(constraintService.getExecutionLogs()).build();
     }
 
     @GET

@@ -19,6 +19,7 @@ public class Constraint {
     private ConstraintType type;
     private ConstraintStatus status;
     private boolean autoExecute;
+    private String autoExecutePayload;
 
     public void updateStatus(ConstraintStatus status) {
         if (this.status == ConstraintStatus.PERMANENT_VIOLATION) {

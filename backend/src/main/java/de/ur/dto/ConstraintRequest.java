@@ -12,6 +12,7 @@ public record ConstraintRequest(
         ConditionRequest targetCondition,
         ConditionRequest activationCondition,
         CorrelationCondition correlationCondition,
-        Boolean autoExecute
+        Boolean autoExecute,
+        String autoExecutePayload
 ) {
 }

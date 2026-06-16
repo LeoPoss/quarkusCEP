@@ -24,6 +24,65 @@ public class ConstraintService {
     @Inject
     EsperService esperService;
 
+    @Inject
+    com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+
+    @Inject
+    jakarta.enterprise.inject.Instance<TaskExecutorService> taskExecutorServiceInstance;
+
+    @Getter
+    private final List<Map<String, Object>> executionLogs = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public void logExecution(String type, String constraintName, String targetTask, String message, Map<String, String> payload) {
+        Map<String, Object> logEntry = new HashMap<>();
+        logEntry.put("timestamp", System.currentTimeMillis());
+        logEntry.put("type", type);
+        logEntry.put("constraintName", constraintName);
+        logEntry.put("targetTask", targetTask);
+        logEntry.put("message", message);
+        logEntry.put("payload", payload != null ? new HashMap<>(payload) : null);
+        executionLogs.add(logEntry);
+    }
+
+    private Map<String, String> parseAndInterpolatePayload(String payloadStr, Map<String, String> triggerPayload) {
+        Map<String, String> result = new HashMap<>();
+        if (payloadStr == null || payloadStr.isBlank()) {
+            return result;
+        }
+
+        String interpolated = payloadStr;
+        if (triggerPayload != null) {
+            for (Map.Entry<String, String> entry : triggerPayload.entrySet()) {
+                String placeholder = "${" + entry.getKey() + "}";
+                interpolated = interpolated.replace(placeholder, entry.getValue() != null ? entry.getValue() : "");
+            }
+        }
+        interpolated = interpolated.replace("${timestamp}", String.valueOf(System.currentTimeMillis()));
+
+        // Try JSON
+        try {
+            Map<String, Object> map = objectMapper.readValue(interpolated, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                result.put(entry.getKey(), entry.getValue() != null ? entry.getValue().toString() : "");
+            }
+            return result;
+        } catch (Exception e) {
+            log.debug("Failed to parse payload as JSON, falling back to comma-separated format: {}", e.getMessage());
+        }
+
+        // Try comma-separated
+        String[] pairs = interpolated.split(",");
+        for (String pair : pairs) {
+            String[] kv = pair.split("=");
+            if (kv.length == 2) {
+                result.put(kv[0].trim(), kv[1].trim());
+            } else if (kv.length == 1 && !kv[0].isBlank()) {
+                result.put(kv[0].trim(), "");
+            }
+        }
+        return result;
+    }
+
     @Getter
     private ConcurrentHashMap<String, Constraint> constraints = new ConcurrentHashMap<>();
 
@@ -51,7 +110,7 @@ public class ConstraintService {
         constraints.clear();
     }
 
-    public void setupConstraint(ConstraintType type, String name, Long withinPeriod, String activationEventName, ConditionRequest activationCondition, String targetEventName, ConditionRequest targetCondition, CorrelationCondition correlationCondition, ConstraintStatus status, String activationEventType, String targetEventType, boolean autoExecute) {
+    public void setupConstraint(ConstraintType type, String name, Long withinPeriod, String activationEventName, ConditionRequest activationCondition, String targetEventName, ConditionRequest targetCondition, CorrelationCondition correlationCondition, ConstraintStatus status, String activationEventType, String targetEventType, boolean autoExecute, String autoExecutePayload) {
         // Create activation event
         Event activationEvent = null;
         if (activationEventName != null && !activationEventName.isBlank()) {
@@ -72,7 +131,7 @@ public class ConstraintService {
         Set<String> relevantKeys = getRelevantKeys(correlationCondition, safeActivationCondition, safeTargetCondition);
 
         // Create and add the constraint to the map first
-        Constraint constraint = new Constraint(name, withinPeriod != null ? withinPeriod : null, new ArrayList<>(), activationEvent, EplQueryHelper.isConditionValid(safeActivationCondition) ? new ConstraintCondition(safeActivationCondition.param(), safeActivationCondition.operator(), safeActivationCondition.value(), safeActivationCondition.timer()) : null, targetEvent, EplQueryHelper.isConditionValid(safeTargetCondition) ? new ConstraintCondition(safeTargetCondition.param(), safeTargetCondition.operator(), safeTargetCondition.value(), safeTargetCondition.timer()) : null, correlationCondition, type, status, autoExecute);
+        Constraint constraint = new Constraint(name, withinPeriod != null ? withinPeriod : null, new ArrayList<>(), activationEvent, EplQueryHelper.isConditionValid(safeActivationCondition) ? new ConstraintCondition(safeActivationCondition.param(), safeActivationCondition.operator(), safeActivationCondition.value(), safeActivationCondition.timer()) : null, targetEvent, EplQueryHelper.isConditionValid(safeTargetCondition) ? new ConstraintCondition(safeTargetCondition.param(), safeTargetCondition.operator(), safeTargetCondition.value(), safeTargetCondition.timer()) : null, correlationCondition, type, status, autoExecute, autoExecutePayload);
         constraints.put(name, constraint);
 
         var handler = constraintHandlerFactory.getHandler(type);
@@ -85,13 +144,6 @@ public class ConstraintService {
             if (autoExecute && targetEvent != null) {
                 log.info("Setting up auto-execute for '{}': target='{}'", name, targetEvent.name());
                 final String targetName = targetEvent.name();
-                // Build target payload that satisfies the constraint's target condition
-                final java.util.Map<String, String> targetPayload = new java.util.HashMap<>();
-                targetPayload.put("source", "autoexecute");
-                targetPayload.put("constraint", name);
-                if (safeTargetCondition != null && safeTargetCondition.param() != null && !safeTargetCondition.param().isBlank()) {
-                    targetPayload.put(safeTargetCondition.param(), safeTargetCondition.value());
-                }
                 // Find the deployed ACTIVATION statement and attach a listener directly
                 for (var s : constraint.getEplStatements()) {
                     if (s.type() == StatementType.ACTIVATION) {
@@ -100,13 +152,58 @@ public class ConstraintService {
                         if (stmt != null) {
                             stmt.addListener((newEvents, oldEvents, statement, runtime) -> {
                                 if (newEvents != null && newEvents.length > 0) {
+                                    // Extract trigger payload
+                                    Map<String, String> triggerPayload = new HashMap<>();
+                                    try {
+                                        Object underlying = newEvents[0].getUnderlying();
+                                        if (underlying instanceof Map<?, ?> map) {
+                                            if (map.containsKey("t1")) {
+                                                Object t1Val = map.get("t1");
+                                                if (t1Val instanceof GenericEvent ge) {
+                                                    triggerPayload = ge.getPayload();
+                                                } else if (t1Val instanceof Map<?, ?> t1Map) {
+                                                    for (Map.Entry<?, ?> e : t1Map.entrySet()) {
+                                                        if (e.getValue() != null) triggerPayload.put(e.getKey().toString(), e.getValue().toString());
+                                                    }
+                                                }
+                                            } else if (map.containsKey("payload")) {
+                                                Object pVal = map.get("payload");
+                                                if (pVal instanceof Map<?, ?> pMap) {
+                                                    for (Map.Entry<?, ?> e : pMap.entrySet()) {
+                                                        if (e.getValue() != null) triggerPayload.put(e.getKey().toString(), e.getValue().toString());
+                                                    }
+                                                }
+                                            }
+                                        } else if (underlying instanceof GenericEvent ge) {
+                                            triggerPayload = ge.getPayload();
+                                        }
+                                    } catch (Exception ex) {
+                                        log.warn("Failed to extract trigger event payload", ex);
+                                    }
+
+                                    // Parse and interpolate target payload
+                                    Map<String, String> targetPayload = parseAndInterpolatePayload(
+                                            constraint.getAutoExecutePayload(), triggerPayload);
+
+                                    // Add source=autoexecute and constraint name if not present
+                                    targetPayload.putIfAbsent("source", "autoexecute");
+                                    targetPayload.putIfAbsent("constraint", name);
+
+                                    // If target condition param has been set in request, also make sure it exists
+                                    if (safeTargetCondition != null && safeTargetCondition.param() != null && !safeTargetCondition.param().isBlank()) {
+                                        targetPayload.putIfAbsent(safeTargetCondition.param(), safeTargetCondition.value());
+                                    }
+
                                     log.info("Auto-execute triggered for '{}': injecting '{}' with payload {}",
                                         name, targetName, targetPayload);
-                                    GenericEvent target = new GenericEvent(
-                                        java.util.UUID.randomUUID().toString(), targetName,
-                                        System.currentTimeMillis(), new java.util.HashMap<>(targetPayload));
-                                    addToTrace(targetName, target.getPayload(), target.getTimestamp());
-                                    esperService.sendEvent(target);
+
+                                    logExecution("TRIGGER", name, targetName, "Constraint auto-execution triggered.", targetPayload);
+                                    
+                                    try {
+                                        taskExecutorServiceInstance.get().executeTask(targetName, name, targetPayload, true);
+                                    } catch (Exception ex) {
+                                        log.error("Failed to execute task worker", ex);
+                                    }
                                 }
                             });
                             log.info("Auto-execute listener attached for '{}'", name);

@@ -4,7 +4,7 @@ import {
     toast,
     Button,
     Card,
-    Switch,
+    Checkbox,
     Input,
     Select,
     ListBox,
@@ -43,6 +43,7 @@ export default function ConstraintQuickCreate() {
     const [actTimer, setActTimer] = useState("");
     const [tgtTimer, setTgtTimer] = useState("");
     const [autoExecute, setAutoExecute] = useState(false);
+    const [autoExecutePayload, setAutoExecutePayload] = useState("");
 
     const createConstraintMutation = useMutation({
         mutationFn: async (payload: Record<string, unknown>) => {
@@ -90,6 +91,7 @@ export default function ConstraintQuickCreate() {
             targetEventType: isSingleEvent ? activationEventType : targetEventType,
             timer: timer ? parseInt(timer, 10) : null,
             autoExecute: isSingleEvent ? false : autoExecute,
+            autoExecutePayload: (isSingleEvent ? false : autoExecute) ? autoExecutePayload.trim() : null,
         };
 
         if (actParam.trim() && actOperator && actValue.trim()) {
@@ -127,15 +129,30 @@ export default function ConstraintQuickCreate() {
             {
                 type: "response",
                 payload: {
-                    name: "StartCoolingMustHappen",
+                    name: "StartCoolingManual",
                     activationEvent: "Temp",
                     activationEventType: "signal",
                     targetEvent: "StartCooling",
                     targetEventType: "task",
-                    timer: null,
+                    timer: 10,
+                    activationCondition: { param: "temp", operator: ">", value: "80", timer: 10 },
+                    targetCondition: { param: "user", operator: "==", value: "3" },
+                    autoExecute: false,
+                }
+            },
+            {
+                type: "response",
+                payload: {
+                    name: "StartCoolingAuto",
+                    activationEvent: "Temp",
+                    activationEventType: "signal",
+                    targetEvent: "StartCooling",
+                    targetEventType: "task",
+                    timer: 20,
                     activationCondition: { param: "temp", operator: ">", value: "80", timer: 10 },
                     targetCondition: { param: "user", operator: "==", value: "3" },
                     autoExecute: true,
+                    autoExecutePayload: "temp=${temp}, user=3",
                 }
             },
             {
@@ -280,28 +297,42 @@ export default function ConstraintQuickCreate() {
                             min={1}
                             className="w-32"
                         />
-                        <Switch isSelected={showConditions} onChange={setShowConditions}>
-                            <Switch.Control>
-                                <Switch.Thumb />
-                            </Switch.Control>
-                            <Label className="text-xs text-default-500">Conditions</Label>
-                        </Switch>
+                        <Checkbox id="show-conditions" variant={"secondary"} isSelected={showConditions} onChange={setShowConditions}>
+                            <Checkbox.Control>
+                                <Checkbox.Indicator />
+                            </Checkbox.Control>
+                            <Checkbox.Content>
+                                <Label htmlFor="show-conditions" className="text-xs text-default-500">Conditions</Label>
+                            </Checkbox.Content>
+                        </Checkbox>
                         {needsTarget && (
                             <Tooltip>
                                 <Tooltip.Trigger>
-                                    <Switch isSelected={autoExecute} onChange={setAutoExecute}>
-                                        <Switch.Control>
-                                            <Switch.Thumb />
-                                        </Switch.Control>
-                                        <Label className="text-xs text-warning">Auto</Label>
-                                    </Switch>
+                                    <Checkbox id="auto-execute" variant={"secondary"} isSelected={autoExecute} onChange={setAutoExecute}>
+                                        <Checkbox.Control>
+                                            <Checkbox.Indicator />
+                                        </Checkbox.Control>
+                                        <Checkbox.Content>
+                                            <Label htmlFor="auto-execute" className="text-xs text-warning">Auto</Label>
+                                        </Checkbox.Content>
+                                    </Checkbox>
                                 </Tooltip.Trigger>
                                 <Tooltip.Content placement="top">
-                                    Automatically injects the target event when the activation condition is met
+                                    Use this for the system to execute the task, after finishing, the target event is injected.
                                 </Tooltip.Content>
                             </Tooltip>
                         )}
                     </div>
+
+                    {needsTarget && autoExecute && (
+                        <Input
+                            variant="secondary"
+                            placeholder="Auto Payload (e.g. temp=${temp}, user=3)"
+                            value={autoExecutePayload}
+                            onChange={(e) => setAutoExecutePayload(e.target.value)}
+                            className="font-mono text-xs w-full"
+                        />
+                    )}
 
                     {constraintType && name && activationEvent && (
                         <div className="text-xs font-mono text-default-500 dark:text-default-400 bg-default-50 rounded px-2.5 py-1.5 border border-divider leading-relaxed overflow-x-auto">

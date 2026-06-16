@@ -55,7 +55,8 @@ public class ConstraintResource {
                         initialStatus,
                         request.activationEventType(),
                         request.targetEventType(),
-                        autoExec
+                        autoExec,
+                        request.autoExecutePayload()
                 );
         return Response.created(URI.create(request.name())).build();
     }
