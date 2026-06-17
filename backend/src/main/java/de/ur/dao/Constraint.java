@@ -25,8 +25,9 @@ public class Constraint {
         if (this.status == ConstraintStatus.PERMANENT_VIOLATION) {
             return;
         }
-        // Never downgrade from FULFILLED
-        if (this.status == ConstraintStatus.FULFILLED) {
+        // Templates like EXISTENCE, RESPONDED_EXISTENCE are satisfied permanently once fulfilled.
+        // Recurring templates (RESPONSE, etc.) create a new obligation on each activation.
+        if (this.status == ConstraintStatus.FULFILLED && this.type != null && this.type.isFulfilledPermanent()) {
             return;
         }
         this.status = status;

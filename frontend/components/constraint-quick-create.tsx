@@ -134,7 +134,7 @@ export default function ConstraintQuickCreate() {
                     activationEventType: "signal",
                     targetEvent: "StartCooling",
                     targetEventType: "task",
-                    timer: 10,
+                    timer: 15,
                     activationCondition: { param: "temp", operator: ">", value: "80", timer: 10 },
                     targetCondition: { param: "user", operator: "==", value: "3" },
                     autoExecute: false,
@@ -298,10 +298,10 @@ export default function ConstraintQuickCreate() {
                             className="w-32"
                         />
                         <Checkbox id="show-conditions" variant={"secondary"} isSelected={showConditions} onChange={setShowConditions}>
-                            <Checkbox.Control>
-                                <Checkbox.Indicator />
-                            </Checkbox.Control>
                             <Checkbox.Content>
+                                <Checkbox.Control>
+                                    <Checkbox.Indicator />
+                                </Checkbox.Control>
                                 <Label htmlFor="show-conditions" className="text-xs text-default-500">Conditions</Label>
                             </Checkbox.Content>
                         </Checkbox>
@@ -309,16 +309,16 @@ export default function ConstraintQuickCreate() {
                             <Tooltip>
                                 <Tooltip.Trigger>
                                     <Checkbox id="auto-execute" variant={"secondary"} isSelected={autoExecute} onChange={setAutoExecute}>
-                                        <Checkbox.Control>
-                                            <Checkbox.Indicator />
-                                        </Checkbox.Control>
                                         <Checkbox.Content>
+                                            <Checkbox.Control>
+                                                <Checkbox.Indicator />
+                                            </Checkbox.Control>
                                             <Label htmlFor="auto-execute" className="text-xs text-warning">Auto</Label>
                                         </Checkbox.Content>
                                     </Checkbox>
                                 </Tooltip.Trigger>
                                 <Tooltip.Content placement="top">
-                                    Use this for the system to execute the task, after finishing, the target event is injected.
+                                    Use this for the system to execute the task. After finishing, the target event is injected.
                                 </Tooltip.Content>
                             </Tooltip>
                         )}
@@ -336,10 +336,22 @@ export default function ConstraintQuickCreate() {
 
                     {constraintType && name && activationEvent && (
                         <div className="text-xs font-mono text-default-500 dark:text-default-400 bg-default-50 rounded px-2.5 py-1.5 border border-divider leading-relaxed overflow-x-auto">
-                            {constraintType.toUpperCase()}({singleEventConstraints.includes(constraintType)
-                                ? `${activationEvent}${actParam ? `[${actParam} ${actOperator} ${actValue}]` : ""}${actTimer ? `[0,${actTimer}]` : ""}`
-                                : `${activationEvent}${actParam ? `[${actParam} ${actOperator} ${actValue}]` : ""}${actTimer ? `[0,${actTimer}]` : ""}, ${autoExecute ? "auto(" : "dis("}${targetEvent}${tgtParam ? `[${tgtParam} ${tgtOperator} ${tgtValue}]` : ""}${tgtTimer ? `[0,${tgtTimer}]` : ""})`
-                            })
+                            {(() => {
+                                const type = constraintType.toUpperCase();
+                                const ct = timer ? `[0,${timer}]` : "";
+                                const fmtCond = (p: string, op: string | null, v: string) =>
+                                    p && op && v ? `[${p} ${op} ${v}]` : "";
+                                const fmtETimer = (t: string) => t ? `[0,${t}]` : "";
+                                const act = `${activationEvent}${fmtCond(actParam, actOperator, actValue)}${fmtETimer(actTimer)}`;
+
+                                if (singleEventConstraints.includes(constraintType)) {
+                                    return `${type}${ct}(${act})`;
+                                }
+                                const tgtName = targetEvent || "?";
+                                const tgtPrefix = autoExecute ? "auto(" : "dis(";
+                                const tgt = `${tgtPrefix}${tgtName}${fmtCond(tgtParam, tgtOperator, tgtValue)}${fmtETimer(tgtTimer)})`;
+                                return `${type}${ct}(${act}, ${tgt})`;
+                            })()}
                         </div>
                     )}
 

@@ -25,15 +25,13 @@ public class TaskExecutorService {
     }
 
     public void executeTask(String taskName, String constraintName, Map<String, String> payload, boolean injectEventOnComplete) {
-        String execId = UUID.randomUUID().toString().substring(0, 8);
-        String msgStart = String.format("Task '%s' [ID: %s] started execution.", taskName, execId);
+        String msgStart = String.format("Started '%s' from constraint '%s'.", taskName, constraintName);
         
         log.info(msgStart);
         constraintService.logExecution("START", constraintName, taskName, msgStart, payload);
 
-        // Simulate background execution
         executor.schedule(() -> {
-            String msgEnd = String.format("Task '%s' [ID: %s] completed successfully (Status: 200 OK).", taskName, execId);
+            String msgEnd = String.format("Automatically completed task '%s'.", taskName);
             log.info(msgEnd);
             constraintService.logExecution("COMPLETE", constraintName, taskName, msgEnd, payload);
 
@@ -47,7 +45,7 @@ public class TaskExecutorService {
                 
                 constraintService.addToTrace(taskName, targetEvent.getPayload(), targetEvent.getTimestamp());
                 esperService.sendEvent(targetEvent);
-                log.info("Task '{}' [ID: {}] event injected into Esper stream.", taskName, execId);
+                log.info("Task '{}' event injected into Esper stream for constraint '{}'.", taskName, constraintName);
             }
         }, 2, TimeUnit.SECONDS);
     }

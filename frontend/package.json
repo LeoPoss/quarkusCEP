@@ -10,8 +10,8 @@
     "lint": "eslint --fix"
   },
   "dependencies": {
-    "@heroui/react": "^3.2.0",
-    "@heroui/styles": "^3.2.0",
+    "@heroui/react": "^3.2.1",
+    "@heroui/styles": "^3.2.1",
     "@phosphor-icons/react": "^2.1.10",
     "@react-aria/ssr": "3.9.8",
     "@react-aria/visually-hidden": "3.8.22",

@@ -25,6 +25,7 @@ interface Constraint {
     name: string;
     type: string;
     status: string;
+    withinPeriod?: number;
     activationEvent?: { name: string; type: string };
     targetEvent?: { name: string; type: string };
     activationCondition?: { param: string; operator: string; value: string; timer?: number };
@@ -358,7 +359,9 @@ function mpDeclareFormula(type: string, c?: Constraint): string {
     const evtB = formatEvent(c.targetEvent?.name, c.targetEvent?.type, c.targetCondition, c.autoExecute);
 
     if (["EXISTENCE", "NOTEXISTENCE", "NOT_EXISTENCE"].includes(type)) {
-        return `${type}(${c.targetEvent?.name ? evtB : evtA})`;
+        const constraintTimer = c.withinPeriod ? `[0,${c.withinPeriod}]` : "";
+        return `${type}${constraintTimer}(${c.targetEvent?.name ? evtB : evtA})`;
     }
-    return `${type}(${evtA}, ${evtB})`;
+    const constraintTimer = c.withinPeriod ? `[0,${c.withinPeriod}]` : "";
+    return `${type}${constraintTimer}(${evtA}, ${evtB})`;
 }

@@ -10,5 +10,12 @@ public enum ConstraintType {
     ALTERNATE_PRECEDENCE,
     CHAIN_PRECEDENCE,
     NOT_RESPONSE,
-    NOT_EXISTENCE, NOT_PRECEDENCE
+    NOT_EXISTENCE, NOT_PRECEDENCE;
+
+    public boolean isFulfilledPermanent() {
+        return switch (this) {
+            case EXISTENCE, RESPONDED_EXISTENCE, NOT_EXISTENCE, PRECEDENCE -> true;
+            default -> false;
+        };
+    }
 }

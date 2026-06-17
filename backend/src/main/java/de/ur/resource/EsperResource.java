@@ -137,7 +137,7 @@ public class EsperResource {
 
         if (constraintService.getKnownEvents().contains(eventType)) {
             constraintService.addToTrace(eventType, payload, genericEvent.getTimestamp());
-            constraintService.logExecution("COMPLETE", "Manual UI", eventType, "Task '" + eventType + "' completed manually.", payload);
+            constraintService.logExecution("COMPLETE", "Manual UI", eventType, "Manually completed task '" + eventType + "'.", payload);
         }
 
         if (constraintService.getKnownSignals().contains(eventType)) {

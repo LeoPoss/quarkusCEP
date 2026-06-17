@@ -24,7 +24,7 @@ export interface Constraint {
     name: string;
     type: string;
     status: string;
-    timer?: number;
+    withinPeriod?: number;
     activationEvent?: { name: string; type: string };
     targetEvent?: { name: string; type: string };
     activationCondition?: { param: string; operator: string; value: string; timer?: number };
@@ -195,8 +195,8 @@ function formatConstraintDisplay(c?: Constraint): React.ReactNode {
 
     // Parse top-level timer if needed, though user example focused on event timer.
     // Assuming top-level timer is handled similarly if it exists logic, but following user example style primarily.
-    const constraintTimer = c.timer ? (
-        <span className="text-xs align-sub ml-0.5 text-default-500">[0,{c.timer}]</span>
+    const constraintTimer = c.withinPeriod ? (
+        <span className="text-xs align-sub ml-0.5 text-default-500">[0,{c.withinPeriod}]</span>
     ) : null;
 
     // Some constraints only have A (Existence, NotExistence)

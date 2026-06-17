@@ -197,8 +197,6 @@ public class ConstraintService {
                                     log.info("Auto-execute triggered for '{}': injecting '{}' with payload {}",
                                         name, targetName, targetPayload);
 
-                                    logExecution("TRIGGER", name, targetName, "Constraint auto-execution triggered.", targetPayload);
-                                    
                                     try {
                                         taskExecutorServiceInstance.get().executeTask(targetName, name, targetPayload, true);
                                     } catch (Exception ex) {
