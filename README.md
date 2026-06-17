@@ -2,6 +2,8 @@
 
 Companion repository contains the full implementation of the unified CEP engine, the web frontend, and replication instructions.
 
+![tasklistDeclareCEP.png](tasklistDeclareCEP.png)
+
 ## Artifact Structure
 
 ```
