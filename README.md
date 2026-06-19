@@ -16,12 +16,12 @@ Companion repository contains the full implementation of the unified CEP engine,
 
 ## Abstract
 
-We collapse event abstraction and declarative process execution into a single CEP engine, removing the preprocessing middleware layer found in prior architectures. MP-Declare constraints translate directly to Esper EPL queries over three abstraction tiers: atomic events, constraint-level events, and process-level events. The engine handles real-time compliance monitoring, automated constraint enforcement through background task execution, and interactive signal injection for debugging.
+We collapse event abstraction and declarative process execution into a single CEP engine, removing the preprocessing middleware layer found in prior architectures. MP-Declare constraints with continous data (STL) translate directly to Esper EPL queries over three abstraction tiers: atomic events, constraint-level events, and process-level events. The engine handles real-time compliance monitoring, automated constraint enforcement through background task execution, and interactive signal injection for debugging.
 
 ## Key Claims
 
 1. **Unified Engine Architecture.** Event abstraction and constraint enactment coexist within one Esper runtime, reducing architectural complexity and end-to-end latency compared to multi-engine designs.
-2. **Direct MP-Declare Translation.** Declarative constraints (Precedence, Response, Not-CoExistence, etc.) are systematically translated to EPL queries without intermediate DSLs or middleware queues.
+2. **Direct MP-Declare Translation.** Declarative constraints (Existence, Response, Precedence etc.) are systematically translated to EPL queries without intermediate DSLs or middleware queues.
 3. **Automated Enforcement.** Activation events trigger downstream task injection and lifecycle-logged background execution.
 
 ## Three-Tier Event Abstraction
@@ -36,7 +36,6 @@ We collapse event abstraction and declarative process execution into a single CE
 |----------|----------------------------------------------------|
 | Backend  | Java 21, Quarkus, Esper CEP                        |
 | Frontend | Next.js 16 (React 19), HeroUI v3, Tailwind CSS v4, TanStack Query |
-| Modeling | MP-Declare                                         |
 
 ## Replication
 
