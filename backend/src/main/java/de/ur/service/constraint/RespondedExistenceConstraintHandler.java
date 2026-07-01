@@ -32,7 +32,7 @@ public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
         }
 
         var statement = esperService.deployStatements(name + "_fulfill", query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService, StatementType.FULFILLMENT));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
 
 
@@ -50,7 +50,7 @@ public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
         }
 
         var statement2 = esperService.deployStatements(name + "_fulfill_after", query2);
-        statement2.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
+        statement2.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService, StatementType.FULFILLMENT));
         addConstraintStatement(name, statement2.getDeploymentId(), StatementType.FULFILLMENT, query2);
     }
 
@@ -63,7 +63,7 @@ public class RespondedExistenceConstraintHandler extends BaseConstraintHandler {
                 """.formatted(name);
 
         var statement = esperService.deployStatements(name + "_temp_vio", query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService, StatementType.TEMPORARY_VIOLATION));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
     }
 

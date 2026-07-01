@@ -27,7 +27,7 @@ public class ResponseConstraintHandler extends BaseConstraintHandler {
         }
 
         var statement = esperService.deployStatements(name, query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, false, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, false, constraintService, esperService, StatementType.FULFILLMENT));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }
 
@@ -40,7 +40,7 @@ public class ResponseConstraintHandler extends BaseConstraintHandler {
                 """.formatted(name);
 
         var statement = esperService.deployStatements(name, query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService, StatementType.TEMPORARY_VIOLATION));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
     }
 
@@ -59,7 +59,7 @@ public class ResponseConstraintHandler extends BaseConstraintHandler {
 
             var statement = esperService.deployStatements(name + "_PERM_VIO", query);
 
-            statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
+            statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService, StatementType.PERMANENT_VIOLATION));
             addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
         }
     }

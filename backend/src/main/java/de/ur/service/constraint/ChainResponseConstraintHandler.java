@@ -23,7 +23,7 @@ public class ChainResponseConstraintHandler extends BaseConstraintHandler {
                 """.formatted(name, name);
 
         var statement = esperService.deployStatements(name + "_fulfill", query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, true, constraintService, esperService, StatementType.FULFILLMENT));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
     }
 
@@ -36,7 +36,7 @@ public class ChainResponseConstraintHandler extends BaseConstraintHandler {
                 """.formatted(name);
 
         var statement = esperService.deployStatements(name + "_temp_vio", query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.TEMPORARY_VIOLATION, false, constraintService, esperService, StatementType.TEMPORARY_VIOLATION));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.TEMPORARY_VIOLATION, query);
     }
 
@@ -52,7 +52,7 @@ public class ChainResponseConstraintHandler extends BaseConstraintHandler {
         }
 
         var statement = esperService.deployStatements(name + "_perm_vio", query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService, StatementType.PERMANENT_VIOLATION));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }
 }

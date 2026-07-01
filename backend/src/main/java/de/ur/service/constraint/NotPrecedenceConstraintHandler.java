@@ -24,7 +24,7 @@ public class NotPrecedenceConstraintHandler extends BaseConstraintHandler {
                 """.formatted(name);
 
         var statement = esperService.deployStatements(name, query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, false, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.FULFILLED, false, constraintService, esperService, StatementType.FULFILLMENT));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.FULFILLMENT, query);
 
     }
@@ -36,15 +36,15 @@ public class NotPrecedenceConstraintHandler extends BaseConstraintHandler {
     @Override
     public void createPermanentViolationQuery(String name, CorrelationCondition correlation, Long withinPeriod) {
         String query = """
-                SELECT b.id, b.name, b.type, b.timestamp as timestamp
-                FROM PATTERN [every a=constraintStatus(type='TARGET', name='%s') -> (timer:interval(1 sec) and not b=constraintStatus(type='ACTIVATION', name='%s'))]
+                SELECT a.id, a.name, a.type, a.timestamp as timestamp
+                FROM PATTERN [every a=constraintStatus(type='TARGET', name='%s') -> (timer:interval(1 sec) and not constraintStatus(type='ACTIVATION', name='%s'))]
                 """.formatted(name, name);
 
         if (EplQueryHelper.isCorrelationValid(correlation)) {
             query = appendCondition(query, EplQueryHelper.toEplCorrelation(correlation));
         }
         var statement = esperService.deployStatements(name, query);
-        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService));
+        statement.addListener(new GenericStatusUpdateListener(name, ConstraintStatus.PERMANENT_VIOLATION, true, constraintService, esperService, StatementType.PERMANENT_VIOLATION));
         addConstraintStatement(name, statement.getDeploymentId(), StatementType.PERMANENT_VIOLATION, query);
     }
 }

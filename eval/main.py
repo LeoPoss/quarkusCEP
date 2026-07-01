@@ -17,6 +17,11 @@ MEMORY_LIMIT = "2G"
 ACTIVE_CONSTRAINTS_SHARE = 1
 NOISE_EVENT_PERCENT = 0.9
 
+# Target ~60k events per run for statistical significance.
+# At low rates this means more time; at high rates cap at 60s.
+TARGET_EVENTS_PER_RUN = 60_000
+MIN_DURATION_SEC = 30
+
 
 def create_constraint(constraint_type, i, **kwargs):
     base = {
@@ -89,7 +94,7 @@ def start_backend_container():
             BACKEND_IMAGE,
             detach=True,
             ports={'8080/tcp': 8080},
-            remove=True,
+            remove=False,
             nano_cpus=int(CPU_CORES * 1e9),
             mem_limit=MEMORY_LIMIT,
             environment=["QUARKUS_LOG_CONSOLE_FORMAT=%d{HH:mm:ss,SSS} %-5p [%c] %s%e%n"]
@@ -109,7 +114,8 @@ def stop_and_get_logs_sync(container):
         time.sleep(2)
         logs = container.logs().decode('utf-8')
         container.stop()
-        print("Container stopped.")
+        container.remove()
+        print("Container stopped and removed.")
         return logs
     except docker.errors.NotFound:
         print("Warning: Container not found, could not stop or get logs.")
@@ -161,22 +167,37 @@ def monitor_resources_sync(container, duration_sec):
     return pd.DataFrame(stats)
 
 
+def compute_latency_stats(valid_latencies, label=""):
+    """Compute descriptive statistics for a latency series."""
+    if len(valid_latencies) == 0:
+        return {}
+    return {
+        f"{label}_count": len(valid_latencies),
+        f"{label}_mean_ms": valid_latencies.mean(),
+        f"{label}_median_ms": valid_latencies.median(),
+        f"{label}_p95_ms": np.percentile(valid_latencies, 95),
+        f"{label}_p99_ms": np.percentile(valid_latencies, 99),
+        f"{label}_min_ms": valid_latencies.min(),
+        f"{label}_max_ms": valid_latencies.max(),
+    }
+
+
 def analyze_results_sync(logs, resources_df, actual_eps, run_name, analyzer_metrics=None):
     print("Analyzing results...")
-    
-    # Process logs in chunks to avoid memory issues with large logs
-    chunk_size = 100000  # Process 100k lines at a time
-    latency_pattern = re.compile(r"LATENCY,([^,]+),(\d+)")
-    
-    # Process logs in chunks
+
+    # Parse LATENCY markers with statement type:
+    # Format: LATENCY,<constraintName>,<statementType>,<latencyMs>
+    chunk_size = 100000
+    latency_pattern = re.compile(r"LATENCY,([^,]+),([^,]+),([\d.]+)")
+
     latencies = []
     lines = logs.split('\n')
     total_lines = len(lines)
-    
+
     print(f"Processing {total_lines} log lines in chunks...")
-    
+
     for i in range(0, total_lines, chunk_size):
-        chunk = '\n'.join(lines[i:i+chunk_size])
+        chunk = '\n'.join(lines[i:i + chunk_size])
         latencies.extend(latency_pattern.findall(chunk))
         print(f"Processed {min(i + chunk_size, total_lines)}/{total_lines} lines, found {len(latencies)} latency markers")
 
@@ -188,35 +209,109 @@ def analyze_results_sync(logs, resources_df, actual_eps, run_name, analyzer_metr
             "avg_cpu_percent": np.nan, "max_cpu_percent": np.nan,
             "avg_mem_mb": np.nan, "max_mem_mb": np.nan,
             "total_events_processed": 0,
+            "actual_eps": actual_eps,
             "error": "No latency markers found"
         }
 
     try:
         print(f"Processing {len(latencies)} latency measurements...")
-        latency_df = pd.DataFrame(latencies, columns=['constraint', 'latency_ns'])
-        
-        # Convert to numeric with error handling
-        latency_df['latency_ms'] = pd.to_numeric(latency_df['latency_ns'], errors='coerce') / 1E6
-        
-        # Drop any rows with invalid latency values
-        valid_latencies = latency_df['latency_ms'].dropna()
-        
-        if len(valid_latencies) == 0:
-            print("   - Warning: No valid latency measurements found after filtering.")
+        latency_df = pd.DataFrame(latencies, columns=['constraint', 'statement_type', 'latency_ms'])
+        latency_df['latency_ms'] = pd.to_numeric(latency_df['latency_ms'], errors='coerce')
+
+        # Drop invalid rows
+        valid_df = latency_df.dropna(subset=['latency_ms'])
+        if len(valid_df) == 0:
+            print("   - Warning: No valid latency measurements after filtering.")
             return {
                 "mean_latency_ms": np.nan, "median_latency_ms": np.nan,
                 "p95_latency_ms": np.nan, "p99_latency_ms": np.nan,
                 "avg_cpu_percent": np.nan, "max_cpu_percent": np.nan,
                 "avg_mem_mb": np.nan, "max_mem_mb": np.nan,
                 "total_events_processed": 0,
+                "actual_eps": actual_eps,
                 "error": "No valid latency measurements after filtering"
             }
-        
-        # Save a sample of the latencies instead of all to reduce I/O
-        sample_size = min(10000, len(valid_latencies))
-        valid_latencies.sample(sample_size).to_csv(f"{run_name}_latency_sample.csv", index=False)
-        print(f"Saved sample of {sample_size} latency measurements to {run_name}_latency_sample.csv")
 
+        # ── Aggregate statistics ──
+        all_latencies = valid_df['latency_ms']
+
+        # Per statement-type breakdown
+        st_counts = valid_df['statement_type'].value_counts()
+        print(f"\nLatency count by statement type:")
+        for st, cnt in st_counts.items():
+            print(f"  {st}: {cnt}")
+
+        # Per constraint-type breakdown (extract from constraint name)
+        def extract_constraint_type(name):
+            """Extract constraint type from name like 'Response3' → 'response'."""
+            m = re.match(r'^([A-Za-z]+)', str(name))
+            return m.group(1).lower() if m else 'unknown'
+
+        valid_df['constraint_type'] = valid_df['constraint'].apply(extract_constraint_type)
+        ct_counts = valid_df['constraint_type'].value_counts()
+        print(f"\nLatency count by constraint type:")
+        for ct, cnt in ct_counts.items():
+            print(f"  {ct}: {cnt}")
+
+        # Global stats
+        results = compute_latency_stats(all_latencies, label="")
+        # rename keys for backward compatibility
+        results = {
+            "mean_latency_ms": results.get("_mean_ms", np.nan),
+            "median_latency_ms": results.get("_median_ms", np.nan),
+            "p95_latency_ms": results.get("_p95_ms", np.nan),
+            "p99_latency_ms": results.get("_p99_ms", np.nan),
+            "max_latency_ms": results.get("_max_ms", np.nan),
+            "min_latency_ms": results.get("_min_ms", np.nan),
+        }
+
+        # Per-statement-type breakdown
+        per_st = {}
+        for st in ['FULFILLMENT', 'TEMPORARY_VIOLATION', 'PERMANENT_VIOLATION']:
+            st_df = valid_df[valid_df['statement_type'] == st]
+            st_stats = compute_latency_stats(
+                st_df['latency_ms'] if len(st_df) > 0 else pd.Series(dtype=float),
+                label=st.lower()
+            )
+            results.update(st_stats)
+            per_st[st] = {'n': len(st_df), 'mean': st_stats.get(f'{st.lower()}_mean_ms', np.nan)}
+
+        # Per-constraint-type × statement-type breakdown
+        per_ct_st = {}
+        for ct in valid_df['constraint_type'].unique():
+            ct_df = valid_df[valid_df['constraint_type'] == ct]
+            per_ct_st[ct] = {}
+            for st in ['FULFILLMENT', 'TEMPORARY_VIOLATION', 'PERMANENT_VIOLATION']:
+                sub = ct_df[ct_df['statement_type'] == st]
+                if len(sub) > 0:
+                    per_ct_st[ct][st] = {'n': len(sub), 'mean': sub['latency_ms'].mean(), 'median': sub['latency_ms'].median()}
+
+        # Print detailed breakdown
+        print(f"\n── Global latency stats (all statement types pooled) ──")
+        print(f"  Count : {len(all_latencies)}")
+        print(f"  Mean  : {results['mean_latency_ms']:.2f} ms")
+        print(f"  Median: {results['median_latency_ms']:.2f} ms")
+        print(f"  P95   : {results['p95_latency_ms']:.2f} ms")
+        print(f"  P99   : {results['p99_latency_ms']:.2f} ms")
+
+        print(f"\n── Per statement-type breakdown ──")
+        for st, info in per_st.items():
+            if info['n'] > 0:
+                print(f"  {st:25s}: n={info['n']:>6d}  mean={info['mean']:>8.2f} ms")
+
+        print(f"\n── Per constraint-type × statement-type ──")
+        for ct in sorted(per_ct_st.keys()):
+            for st in ['FULFILLMENT', 'TEMPORARY_VIOLATION', 'PERMANENT_VIOLATION']:
+                info = per_ct_st[ct].get(st)
+                if info:
+                    print(f"  {ct:15s} × {st:20s}: n={info['n']:>6d}  mean={info['mean']:>8.2f} ms  median={info['median']:>8.2f} ms")
+
+        # Save sample
+        sample_size = min(10000, len(valid_df))
+        valid_df.sample(sample_size).to_csv(f"{run_name}_latency_sample.csv", index=False)
+        print(f"\nSaved sample of {sample_size} latency measurements to {run_name}_latency_sample.csv")
+
+        # ── Resource stats ──
         if resources_df.empty:
             print("   - Warning: Resource data is empty. CPU/Mem stats will be NaN.")
             avg_cpu, max_cpu, avg_mem, max_mem = np.nan, np.nan, np.nan, np.nan
@@ -226,25 +321,16 @@ def analyze_results_sync(logs, resources_df, actual_eps, run_name, analyzer_metr
             avg_mem = resources_df['memory_mb'].mean()
             max_mem = resources_df['memory_mb'].max()
 
-        # Calculate percentiles more efficiently for large datasets
-        p95 = np.percentile(valid_latencies, 95) if len(valid_latencies) > 0 else np.nan
-        p99 = np.percentile(valid_latencies, 99) if len(valid_latencies) > 0 else np.nan
-
-        results = {
-            "mean_latency_ms": valid_latencies.mean(),
-            "median_latency_ms": valid_latencies.median(),
-            "p95_latency_ms": p95,
-            "p99_latency_ms": p99,
-            "max_latency_ms": valid_latencies.max(),
-            "min_latency_ms": valid_latencies.min(),
+        results.update({
             "avg_cpu_percent": avg_cpu,
             "max_cpu_percent": max_cpu,
             "avg_mem_mb": avg_mem,
             "max_mem_mb": max_mem,
             "actual_eps": actual_eps,
-            "total_events_processed": len(valid_latencies),
+            "total_events_processed": len(valid_df),
             "error": None
-        }
+        })
+
     except Exception as e:
         print(f"Error during analysis: {str(e)}")
         return {
@@ -253,6 +339,7 @@ def analyze_results_sync(logs, resources_df, actual_eps, run_name, analyzer_metr
             "avg_cpu_percent": np.nan, "max_cpu_percent": np.nan,
             "avg_mem_mb": np.nan, "max_mem_mb": np.nan,
             "total_events_processed": 0,
+            "actual_eps": actual_eps,
             "error": f"Analysis error: {str(e)}"
         }
     print("Analysis complete.")
@@ -294,8 +381,6 @@ async def setup_constraints(constraints):
                     f"   - Warning: Failed to create {c.get('name')}. Status: {e.response.status_code}, Body: {e.response.text}")
             except httpx.RequestError as e:
                 print(f"   - Error creating constraint {c.get('name')}: {e}")
-
-    print("Constraints setup complete.")
 
 
 async def run_load_test(constraints, rate_eps, duration_sec, num_instances):
@@ -403,15 +488,16 @@ async def run_single_benchmark(constraints, rate_eps, duration_sec, run_name, nu
     return await asyncio.to_thread(analyze_results_sync, logs, resources_df, actual_eps, run_name)
 
 
-async def run_scenario_scalability(num_runs=10):
+async def run_scenario_scalability(num_runs=5):
     print("\n=== Running Scalability Scenario ===")
     print(f"Testing how the system scales with increasing event rates (averaging over {num_runs} runs per rate)...")
 
     all_results = []
 
-    # Test different event rates
-    for rate_eps in [250000]:
-        print(f"\n--- Testing at {rate_eps} events/second ---")
+    for rate_eps in [100, 1000, 10000, 50000, 100000]:
+        duration_sec = max(MIN_DURATION_SEC, int(TARGET_EVENTS_PER_RUN / rate_eps))
+        total_events = int(rate_eps * duration_sec)
+        print(f"\n--- Testing at {rate_eps} events/second for {duration_sec}s (~{total_events:,} events) ---")
 
         # Run multiple times and collect results
         run_results = []
@@ -421,7 +507,7 @@ async def run_scenario_scalability(num_runs=10):
             result = await run_single_benchmark(
                 constraints=SCALABILITY_CONSTRAINTS,
                 rate_eps=rate_eps,
-                duration_sec=60,
+                duration_sec=duration_sec,
                 run_name=f"scalability_{rate_eps}eps_run{run_num}"
             )
 

@@ -59,7 +59,7 @@ cd frontend && bun install && bun dev     # → http://localhost:3000
 ### Docker
 
 ```bash
-cd backend && ./gradlew build
+cd backend &&  ./gradlew clean build -x test
 cd .. && docker compose up --build
 ```
 

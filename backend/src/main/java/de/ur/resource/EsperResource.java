@@ -131,7 +131,7 @@ public class EsperResource {
         GenericEvent genericEvent = new GenericEvent(
                 UUID.randomUUID().toString(),
                 eventType,
-                System.currentTimeMillis(),
+                System.nanoTime(),
                 payload
         );
 

@@ -39,7 +39,7 @@ public class TaskExecutorService {
                 de.ur.dao.GenericEvent targetEvent = new de.ur.dao.GenericEvent(
                     UUID.randomUUID().toString(),
                     taskName,
-                    System.currentTimeMillis(),
+                    System.nanoTime(),
                     payload != null ? new HashMap<>(payload) : new HashMap<>()
                 );
                 

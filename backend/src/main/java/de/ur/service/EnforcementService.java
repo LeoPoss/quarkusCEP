@@ -76,7 +76,7 @@ public class EnforcementService {
 
         GenericEvent event = new GenericEvent(
                 UUID.randomUUID().toString(), rule.getActionEventType(),
-                System.currentTimeMillis(), payload
+                System.nanoTime(), payload
         );
 
         if (constraintService.getKnownEvents().contains(rule.getActionEventType())) {
