@@ -1,22 +1,29 @@
 # syntax=docker.io/docker/dockerfile:1
 
-FROM oven/bun:1 AS base
+FROM node:24-alpine AS base
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
 # Install dependencies and build the application
 FROM base AS builder
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY bun.lock package.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
 
-# Install dependencies with bun
-RUN bun install --frozen-lockfile
+# Install dependencies with pnpm
+RUN pnpm install --frozen-lockfile
 
 # Copy the rest of the application
 COPY . .
 
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 # Build the application
-RUN bun run build
+RUN pnpm run build
 
 # Production image
 FROM base AS runner
@@ -27,8 +34,8 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 # Create a non-root user
-RUN groupadd --system --gid 1001 nodejs && \
-    useradd --system --uid 1001 -g nodejs nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 -G nodejs nextjs
 
 # Copy built files from builder
 COPY --from=builder /app/public ./public
@@ -41,4 +48,4 @@ USER nextjs
 EXPOSE 3000
 
 # Start the application
-CMD ["bun", "run", "server.js"]
+CMD ["node", "server.js"]

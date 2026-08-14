@@ -43,7 +43,7 @@ We collapse event abstraction and declarative process execution into a single CE
 
 - JDK 21+
 - Gradle
-- Node.js + bun
+- Node.js + pnpm
 - Docker (optional)
 
 ### Running Locally
@@ -53,13 +53,13 @@ We collapse event abstraction and declarative process execution into a single CE
 cd backend && ./gradlew quarkusDev        # → http://localhost:8080
 
 # Frontend
-cd frontend && bun install && bun dev     # → http://localhost:3000
+cd frontend && pnpm install && pnpm dev     # → http://localhost:3000
 ```
 
 ### Docker
 
 ```bash
-cd backend &&  ./gradlew clean build -x test
+cd backend && ./gradlew clean build -x test
 cd .. && docker compose up --build
 ```
 

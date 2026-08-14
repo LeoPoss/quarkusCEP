@@ -8,12 +8,12 @@ repositories {
     mavenLocal()
 }
 
-val quarkusPlatformGroupId: String by project
-val quarkusPlatformArtifactId: String by project
-val quarkusPlatformVersion: String by project
+val quarkusPlatformGroupId = providers.gradleProperty("quarkusPlatformGroupId").get()
+val quarkusPlatformArtifactId = providers.gradleProperty("quarkusPlatformArtifactId").get()
+val quarkusPlatformVersion = providers.gradleProperty("quarkusPlatformVersion").get()
 
 val esperVersion = "9.0.0"
-val lombokVersion = "1.18.42"
+val lombokVersion = "1.18.46"
 
 dependencies {
     implementation("io.quarkus:quarkus-smallrye-health")
@@ -48,6 +48,13 @@ java {
 
 tasks.withType<Test> {
     systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
+    jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
+}
+tasks.withType<JavaExec> {
+    jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED")
+}
+tasks.withType<io.quarkus.gradle.tasks.QuarkusDev> {
+    jvmArguments.add("--add-opens=java.base/java.lang=ALL-UNNAMED")
 }
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
